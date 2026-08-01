@@ -436,12 +436,17 @@ public sealed class DiligentOpenGLTests
             _memory = Marshal.AllocHGlobal(size);
             Marshal.Copy(new byte[size], 0, _memory, size);
             Desc = TextureDesc.CreateManagedWrapper(_memory, ownsHandle: false);
+            Desc.ArraySize = 1;
+            Desc.MipLevels = 1;
+            Desc.SampleCount = 1;
+            Desc.ImmediateContextMask = 1;
         }
 
         public TextureDesc Desc { get; }
 
         public void Dispose()
         {
+            Desc.Dispose();
             if (_memory != IntPtr.Zero)
                 Marshal.FreeHGlobal(_memory);
         }
@@ -462,6 +467,7 @@ public sealed class DiligentOpenGLTests
 
         public void Dispose()
         {
+            Desc.Dispose();
             if (_memory != IntPtr.Zero)
                 Marshal.FreeHGlobal(_memory);
         }
