@@ -20,7 +20,10 @@
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Bindings/SpirVCross/RedBolt.Bindings.SpirVCross.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Bindings/SpirVTools/RedBolt.Bindings.SpirVTools.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/RedBolt/RedBolt.csproj" />
+    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/DearImGui/RedBolt.DearImGui.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Glow/RedBolt.Glow.csproj" />
+    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Generator/Dependencies/RedBolt.Generator.Dependencies.csproj"
+                      GlobalPropertiesToRemove="RedBoltPlatform;RedBoltNativePreset" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/IK/RedBolt.IK.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/JoltPhysics/RedBolt.JoltPhysics.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Navigation/RedBolt.Navigation.csproj" />
