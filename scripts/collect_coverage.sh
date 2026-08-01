@@ -5,7 +5,6 @@ set -euo pipefail
 script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 tests_root="$(cd -- "$script_directory/.." && pwd)"
 redbolt_root="${REDBOLT_ROOT:-$tests_root/../RedBolt}"
-redbolt_configuration="${REDBOLT_COVERAGE_CONFIGURATION:-Debug}"
 results_directory="${REDBOLT_COVERAGE_RESULTS_DIR:-$tests_root/TestResults/coverage}"
 redbolt_user_home="$(getent passwd "$(id -u)" | cut -d: -f6)"
 redbolt_data_root="${XDG_DATA_HOME:-$redbolt_user_home/.local/share}"
@@ -22,16 +21,6 @@ export PATH
 
 mkdir -p "$results_directory"
 
-coverage_arguments=(
-    --configuration "$redbolt_configuration"
-    --no-restore
-    --results-directory "$results_directory"
-    --settings "$tests_root/coverage.runsettings"
-    --collect:"XPlat Code Coverage"
-    -p:RedBoltKeepParentRuntimeAssemblies=true
-    -p:BuildProjectReferences=false
-)
-
 offscreen_coverage_arguments=(
     --results-directory "$results_directory"
     --settings "$tests_root/coverage.runsettings"
@@ -40,21 +29,10 @@ offscreen_coverage_arguments=(
     -p:BuildProjectReferences=false
 )
 
-if [[ "${REDBOLT_COVERAGE_OFFSCREEN:-0}" == "1" ]]; then
-    "$redbolt_root/scripts/run_visual_tests_offscreen.sh" \
-        "${offscreen_coverage_arguments[@]}" "$@"
-else
-    env \
-        -u DISPLAY \
-        -u WAYLAND_DISPLAY \
-        -u SDL_VIDEODRIVER \
-        -u SDL_AUDIODRIVER \
-        -u REDBOLT_RUN_VISUAL_TESTS \
-        -u REDBOLT_RUN_GRAPHICS_BACKEND_LIFECYCLE \
-        -u REDBOLT_RUN_DILIGENT_GL_SMOKE \
-        dotnet test "$tests_root/RedBolt.Tests.csproj" \
-        "${coverage_arguments[@]}" "$@"
-fi
+# Coverage is always collected through the Xvfb/llvmpipe harness. This keeps
+# native and visual tests on the same deterministic software-rendered path.
+"$redbolt_root/scripts/run_visual_tests_offscreen.sh" \
+    "${offscreen_coverage_arguments[@]}" "$@"
 
 coverage_file="$(find "$results_directory" -type f -name coverage.cobertura.xml -printf '%T@ %p\n' \
     | sort -nr | sed -n '1{s/^[^ ]* //;p}')"
@@ -70,10 +48,17 @@ branch_rate="$(printf '%s\n' "$coverage_header" | sed -n 's/.*branch-rate="\([^"
 lines_covered="$(printf '%s\n' "$coverage_header" | sed -n 's/.*lines-covered="\([^"]*\)".*/\1/p')"
 lines_valid="$(printf '%s\n' "$coverage_header" | sed -n 's/.*lines-valid="\([^"]*\)".*/\1/p')"
 
+minimum_coverage="${REDBOLT_COVERAGE_MINIMUM:-80}"
+
 awk -v line_rate="$line_rate" -v branch_rate="$branch_rate" \
     -v lines_covered="$lines_covered" -v lines_valid="$lines_valid" \
+    -v minimum_coverage="$minimum_coverage" \
     'BEGIN {
         printf "Line coverage: %.2f%% (%s/%s lines)\n", 100 * line_rate, lines_covered, lines_valid
         printf "Branch coverage: %.2f%%\n", 100 * branch_rate
+        if (100 * line_rate < minimum_coverage || 100 * branch_rate < minimum_coverage) {
+            printf "Coverage gate failed: both line and branch coverage must be at least %.2f%%\n", minimum_coverage > "/dev/stderr"
+            exit 1
+        }
     }'
 printf 'Cobertura report: %s\n' "$coverage_file"

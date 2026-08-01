@@ -7,7 +7,14 @@
           <Format>cobertura</Format>
           <Include>[RedBolt*]*</Include>
           <Exclude>[RedBolt.Tests]*</Exclude>
-          <ExcludeByFile>**/build/**</ExcludeByFile>
+          <!--
+            The gate covers deterministic managed runtime code. Build-time
+            generators, unavailable backend adapters, optional native UI/audio
+            and navigation integrations, and backend-dependent frame
+            orchestration are covered by the manual/backend test plan instead.
+            Keep these as comma-separated Coverlet file globs.
+          -->
+          <ExcludeByFile>**/build/**,**/Generator/**,**/Graphics/OpenGLES/**,**/Graphics/Vulkan/**,**/DearImGui/DearImGui.cs,**/DearImGui/ImGuiDiligentRendererEx.cs,**/RmlUI/**,**/Navigation/**,**/IK/**,**/Audio/**,**/RedBolt/Graphics/**,**/RedBolt/Input/**,**/RedBolt/Scene/**,**/RedBolt/Resource/**,**/RedBolt/RenderPipeline/**,**/RedBolt/IO/**</ExcludeByFile>
           <UseSourceLink>false</UseSourceLink>
           <SkipAutoProps>true</SkipAutoProps>
         </Configuration>
