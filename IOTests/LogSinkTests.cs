@@ -1,0 +1,224 @@
+namespace RedBolt.Tests;
+
+using System.Reflection;
+
+using RedBolt.Bindings.Sdl;
+using RedBolt.Core;
+using RedBolt.Engine;
+using RedBolt.Logging;
+using RedBolt.Platform;
+
+[Collection(nameof(HeadlessEngineCollection))]
+public sealed class LogSinkTests
+{
+    private static readonly MethodInfo SetMainThreadMethod = typeof(WorkQueue).GetMethod(
+        "SetMainThread", BindingFlags.NonPublic | BindingFlags.Static)!;
+
+    [Fact]
+    public void Open_rotates_existing_files_in_numbered_order()
+    {
+        using var scope = new TestArtifactScope(nameof(Open_rotates_existing_files_in_numbered_order));
+        var fileName = Path.Combine(scope.DirectoryPath, "engine.log");
+        File.WriteAllText(fileName, "current");
+        File.WriteAllText(fileName + ".1", "previous");
+
+        WithLog(true, log =>
+        {
+            log.SetQuiet(true);
+            log.SetLogFormat("%v");
+            var parameters = new LogFileParams
+            {
+                RotateOnOpen = true,
+                RotateBySize = false,
+                MaxFiles = 3,
+                MaxSize = 1024
+            };
+
+            log.Open(fileName, in parameters);
+            log.Close();
+        });
+
+        Assert.Empty(File.ReadAllText(fileName));
+        Assert.Equal("current", File.ReadAllText(fileName + ".1"));
+        Assert.Equal("previous", File.ReadAllText(fileName + ".2"));
+    }
+
+    [Fact]
+    public void Rotate_by_size_preserves_complete_entries_in_numbered_sink()
+    {
+        using var scope = new TestArtifactScope(nameof(Rotate_by_size_preserves_complete_entries_in_numbered_sink));
+        var fileName = Path.Combine(scope.DirectoryPath, "size.log");
+        var first = "first-entry-" + Guid.NewGuid().ToString("N");
+        var second = "second-entry-" + Guid.NewGuid().ToString("N");
+
+        WithLog(true, log =>
+        {
+            log.SetQuiet(true);
+            log.SetLevel(LogLevel.Trace);
+            log.SetLogFormat("%v");
+            var parameters = new LogFileParams
+            {
+                RotateOnOpen = false,
+                RotateBySize = true,
+                MaxFiles = 2,
+                MaxSize = (uint)(first.Length + Environment.NewLine.Length + 1)
+            };
+
+            log.Open(fileName, in parameters);
+            Log.GetLogger("rotation").Info(first);
+            Log.GetLogger("rotation").Info(second);
+            log.Close();
+        });
+
+        Assert.Equal(first + Environment.NewLine, File.ReadAllText(fileName + ".1"));
+        Assert.Equal(second + Environment.NewLine, File.ReadAllText(fileName));
+    }
+
+    [Fact]
+    public void Duplicate_errors_are_suppressed_and_summary_is_emitted_on_next_error()
+    {
+        using var scope = new TestArtifactScope(nameof(Duplicate_errors_are_suppressed_and_summary_is_emitted_on_next_error));
+        var fileName = Path.Combine(scope.DirectoryPath, "duplicates.log");
+        var duplicate = "duplicate-error-" + Guid.NewGuid().ToString("N");
+        var distinct = "distinct-error-" + Guid.NewGuid().ToString("N");
+
+        WithLog(true, log =>
+        {
+            log.SetQuiet(true);
+            log.SetLevel(LogLevel.Trace);
+            log.SetLogFormat("%v");
+            var parameters = new LogFileParams { RotateOnOpen = false, MaxFiles = 0 };
+            log.Open(fileName, in parameters);
+            var logger = Log.GetLogger("duplicate");
+            logger.Error(duplicate);
+            logger.Error(duplicate);
+            logger.Error(duplicate);
+            logger.Error(distinct);
+            log.Close();
+        });
+
+        Assert.Equal(
+        [
+            duplicate,
+            "Skipped 2 duplicate messages..",
+            distinct
+        ], File.ReadAllLines(fileName));
+    }
+
+    [Fact]
+    public void Concurrent_loggers_share_one_serialized_sink_without_lost_entries()
+    {
+        using var scope = new TestArtifactScope(nameof(Concurrent_loggers_share_one_serialized_sink_without_lost_entries));
+        var fileName = Path.Combine(scope.DirectoryPath, "concurrent.log");
+        const int workerCount = 4;
+        const int messagesPerWorker = 40;
+
+        WithLog(true, log =>
+        {
+            log.SetQuiet(true);
+            log.SetLevel(LogLevel.Trace);
+            log.SetLogFormat("%v");
+            var parameters = new LogFileParams { RotateOnOpen = false, MaxFiles = 0 };
+            log.Open(fileName, in parameters);
+
+            var threads = Enumerable.Range(0, workerCount)
+                .Select(worker => new Thread(() =>
+                {
+                    var logger = Log.GetLogger("worker");
+                    for (var index = 0; index < messagesPerWorker; ++index)
+                        logger.Info($"worker-{worker:D2}-{index:D3}");
+                }))
+                .ToArray();
+            foreach (var thread in threads)
+                thread.Start();
+            foreach (var thread in threads)
+                thread.Join();
+            log.Close();
+        });
+
+        var lines = File.ReadAllLines(fileName);
+        Assert.Equal(workerCount * messagesPerWorker, lines.Length);
+        Assert.Equal(lines.Length, lines.Distinct(StringComparer.Ordinal).Count());
+        Assert.All(lines, line => Assert.Matches("^worker-\\d{2}-\\d{3}$", line));
+    }
+
+    [Fact]
+    public void Invalid_paths_fall_back_without_leaking_a_sink_and_dispose_is_repeatable()
+    {
+        using var scope = new TestArtifactScope(nameof(Invalid_paths_fall_back_without_leaking_a_sink_and_dispose_is_repeatable));
+        var directoryPath = Path.Combine(scope.DirectoryPath, "not-a-file");
+        Directory.CreateDirectory(directoryPath);
+
+        WithLog(true, log =>
+        {
+            log.SetQuiet(true);
+            log.SetLevel(LogLevel.Trace);
+            log.Open(directoryPath);
+            log.Close();
+            log.Dispose();
+            log.Dispose();
+        });
+
+        Assert.True(Directory.Exists(directoryPath));
+        Assert.Empty(Directory.EnumerateFiles(scope.DirectoryPath));
+    }
+
+    [Fact]
+    public void Unsupported_platform_and_empty_or_null_device_names_are_no_ops()
+    {
+        using var scope = new TestArtifactScope(nameof(Unsupported_platform_and_empty_or_null_device_names_are_no_ops));
+        var previous = Context.Instance;
+        var context = new Context(new RuntimeServices(new FakePlatformRuntime(false), []));
+        Context.SetInstance(context);
+        try
+        {
+            using var log = new Log();
+            log.Open(Path.Combine(scope.DirectoryPath, "unsupported.log"));
+            log.Open(string.Empty);
+            log.Open(null!);
+            log.Open(OperatingSystem.IsWindows() ? "NUL" : "/dev/null");
+        }
+        finally
+        {
+            Context.SetInstance(previous);
+            context.Dispose();
+        }
+
+        Assert.False(File.Exists(Path.Combine(scope.DirectoryPath, "unsupported.log")));
+    }
+
+    private static void WithLog(bool supportsFileLogging, Action<Log> action)
+    {
+        SetMainThreadMethod.Invoke(null, null);
+        var previous = Context.Instance;
+        var context = new Context(new RuntimeServices(new FakePlatformRuntime(supportsFileLogging), []));
+        Context.SetInstance(context);
+        var log = new Log();
+        context.RegisterSubsystem(log);
+        try
+        {
+            action(log);
+        }
+        finally
+        {
+            context.RemoveSubsystem<Log>();
+            log.Dispose();
+            Context.SetInstance(previous);
+            context.Dispose();
+        }
+    }
+
+    private sealed class FakePlatformRuntime(bool supportsFileLogging) : IPlatformRuntime
+    {
+        public bool SupportsFileLogging => supportsFileLogging;
+
+        public bool UseHighDensityWindow => false;
+
+        public void InitializeApplicationParameters(EngineParameters parameters)
+        {
+        }
+
+        public NativeWindowInfo GetNativeWindowInfo(SdlWindow window) =>
+            throw new PlatformNotSupportedException("Native windows are not part of this logging test.");
+    }
+}

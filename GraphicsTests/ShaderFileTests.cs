@@ -20,7 +20,7 @@ public sealed class ShaderFileTests
 
     private ResourceCache Resources => _fixture.Resources;
 
-    [Fact]
+    [GraphicsFact]
     public void Shader_registers_empty_named_factory()
     {
         var context = new Context();
@@ -30,7 +30,7 @@ public sealed class ShaderFileTests
         Assert.Equal(string.Empty, shader.Name);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Repo_backed_rbfx_shader_loads_with_recursive_includes()
     {
         RbfxTestData.AddResourceDirs(Resources);
@@ -49,7 +49,7 @@ public sealed class ShaderFileTests
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Prepared_shader_source_injects_rbfx_style_engine_macros()
     {
         RbfxTestData.AddResourceDirs(Resources);
@@ -75,7 +75,7 @@ public sealed class ShaderFileTests
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Normal_buffer_shader_loads_and_prepares_alpha_mask_support()
     {
         RbfxTestData.AddResourceDirs(Resources);
@@ -99,7 +99,7 @@ public sealed class ShaderFileTests
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Shader_reload_caches_normalized_variations_and_indexes_files()
     {
         RbfxTestData.AddResourceDirs(Resources);

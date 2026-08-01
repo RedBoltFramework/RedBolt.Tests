@@ -1,6 +1,6 @@
 # Package tool test plan
 
-Source: `../RedBolt/src/RedBolt/Tools/PackageTool/Program.cs`.
+Source: `../../RedBolt/src/RedBolt/Tools/PackageTool/Program.cs`.
 
 - `PackageTool` and nested `FileEntry`: package an empty directory, one file,
   nested files, duplicate names, zero-byte files, large files, binary data,
@@ -19,4 +19,7 @@ in `finally`.
 ## Verified checks
 
 - [x] Empty/hidden-file filtering, nested files, binary round trips, compressed/uncompressed archives, listing, and package inspection (`IOTests/PackageToolTests`).
-- [ ] Malformed archive, path traversal, output-conflict, and process exit diagnostics remain follow-up cases.
+- [x] Invalid archive rejection through `PackageFile.Open`, missing-input/output-parent failures, invalid-option diagnostics, and deterministic output-conflict/up-to-date behavior (`IOTests/PackageToolTests`).
+- [x] PackageTool has no extraction API or entry-name policy hook, so
+  path-traversal rejection is an explicit production-API gate rather than a
+  falsely claimed end-to-end test.

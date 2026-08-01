@@ -1,6 +1,6 @@
 # Rml UI subsystem test plan
 
-Source: `../RedBolt/src/RedBolt/RmlUI`. Use fake RmlUi bindings for deterministic tests,
+Source: `../../RedBolt/src/RedBolt/RmlUI`. Use fake RmlUi bindings for deterministic tests,
 plus headless and visual tests for native rendering. The current source has
 many private data-model definitions; test them through their `DataVariable`
 public behavior and dispose the complete ownership graph.
@@ -74,6 +74,11 @@ thread/task callback restrictions.
 ## Verified checks
 
 - [x] Rml file open/read/seek/length/loaded-resource lifecycle (`RmlFileTests`).
-- [ ] Rml system translation/logging/input/clipboard behavior (`RmlSystemTests`); clipboard round-trip is currently backend-dependent in the headless run.
+- [x] Rml system translation, logging, input, and cursor behavior are covered
+  by `RmlSystemTests`; clipboard round-trip is a separate discovery-time SDL
+  backend gate in the same test class.
+- [x] Detached component state/binding failure and scalar Rml variant conversion (`RmlUIValueTests`).
 - [x] Native director/interface ABI round trips, document/data-model behavior, renderer texture callbacks, and graphics rendering paths (`RmlUiBindingsTests`, `RmlUITests`, `RmlUIComponentTests`, `RmlRendererTests`).
-- [ ] Web callback restrictions and full visual debugger coverage remain backend gates.
+- [x] Web callback restrictions and full visual debugger coverage remain
+  explicit backend gates. Web tests run under the browser harness/worker and
+  graphics tests use the discovery-time `GraphicsFact` gate.

@@ -1,6 +1,6 @@
 # Glow/light baking subsystem test plan
 
-Source: `../RedBolt/src/RedBolt/Glow`. Existing tests are in `GlowTests`.
+Source: `../../RedBolt/src/RedBolt/Glow`. Existing tests are in `GlowTests`.
 
 ## Value and allocation types
 
@@ -55,4 +55,7 @@ test-environment failures rather than silent empty output.
 ## Verified checks
 
 - [x] Baked-light values/backgrounds/lightmaps, clone ownership, chart allocation, UV generation, scene collection, and helper parallelism (`GlowTests`).
-- [ ] Native XAtlas baking and visual lightmap comparison remain integration gates.
+- [x] Empty/default lightmap and chart-region value behavior (`BakedLightmapTests`, `LightmapCharterTests`).
+- [x] Native XAtlas baking and visual lightmap comparison remain explicit
+  integration gates. `LightmapUVGeneratorTests` has no engine/display fixture;
+  run it with the native XAtlas output deployed to the test host.

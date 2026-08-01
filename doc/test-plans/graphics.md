@@ -1,6 +1,6 @@
 # Graphics subsystem test plan
 
-Source: `../RedBolt/src/RedBolt/RedBolt/Graphics`. Existing unit and headless
+Source: `../../RedBolt/src/RedBolt/RedBolt/Graphics`. Existing unit and headless
 coverage is in `GraphicsTests`; native/device and image comparisons are in
 `VisualRegression`. The backend implementation plan is separate in
 [`graphics-backends.md`](graphics-backends.md).
@@ -22,7 +22,7 @@ ownership must be observed through the owning public class.
 - [x] Renderer viewport queue deduplication, uninitialized-frame behavior,
   default resources, frame counters, and device-state boundaries are covered
   (`RendererTests`, `RenderDeviceTests`).
-- [ ] The OpenGL fixture lifetime test is available as an opt-in native gate;
+- [x] The OpenGL fixture lifetime test is available as an opt-in native gate;
   it verifies context exposure, close, and reinitialization when a display is
   present (`GraphicsBackendLifecycleTests`).
 

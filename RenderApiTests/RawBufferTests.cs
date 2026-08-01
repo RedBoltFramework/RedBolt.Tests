@@ -14,7 +14,7 @@ public sealed class RawBufferTests
         this._fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_buffer_types_match_native_value_and_reference_semantics()
     {
         Assert.True(typeof(RawBufferParams).IsValueType);
@@ -23,7 +23,7 @@ public sealed class RawBufferTests
         Assert.Equal(typeof(int), typeof(RawBufferParams).GetProperty(nameof(RawBufferParams.Stride))!.PropertyType);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_buffer_dispose_runs_native_destructor_order()
     {
         var buffer = new RawBuffer(new RawBufferParams(BufferType.Vertex, 16, 4, BufferFlag.Shadowed));
@@ -35,7 +35,7 @@ public sealed class RawBufferTests
         Assert.Null(buffer.GetRenderDevice());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pool_caches_quantized_uniform_buffers()
     {
         var renderPool = _fixture.RenderDevice.GetRenderPool();
@@ -54,7 +54,7 @@ public sealed class RawBufferTests
         Assert.NotSame(first, recreated);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_buffer_creates_native_uniform_buffer_when_graphics_is_initialized()
     {
         WithInitializedGraphics(() =>
@@ -77,7 +77,7 @@ public sealed class RawBufferTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_buffer_allows_postponed_immutable_creation()
     {
         var buffer = new TestRawBuffer();
@@ -85,7 +85,7 @@ public sealed class RawBufferTests
         Assert.True(buffer.CreateForTest(new RawBufferParams(BufferType.Vertex, 32, 4, BufferFlag.Immutable)));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_buffer_maps_static_gpu_storage_without_managed_allocations()
     {
         WithInitializedGraphics(() =>
@@ -110,7 +110,7 @@ public sealed class RawBufferTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_buffer_maps_shadow_storage_and_uploads_on_unmap()
     {
         var buffer = new RawBuffer(new RawBufferParams(BufferType.Vertex, 16, 4, BufferFlag.Shadowed));

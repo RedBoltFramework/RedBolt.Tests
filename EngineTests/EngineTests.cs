@@ -55,7 +55,7 @@ public sealed class EngineTests
             "_exitRequired",
             "_exiting",
             "_headless",
-            "_audioPaused"
+            "_customParameters"
         ], fields[..17]);
 
         var resourceRootEntry = type.GetNestedType(
@@ -198,7 +198,7 @@ public sealed class EngineTests
         Assert.False(engine.Value.Context.GetSubsystem<Graphics>()!.IsInitialized);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Exit_closes_graphics_when_screenshot_on_exit_is_configured()
     {
         using var engine = new EngineScope(new Engine(), new EngineParameters
@@ -219,7 +219,7 @@ public sealed class EngineTests
         Assert.False(graphics.IsInitialized);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Engine_exit_saves_pipeline_state_cache_through_virtual_file_system()
     {
         var preferencesDirectory = Path.Combine(Path.GetTempPath(), $"redbolt-engine-pso-{Guid.NewGuid():N}");

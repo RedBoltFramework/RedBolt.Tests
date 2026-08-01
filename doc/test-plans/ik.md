@@ -1,6 +1,6 @@
 # Inverse-kinematics subsystem test plan
 
-Source: `../RedBolt/src/RedBolt/IK`. Existing tests are in
+Source: `../../RedBolt/src/RedBolt/IK`. Existing tests are in
 `IKTests/IKSolverTests.cs`.
 
 ## Shared fixture
@@ -66,4 +66,6 @@ steady-state test for a warmed solver tree.
 
 - [x] Solver defaults/reflection registration, identity and limb solving, event order, stick-target recovery, and warmed steady-state allocation contract (`IKSolverTests`).
 - [x] IK value-type clone/transform behavior (`InverseKinematicsTypesTests`, `IKChainTests`, `IKFabrikChainTests`, `IKSpineChainTests`).
-- [ ] Visual debug geometry and animation-backed skeleton paths remain integration gates.
+- [x] Missing solver names fail without emitting solve events or retaining a partial node cache (`IKSolverTests`).
+- [x] Visual debug geometry and animation-backed skeleton paths remain explicit
+  integration gates.

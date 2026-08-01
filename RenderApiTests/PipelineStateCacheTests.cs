@@ -20,13 +20,13 @@ public sealed class PipelineStateCacheTests
         this._fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Pipeline_state_cache_is_registered_as_engine_subsystem()
     {
         Assert.Same(_fixture.PipelineStateCache, _fixture.Context.GetSubsystem<PipelineStateCache>());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Pipeline_state_cache_matches_native_reference_class_and_weak_owner_lifetime()
     {
         Assert.False(typeof(PipelineStateCache).IsSealed);
@@ -52,7 +52,7 @@ public sealed class PipelineStateCacheTests
         pipelineState!.Dispose();
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Graphics_pipeline_state_desc_supports_value_semantics_and_initialization()
     {
         var vertexShader = CreateRawShader(ShaderType.VS);
@@ -102,7 +102,7 @@ public sealed class PipelineStateCacheTests
         Assert.Equal(first.ToHash(), second.ToHash());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Pipeline_state_desc_clones_mutable_state()
     {
         var graphicsDesc = new GraphicsPipelineStateDesc
@@ -136,7 +136,7 @@ public sealed class PipelineStateCacheTests
         Assert.Equal(1, cloned.Samplers.Size);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Pipeline_state_cache_reuses_equal_graphics_descriptors()
     {
         var first = new GraphicsPipelineStateDesc
@@ -161,14 +161,14 @@ public sealed class PipelineStateCacheTests
         Assert.Null(firstState.GetHandle());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Pipeline_state_cache_rejects_uninitialized_descriptors()
     {
         Assert.Null(_fixture.PipelineStateCache.GetGraphicsPipelineState(new GraphicsPipelineStateDesc()));
         Assert.Null(_fixture.PipelineStateCache.GetComputePipelineState(new ComputePipelineStateDesc()));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Pipeline_state_cache_restore_does_not_reenter_pipeline_states()
     {
         var desc = new GraphicsPipelineStateDesc
@@ -187,7 +187,7 @@ public sealed class PipelineStateCacheTests
         Assert.NotNull(state);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Pipeline_state_dispose_releases_cache_entry()
     {
         var desc = new GraphicsPipelineStateDesc
@@ -209,7 +209,7 @@ public sealed class PipelineStateCacheTests
         Assert.NotSame(firstState, secondState);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Pipeline_state_cache_matches_unavailable_native_cache_lifecycle()
     {
         _fixture.PipelineStateCache.Initialize([1, 2, 3]);
@@ -217,7 +217,7 @@ public sealed class PipelineStateCacheTests
         Assert.Empty(_fixture.PipelineStateCache.GetCachedData());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Graphics_pipeline_state_creates_native_handle_binding_and_reflection()
     {
         WithInitializedGraphics(() =>

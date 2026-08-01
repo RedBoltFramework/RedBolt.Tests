@@ -18,7 +18,7 @@ public sealed class RawShaderTests
         this._fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Shader_bytecode_round_trips_stream_state()
     {
         var original = new ShaderBytecode(ShaderType.VS)
@@ -39,7 +39,7 @@ public sealed class RawShaderTests
         AssertShaderBytecodeEqual(original, restored);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Shader_bytecode_round_trips_archive_state()
     {
         var original = new ShaderBytecode(ShaderType.VS)
@@ -58,7 +58,7 @@ public sealed class RawShaderTests
         AssertShaderBytecodeEqual(original, restored);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Shader_bytecode_and_vertex_attributes_match_native_value_types()
     {
         Assert.True(typeof(ShaderBytecode).IsValueType);
@@ -81,7 +81,7 @@ public sealed class RawShaderTests
         Assert.Equal(new VertexShaderAttribute(VertexElementSemantic.Position, 0, 2), original.VertexAttributes[0]);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Compute_pipeline_state_desc_supports_raw_shader_value_semantics()
     {
         var bytecode = new ShaderBytecode(ShaderType.CS)
@@ -104,7 +104,7 @@ public sealed class RawShaderTests
         Assert.Equal(first.ToHash(), second.ToHash());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Graphics_shader_variations_compile_to_native_handles_when_graphics_is_initialized()
     {
         WithInitializedGraphics(() =>
@@ -130,7 +130,7 @@ public sealed class RawShaderTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Fullscreen_copy_shader_variations_compile_to_native_handles_when_graphics_is_initialized()
     {
         WithInitializedGraphics(() =>

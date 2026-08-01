@@ -17,7 +17,7 @@ public sealed class RenderPipelineDebuggerTests
         _fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Snapshot_structs_clone_owned_containers()
     {
         Assert.True(typeof(DebugFrameSnapshotBatch).IsValueType);
@@ -43,7 +43,7 @@ public sealed class RenderPipelineDebuggerTests
         Assert.Same(geometry, copy.Passes[0].Batches[0].Geometry);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Snapshot_state_machine_preserves_pass_and_item_order()
     {
         var debugger = new RenderPipelineDebugger();
@@ -70,7 +70,7 @@ public sealed class RenderPipelineDebuggerTests
         Assert.Equal("Pass Unnamed - 1b 4v 2t:\n\n+ [quad 320x200] First\n\n", snapshot.Passes[0].ToString());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Begin_snapshot_replaces_previous_snapshot()
     {
         var debugger = new RenderPipelineDebugger();
@@ -92,7 +92,7 @@ public sealed class RenderPipelineDebuggerTests
         Assert.Contains("Shaders in scene (0)", snapshot.ToString());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Each_render_pipeline_view_owns_its_debugger()
     {
         var pipeline = new RenderPipeline();
@@ -107,7 +107,7 @@ public sealed class RenderPipelineDebuggerTests
         Assert.False(secondView.GetDebugger()!.IsSnapshotInProgress());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Stereo_render_pipeline_view_does_not_expose_its_debugger()
     {
         var pipeline = new StereoRenderPipeline();
@@ -116,7 +116,7 @@ public sealed class RenderPipelineDebuggerTests
         Assert.Null(view.GetDebugger());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Stereo_render_pipeline_view_tracks_settings_until_disposed()
     {
         var pipeline = new StereoRenderPipeline();
@@ -135,7 +135,7 @@ public sealed class RenderPipelineDebuggerTests
         Assert.False(view.Settings.DrawDebugGeometry);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Snapshot_batch_constructor_resolves_pixel_light_from_drawable_processor()
     {
         var scene = new Scene();
@@ -186,7 +186,7 @@ public sealed class RenderPipelineDebuggerTests
         Assert.Contains("lit with", text);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Debugger_reports_batches_into_active_snapshot()
     {
         var scene = new Scene();

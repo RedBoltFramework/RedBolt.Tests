@@ -17,7 +17,7 @@ public sealed class GraphicsCustomUniformTests
         this._fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void CreateCustomUniformLayout_uses_reflected_outline_uniform_offsets()
     {
         WithInitializedGraphics(() =>
@@ -33,7 +33,7 @@ public sealed class GraphicsCustomUniformTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void CreateCustomUniformLayout_reflects_pixel_only_custom_uniforms()
     {
         WithInitializedGraphics(() =>
@@ -49,7 +49,7 @@ public sealed class GraphicsCustomUniformTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void WriteCustomParameterValue_packs_reflected_custom_uniform_values()
     {
         WithInitializedGraphics(() =>
@@ -70,7 +70,7 @@ public sealed class GraphicsCustomUniformTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void TryGetCustomParameterValue_reads_material_custom_parameters()
     {
         var field = GetFields(CreateFieldOnlyLayout("P_Outline", "URHO3D_GEOMETRY_STATIC")).Single();
@@ -97,7 +97,7 @@ public sealed class GraphicsCustomUniformTests
         Assert.Equal(new Vector2f(0.5f, 0.25f), Assert.IsType<Vector2f>(arguments[2]));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void TryGetCustomParameterValue_ignores_non_custom_material_parameters()
     {
         var field = GetFields(CreateFieldOnlyLayout("P_Outline", "URHO3D_GEOMETRY_STATIC")).Single();
@@ -124,7 +124,7 @@ public sealed class GraphicsCustomUniformTests
         Assert.Null(arguments[2]);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void StructCustomUniformWriter_packs_typed_parameters_using_shader_parameter_names()
     {
         WithInitializedGraphics(() =>

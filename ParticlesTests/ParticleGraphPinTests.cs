@@ -84,6 +84,31 @@ public class ParticleGraphPinTests
     }
 
     [Fact]
+    public void Seeded_pin_operations_preserve_direction_and_clone_state()
+    {
+        var random = DeterministicTestSeed.Create(nameof(Seeded_pin_operations_preserve_direction_and_clone_state));
+        for (var index = 0; index < 128; ++index)
+        {
+            var input = new ParticleGraphPin(ParticleGraphPinFlag.Input, $"input-{index}");
+            var output = new ParticleGraphPin(ParticleGraphPinFlag.Output, $"output-{index}");
+            var nodeIndex = random.Next(0, 32);
+            var pinIndex = random.Next(0, 16);
+
+            Assert.True(input.SetSource(nodeIndex, pinIndex));
+            Assert.True(input.Connected);
+            Assert.Equal(nodeIndex, input.ConnectedNodeIndex);
+            Assert.Equal(pinIndex, input.ConnectedPinIndex);
+            Assert.False(output.SetSource(nodeIndex, pinIndex));
+            Assert.False(output.Connected);
+
+            var clone = input.Clone();
+            Assert.NotSame(input, clone);
+            Assert.Equal(input.ConnectedNodeIndex, clone.ConnectedNodeIndex);
+            Assert.Equal(input.ConnectedPinIndex, clone.ConnectedPinIndex);
+        }
+    }
+
+    [Fact]
     public void ProtectedMutatorsRespectFlags()
     {
         var fixedPin = new MutableParticleGraphPin(ParticleGraphPinFlag.Input, "fixed", VariantType.Float);

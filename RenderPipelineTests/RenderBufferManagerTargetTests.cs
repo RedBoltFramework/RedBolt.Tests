@@ -16,7 +16,7 @@ public sealed class RenderBufferManagerTargetTests : IDisposable
         this._fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Class_shape_matches_native()
     {
         Assert.True(typeof(RenderBufferManager).IsClass);
@@ -26,7 +26,7 @@ public sealed class RenderBufferManagerTargetTests : IDisposable
             method => Assert.Equal(typeof(RenderBuffer), method.ReturnType));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Set_render_targets_rect_uses_depth_first_multi_color_api()
     {
         EnsureGraphics();
@@ -48,7 +48,7 @@ public sealed class RenderBufferManagerTargetTests : IDisposable
         pipeline.EndFrame(frameInfo);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Backbuffer_subviewport_uses_substitute_output_buffers()
     {
         EnsureGraphics();

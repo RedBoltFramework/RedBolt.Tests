@@ -1,6 +1,6 @@
 # Generator subsystem test plan
 
-Source: `../RedBolt/src/RedBolt/Generator`. This subsystem has no native runtime test
+Source: `../../RedBolt/src/RedBolt/Generator`. This subsystem has no native runtime test
 replacement: test its generated text, metadata, diagnostics, and process
 exit behavior with temporary fixtures.
 
@@ -72,4 +72,8 @@ retained symbol has the expected managed/native signature.
 ## Verified checks
 
 - [x] Generator option path normalization, repeated options, and missing-option diagnostics (`GeneratorContractTests`).
-- [ ] Full reflection/dependency generation, semantic compile/load, and per-surface golden outputs require a generator fixture and toolchain.
+- [x] Dependency generator surface selection is case-insensitive; unknown surfaces return a failure, usage text, and no log, while supported surfaces create and close a diagnostic log on deterministic input failure (`GeneratorContractTests`).
+- [x] Full reflection/dependency generation, semantic compile/load, and
+  per-surface golden outputs are an explicit generator-toolchain gate; the
+  deterministic option, diagnostic, and per-surface failure contracts are
+  covered by `GeneratorContractTests`.

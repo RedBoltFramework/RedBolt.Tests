@@ -278,6 +278,25 @@ public sealed class IKSolverTests
     }
 
     [Fact]
+    public void Missing_solver_nodes_fail_without_partial_cache_or_events()
+    {
+        using var scene = new Scene();
+        var rig = scene.CreateChild("Rig");
+        var host = rig.CreateComponent<IKSolver>();
+        var identity = rig.CreateComponent<IKIdentitySolver>();
+        identity.BoneName = "MissingBone";
+        identity.TargetName = "MissingTarget";
+        var existing = rig.CreateChild("Existing");
+        var events = 0;
+        host.SubscribeToEvent<IKEvents.IKPreSolveEvent>(rig, (ref IKEvents.IKPreSolveEvent _) => ++events);
+
+        host.Solve(1.0f / 60.0f);
+
+        Assert.Equal(0, events);
+        Assert.Null(host.GetNodeData(existing));
+    }
+
+    [Fact]
     public void Stick_targets_recover_toward_repeated_desired_transform()
     {
         using var scene = new Scene();

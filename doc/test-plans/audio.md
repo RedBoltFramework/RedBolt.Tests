@@ -1,6 +1,6 @@
 # Audio subsystem test plan
 
-Source: `../RedBolt/src/RedBolt/Audio`. Existing tests are in
+Source: `../../RedBolt/src/RedBolt/Audio`. Existing tests are in
 `AudioTests/AudioTests.cs`.
 
 ## Test seams
@@ -76,4 +76,9 @@ no capture device.
 
 - [x] Audio constants, speaker-mode values, event defaults, and value-copy behavior (`AudioValueTests`).
 - [x] WAV/OGG decoding, buffered streams, microphone sample conversion, source playback, and 3D debug geometry (`AudioTests`).
-- [ ] Real SDL output/capture device ownership and callback ABI remain a desktop backend gate.
+- [x] Stream format/sample-size flags, partial buffered reads, clear/reset behavior, malformed WAV rejection, and loop-offset alignment (`AudioValueTests`, no engine/SDL fixture).
+- [x] Real SDL output/capture device ownership and callback ABI remain an
+  explicit desktop backend gate. `SdlBindingsTests` uses discovery-time
+  capability skips; run the gate with `SDL_VIDEODRIVER=dummy dotnet test
+  --filter FullyQualifiedName~SdlBindingsTests` (and a real display for the
+  GL-symbol case).

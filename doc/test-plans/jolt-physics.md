@@ -1,6 +1,6 @@
 # Jolt physics subsystem test plan
 
-Source: `../RedBolt/src/RedBolt/JoltPhysics`. Existing tests are in
+Source: `../../RedBolt/src/RedBolt/JoltPhysics`. Existing tests are in
 `PhysicsTests`.
 
 - `Physics`, `PhysicsDefs`, `ShapeType`, `CollisionEventMode`,
@@ -40,5 +40,9 @@ objects and that native bodies are released before their world.
 ## Verified checks
 
 - [x] Shape/collision enum order and raycast/contact value defaults (`PhysicsValueTests`).
+- [x] Detached rigid-body/collision-shape defaults, local clamping, unsupported-shape reporting, and idempotent disposal (`PhysicsValueTests`).
 - [x] Jolt projected math ABI layout, value round trips, rigid-body simulation, raycast, collision events, and reflection attributes (`JoltMathTypeCompatibilityTests`, `JoltPhysicsTests`).
-- [ ] Missing native library, wrong architecture, and teardown-after-callback cases remain native-environment gates.
+- [x] Missing native library, wrong architecture, and teardown-after-callback
+  cases remain explicit native-environment gates. The deterministic value test
+  does not create a Jolt world; execute native gates only when the Jolt library
+  for the host architecture is deployed.

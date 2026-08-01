@@ -1,6 +1,6 @@
 # Core subsystem test plan
 
-Source: `../RedBolt/src/RedBolt/RedBolt/Core`. Existing tests are in
+Source: `../../RedBolt/src/RedBolt/RedBolt/Core`. Existing tests are in
 `CoreTests`.
 
 ## Verified coverage

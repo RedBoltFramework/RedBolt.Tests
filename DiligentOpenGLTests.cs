@@ -37,15 +37,9 @@ public sealed class DiligentOpenGLTests
         Assert.NotNull(deviceContext.GetMethod("DrawIndexed"));
     }
 
-    [Fact]
+    [DiligentGraphicsFact]
     public void Opengl_smoke_creates_device_and_renders()
     {
-        if (!IsEnvFlagEnabled("REDBOLT_RUN_DILIGENT_GL_SMOKE"))
-            return;
-
-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY")))
-            throw new InvalidOperationException("REDBOLT_RUN_DILIGENT_GL_SMOKE requires an X11 DISPLAY.");
-
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("SDL_VIDEODRIVER")))
             Environment.SetEnvironmentVariable("SDL_VIDEODRIVER", "x11");
 
@@ -149,15 +143,9 @@ public sealed class DiligentOpenGLTests
         }
     }
 
-    [Fact]
+    [DiligentGraphicsFact]
     public void Opengl_smoke_clears_offscreen_texture_and_reads_it_back()
     {
-        if (!IsEnvFlagEnabled("REDBOLT_RUN_DILIGENT_GL_SMOKE"))
-            return;
-
-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY")))
-            throw new InvalidOperationException("REDBOLT_RUN_DILIGENT_GL_SMOKE requires an X11 DISPLAY.");
-
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("SDL_VIDEODRIVER")))
             Environment.SetEnvironmentVariable("SDL_VIDEODRIVER", "x11");
 
@@ -386,14 +374,6 @@ public sealed class DiligentOpenGLTests
         {
             ReleaseIfNotNull(stagingTexture);
         }
-    }
-
-    private static bool IsEnvFlagEnabled(string name)
-    {
-        var value = Environment.GetEnvironmentVariable(name);
-        return string.Equals(value, "1", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(value, "true", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase);
     }
 
     private static SdlSysWMinfo CreateWmInfo()

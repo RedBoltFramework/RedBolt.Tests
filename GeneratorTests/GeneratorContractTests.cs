@@ -4,6 +4,7 @@ using System.Reflection;
 
 public sealed class GeneratorContractTests
 {
+    private static readonly object ProgramLock = new();
     private static readonly Assembly GeneratorAssembly = Assembly.LoadFrom(Path.GetFullPath(
         Path.Combine(AppContext.BaseDirectory, "..", "tools", "RedBolt.Generator.Dependencies.dll")));
 
@@ -41,5 +42,90 @@ public sealed class GeneratorContractTests
         var exception = Assert.Throws<TargetInvocationException>(() => parse.Invoke(null, [Array.Empty<string>()]));
         Assert.IsType<ArgumentException>(exception.InnerException);
         Assert.Contains("--surface", exception.InnerException!.Message);
+    }
+
+    [Fact]
+    public void Generator_program_reports_unknown_surface_and_prints_usage()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Generator_program_reports_unknown_surface_and_prints_usage));
+        var result = InvokeProgram(
+            [
+                "--surface", "not-a-surface",
+                "--header", Path.Combine(artifacts.DirectoryPath, "missing.hpp"),
+                "--include-name", "missing.hpp",
+                "--output-dir", Path.Combine(artifacts.DirectoryPath, "output"),
+                "--file-stem", "Bindings",
+                "--metadata", Path.Combine(artifacts.DirectoryPath, "metadata.json"),
+                "--log", Path.Combine(artifacts.DirectoryPath, "generator.log"),
+                "--sharpcpp-root", artifacts.DirectoryPath,
+                "--redbolt-root", artifacts.DirectoryPath,
+                "--native-library-name", "missing",
+                "--compiler", Path.Combine(artifacts.DirectoryPath, "missing-compiler")
+            ]);
+
+        Assert.Equal(1, result.ExitCode);
+        Assert.Contains("Unknown binding surface 'not-a-surface'", result.Error);
+        Assert.Contains("Usage: RedBolt.Generator.Dependencies", result.Error);
+        Assert.False(File.Exists(Path.Combine(artifacts.DirectoryPath, "generator.log")));
+    }
+
+    [Fact]
+    public void Generator_program_creates_and_closes_log_on_each_supported_surface_error()
+    {
+        var surfaces = new[]
+        {
+            "sdl", "diligent", "dearimgui", "stb", "lz4", "harfbuzz", "rmlui",
+            "webp", "xatlas", "glslang", "spirvcross", "spirvtools", "shadercompiler", "jolt"
+        };
+
+        foreach (var surface in surfaces)
+        {
+            using var artifacts = new TestArtifactScope($"{nameof(Generator_program_creates_and_closes_log_on_each_supported_surface_error)}-{surface}");
+            var logPath = Path.Combine(artifacts.DirectoryPath, "logs", "generator.log");
+            var result = InvokeProgram(
+                [
+                    "--surface", surface.ToUpperInvariant(),
+                    "--header", Path.Combine(artifacts.DirectoryPath, "missing.hpp"),
+                    "--include-name", "missing.hpp",
+                    "--output-dir", Path.Combine(artifacts.DirectoryPath, "output"),
+                    "--file-stem", "Bindings",
+                    "--metadata", Path.Combine(artifacts.DirectoryPath, "metadata.json"),
+                    "--log", logPath,
+                    "--sharpcpp-root", artifacts.DirectoryPath,
+                    "--redbolt-root", artifacts.DirectoryPath,
+                    "--native-library-name", "missing",
+                    "--compiler", Path.Combine(artifacts.DirectoryPath, "missing-compiler")
+                ]);
+
+            Assert.Equal(1, result.ExitCode);
+            Assert.Contains("Usage: RedBolt.Generator.Dependencies", result.Error);
+            Assert.True(File.Exists(logPath), $"No log was created for {surface}.");
+            Assert.NotEmpty(File.ReadAllText(logPath));
+
+            File.Delete(logPath);
+        }
+    }
+
+    private static (int ExitCode, string Output, string Error) InvokeProgram(string[] args)
+    {
+        lock (ProgramLock)
+        {
+            using var output = new StringWriter();
+            using var error = new StringWriter();
+            var previousOutput = Console.Out;
+            var previousError = Console.Error;
+            Console.SetOut(output);
+            Console.SetError(error);
+            try
+            {
+                var exitCode = (int)GeneratorAssembly.EntryPoint!.Invoke(null, [args])!;
+                return (exitCode, output.ToString(), error.ToString());
+            }
+            finally
+            {
+                Console.SetOut(previousOutput);
+                Console.SetError(previousError);
+            }
+        }
     }
 }

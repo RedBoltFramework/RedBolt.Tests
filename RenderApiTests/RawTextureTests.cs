@@ -12,7 +12,7 @@ using RedBolt.Resource;
 [Collection(nameof(GraphicsEngineCollection))]
 public sealed class RawTextureTests
 {
-    [Fact]
+    [GraphicsFact]
     public void Texture2D_image_upload_and_readback_use_raw_texture()
     {
         WithInitializedGraphics(() =>
@@ -39,7 +39,7 @@ public sealed class RawTextureTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Texture2D_unaligned_upload_and_readback_use_repacked_data()
     {
         WithInitializedGraphics(() =>
@@ -63,7 +63,7 @@ public sealed class RawTextureTests
         this._fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_texture_value_types_and_index_types_match_port_mappings()
     {
         Assert.True(typeof(RawTextureParams).IsValueType);
@@ -79,7 +79,7 @@ public sealed class RawTextureTests
         Assert.Equal(typeof(int), typeof(RawTextureUAVKey).GetProperty(nameof(RawTextureUAVKey.NumLevels))!.PropertyType);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_texture_deduces_full_mip_chain()
     {
         WithInitializedGraphics(() =>
@@ -101,7 +101,7 @@ public sealed class RawTextureTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_texture_copies_sampler_state_on_assignment_and_return()
     {
         WithInitializedGraphics(() =>
@@ -123,7 +123,7 @@ public sealed class RawTextureTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_texture_preserves_srgb_texture_format()
     {
         WithInitializedGraphics(() =>
@@ -138,7 +138,7 @@ public sealed class RawTextureTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_texture_normalizes_cube_and_array_params()
     {
         WithInitializedGraphics(() =>
@@ -163,7 +163,7 @@ public sealed class RawTextureTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_texture_rejects_invalid_dimensions_bindings_and_multisampling()
     {
         WithInitializedGraphics(() =>
@@ -185,7 +185,7 @@ public sealed class RawTextureTests
         public bool CreateForTest(RawTextureParams parameters) => Create(parameters);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_texture_normalizes_dimensions_and_mip_rules_like_rbfx()
     {
         WithInitializedGraphics(() =>
@@ -204,7 +204,7 @@ public sealed class RawTextureTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Multisampled_render_target_marks_resolve_and_mip_levels_dirty()
     {
         WithInitializedGraphics(() =>
@@ -223,7 +223,7 @@ public sealed class RawTextureTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pool_recycles_transient_textures_by_params()
     {
         WithInitializedGraphics(() =>
@@ -247,7 +247,7 @@ public sealed class RawTextureTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pool_reuses_persistent_textures_for_matching_persistence_keys()
     {
         WithInitializedGraphics(() =>
@@ -268,7 +268,7 @@ public sealed class RawTextureTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_target_view_accepts_raw_texture_inputs()
     {
         WithInitializedGraphics(() =>
@@ -292,7 +292,7 @@ public sealed class RawTextureTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_texture_creates_native_handle_when_graphics_is_initialized()
     {
         WithInitializedGraphics(() =>
@@ -314,7 +314,7 @@ public sealed class RawTextureTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_depth_texture_exposes_writable_and_read_only_depth_views()
     {
         WithInitializedGraphics(() =>
@@ -335,7 +335,7 @@ public sealed class RawTextureTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_texture_creates_and_caches_single_mip_uav_when_graphics_is_initialized()
     {
         WithInitializedGraphics(() =>
@@ -363,7 +363,7 @@ public sealed class RawTextureTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_texture_uav_key_default_constructor_matches_cpp_member_initializers()
     {
         var key = new RawTextureUAVKey();
@@ -376,7 +376,7 @@ public sealed class RawTextureTests
         Assert.Equal(0, key.NumLevels);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_texture_normalizes_uav_key_ranges_before_caching_view()
     {
         WithInitializedGraphics(() =>
@@ -408,7 +408,7 @@ public sealed class RawTextureTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_texture_updates_and_reads_native_texture_data()
     {
         WithInitializedGraphics(() =>
@@ -425,7 +425,7 @@ public sealed class RawTextureTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_texture_update_hot_path_does_not_allocate_managed_memory()
     {
         WithInitializedGraphics(() =>
@@ -444,7 +444,7 @@ public sealed class RawTextureTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_texture_wraps_existing_native_texture_handle()
     {
         WithInitializedGraphics(() =>
@@ -471,7 +471,7 @@ public sealed class RawTextureTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_texture_wraps_native_handle_without_shader_resource_binding()
     {
         WithInitializedGraphics(() =>
@@ -508,7 +508,7 @@ public sealed class RawTextureTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Raw_texture_external_imports_assert_on_unsupported_backend()
     {
         var texture = new TestRawTexture();

@@ -27,4 +27,39 @@ public sealed class PhysicsValueTests
         Assert.Equal(0.0f, contact.Distance);
         Assert.Equal(0.0f, contact.Impulse);
     }
+
+    [Fact]
+    public void Detached_components_keep_safe_defaults_and_clamp_local_values()
+    {
+        var body = new RigidBody();
+        var shape = new CollisionShape();
+
+        Assert.Null(body.JoltBodyId);
+        Assert.False(body.IsActive);
+        Assert.Equal(0.0f, body.Mass);
+        Assert.Equal(0.5f, body.Friction);
+        Assert.Equal(Vector3f.One, body.LinearFactor);
+        Assert.True(body.UseGravity);
+        Assert.Equal(ShapeType.Box, shape.ShapeType);
+        Assert.True(shape.IsSupported);
+
+        body.Mass = -1.0f;
+        body.LinearDamping = -1.0f;
+        body.CcdRadius = -1.0f;
+        body.SetTransform(new Vector3f(1.0f, 2.0f, 3.0f), Quaternion.IDENTITY);
+        shape.Margin = -1.0f;
+        shape.ShapeType = ShapeType.TriangleMesh;
+
+        Assert.Equal(0.0f, body.Mass);
+        Assert.Equal(0.0f, body.LinearDamping);
+        Assert.Equal(0.0f, body.CcdRadius);
+        Assert.Equal(new Vector3f(1.0f, 2.0f, 3.0f), body.Position);
+        Assert.Equal(0.0f, shape.Margin);
+        Assert.False(shape.IsSupported);
+
+        body.Dispose();
+        body.Dispose();
+        shape.Dispose();
+        shape.Dispose();
+    }
 }

@@ -5,10 +5,9 @@ using RedBolt.Graphics;
 using RedBolt.Math;
 using RedBolt.RenderAPI;
 
-[Collection(nameof(HeadlessEngineCollection))]
 public sealed class LightmapUVGeneratorTests
 {
-    [Fact]
+    [NativeBindingFact]
     public void GenerateLightmapUV_generates_second_uv_channel_and_metadata()
     {
         using var modelView = new ModelView();
@@ -58,4 +57,5 @@ public sealed class LightmapUVGeneratorTests
         vertex.SetNormal(Vector3f.Up);
         return vertex;
     }
+
 }

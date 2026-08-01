@@ -23,7 +23,7 @@ public sealed class GraphicsRenderTargetViewTests
         this._fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_target_view_matches_cpp_value_type()
     {
         Assert.True(typeof(RenderTargetView).IsValueType);
@@ -36,7 +36,7 @@ public sealed class GraphicsRenderTargetViewTests
         Assert.True(copy.IsSwapChain);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Graphics_resolves_cubemap_face_render_target_views_as_2d_slices()
     {
         WithInitializedGraphics(() =>
@@ -56,7 +56,7 @@ public sealed class GraphicsRenderTargetViewTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_target_view_get_view_exposes_the_native_handle()
     {
         WithInitializedGraphics(() =>
@@ -71,7 +71,7 @@ public sealed class GraphicsRenderTargetViewTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Texture_backed_render_target_view_tracks_stable_raw_texture()
     {
         WithInitializedGraphics(() =>
@@ -89,7 +89,7 @@ public sealed class GraphicsRenderTargetViewTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_target_view_mark_dirty_marks_multisampled_resolve_state()
     {
         WithInitializedGraphics(() =>
@@ -110,7 +110,7 @@ public sealed class GraphicsRenderTargetViewTests
         }, multiSample: 4);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Swap_chain_render_target_views_report_live_format_and_multisample()
     {
         WithInitializedGraphics(() =>
@@ -129,7 +129,7 @@ public sealed class GraphicsRenderTargetViewTests
         }, multiSample: 4);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Graphics_resolves_depth_array_slice_views_as_2d_read_only_depth_targets()
     {
         WithInitializedGraphics(() =>
@@ -149,7 +149,7 @@ public sealed class GraphicsRenderTargetViewTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Graphics_recreates_uploaded_texture_when_managed_texture_size_changes()
     {
         WithInitializedGraphics(() =>
@@ -176,7 +176,7 @@ public sealed class GraphicsRenderTargetViewTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Graphics_reuses_raw_texture_with_full_mip_chain_for_cpu_backed_texture()
     {
         WithInitializedGraphics(() =>
@@ -195,7 +195,7 @@ public sealed class GraphicsRenderTargetViewTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Graphics_uploads_managed_texture_multisample_count_into_native_descriptor()
     {
         WithInitializedGraphics(() =>
@@ -217,7 +217,7 @@ public sealed class GraphicsRenderTargetViewTests
         }, multiSample: 4);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Graphics_resolves_multisampled_render_target_into_shader_resource_texture()
     {
         WithInitializedGraphics(() =>
@@ -245,7 +245,7 @@ public sealed class GraphicsRenderTargetViewTests
         }, multiSample: 4);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Graphics_reads_back_single_sampled_render_target_into_shader_resource_texture()
     {
         WithInitializedGraphics(() =>
@@ -270,7 +270,7 @@ public sealed class GraphicsRenderTargetViewTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Graphics_keeps_multisampled_shader_view_when_auto_resolve_is_disabled()
     {
         WithInitializedGraphics(() =>
@@ -290,7 +290,7 @@ public sealed class GraphicsRenderTargetViewTests
         }, multiSample: 4);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Graphics_draw_copy_texture_copies_render_target_contents_into_destination_target()
     {
         WithInitializedGraphics(() =>
@@ -318,7 +318,7 @@ public sealed class GraphicsRenderTargetViewTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Graphics_draw_copy_texture_copies_cpu_backed_texture_into_destination_target()
     {
         WithInitializedGraphics(() =>

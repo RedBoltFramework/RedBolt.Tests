@@ -77,7 +77,7 @@ public sealed partial class RmlUIComponentTests
         _fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Component_manages_document_and_data_model_lifecycle()
     {
         const string ResourceName = "RmlUI/ComponentTest.rml";
@@ -168,7 +168,7 @@ public sealed partial class RmlUIComponentTests
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Serializable_inspector_edits_supported_attributes()
     {
         const string ResourceName = "RmlUI/SerializableInspectorTest.rml";

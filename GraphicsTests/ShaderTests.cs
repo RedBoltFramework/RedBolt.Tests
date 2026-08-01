@@ -16,14 +16,14 @@ public sealed class ShaderTests
         _fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Shader_type_matches_cpp_reference_category()
     {
         Assert.False(typeof(Shader).IsValueType);
         Assert.False(typeof(ICloneable).IsAssignableFrom(typeof(Shader)));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Dispose_releases_aliased_variations_once()
     {
         var parameters = new EngineParameters

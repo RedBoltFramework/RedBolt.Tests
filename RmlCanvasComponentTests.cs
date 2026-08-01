@@ -15,7 +15,7 @@ public sealed class RmlCanvasComponentTests
         _fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Component_manages_offscreen_render_target()
     {
         RmlUI.RegisterRmlUILibrary(_fixture.Context);

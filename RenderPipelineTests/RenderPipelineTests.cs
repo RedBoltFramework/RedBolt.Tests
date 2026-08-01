@@ -20,7 +20,7 @@ using RedBolt.Scene;
 [Collection(nameof(GraphicsEngineCollection))]
 public sealed class RenderPipelineTests : IDisposable
 {
-    [Fact]
+    [GraphicsFact]
     public void Render_buffer_params_have_native_mutable_value_semantics()
     {
         var parameters = new RenderBufferParams();
@@ -43,7 +43,7 @@ public sealed class RenderPipelineTests : IDisposable
         this._fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pipeline_enables_instancing_by_default()
     {
         var renderPipeline = new RenderPipeline();
@@ -51,7 +51,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.True(renderPipeline.Settings.InstancingBuffer.EnableInstancing);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pipeline_collects_render_path_parameters()
     {
         var scene = new Scene();
@@ -65,7 +65,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.Equal(1.25f, renderPipeline.GetRenderPathParameters()["Exposure"].GetFloat());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pipeline_serializes_render_path_and_pass_attributes()
     {
         var scene = new Scene();
@@ -99,7 +99,7 @@ public sealed class RenderPipelineTests : IDisposable
             renderPipeline.GetRenderPasses());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pipeline_copies_enabled_render_passes()
     {
         var scene = new Scene();
@@ -113,7 +113,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.Equal(("First", true), Assert.Single(renderPipeline.GetRenderPasses()));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pipeline_raises_events_for_settings_parameters_and_renderpath_changes()
     {
         var scene = new Scene();
@@ -143,7 +143,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.Same(renderPath, changedRenderPath);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pipeline_only_raises_parameter_event_on_actual_render_path_changes()
     {
         var scene = new Scene();
@@ -167,7 +167,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.Equal(2.0f, renderPipeline.GetRenderPathParameters()["Exposure"].GetFloat());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pipeline_updates_existing_parameters_by_hash()
     {
         var scene = new Scene();
@@ -192,7 +192,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.DoesNotContain("Missing", renderPipeline.GetRenderPathParameters().Keys);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pipeline_frame_shader_parameters_do_not_raise_parameter_event()
     {
         var scene = new Scene();
@@ -211,7 +211,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.Equal(4, renderPipeline.GetFrameShaderParameters()["FrameIndex"].GetInt());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pipeline_updates_existing_frame_parameters_by_hash()
     {
         var scene = new Scene();
@@ -229,7 +229,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.DoesNotContain("Missing", renderPipeline.GetFrameShaderParameters().Keys);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pipeline_updates_single_existing_frame_parameter_by_hash()
     {
         var scene = new Scene();
@@ -243,7 +243,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.DoesNotContain("Missing", renderPipeline.GetFrameShaderParameters().Keys);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Frame_shader_parameters_and_view_descriptors_own_independent_variants()
     {
         var renderPipeline = new RenderPipeline();
@@ -285,7 +285,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.False(replacement.GetCustom<FrameParameterValue>().IsDisposed);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_path_parameters_own_independent_variants()
     {
         var renderPipeline = new RenderPipeline();
@@ -315,7 +315,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.False(replacement.GetCustom<FrameParameterValue>().IsDisposed);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pipeline_set_render_pass_enabled_only_notifies_on_change()
     {
         var scene = new Scene();
@@ -335,7 +335,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.Equal(("Tracking", false), Assert.Single(renderPipeline.GetRenderPasses()));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pipeline_view_updates_and_renders_enabled_passes()
     {
         var parameters = new EngineParameters
@@ -445,7 +445,7 @@ public sealed class RenderPipelineTests : IDisposable
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pipeline_publishes_null_normal_buffer_for_forward_lighting()
     {
         var parameters = new EngineParameters
@@ -488,7 +488,7 @@ public sealed class RenderPipelineTests : IDisposable
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pipeline_keeps_outline_buffer_published_during_update()
     {
         var parameters = new EngineParameters
@@ -529,7 +529,7 @@ public sealed class RenderPipelineTests : IDisposable
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_buffer_manager_supports_secondary_color_buffer_when_requested()
     {
         using var manager = CreateRenderBufferManager();
@@ -549,7 +549,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.Equal(new Vector2i(640, 360), manager.OutputSize);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_buffer_manager_uses_offscreen_primary_buffer_for_color_read_write_frames()
     {
         using var manager = CreateRenderBufferManager();
@@ -570,7 +570,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.IsType<TextureRenderBuffer>(manager.ColorOutput);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_buffer_manager_allocates_readable_depth_buffer_when_requested()
     {
         using var manager = CreateRenderBufferManager();
@@ -587,7 +587,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.IsType<TextureRenderBuffer>(manager.ColorOutput);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_buffer_manager_shared_state_uses_readable_depth_buffer_when_requested()
     {
         using var manager = CreateRenderBufferManager();
@@ -602,7 +602,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.Same(manager.DepthStencilTexture, manager.DepthStencilOutput.GetTexture());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_buffer_manager_uses_simple_primary_buffer_without_secondary_when_only_readable_color_is_requested()
     {
         using var manager = CreateRenderBufferManager();
@@ -618,7 +618,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.IsType<TextureRenderBuffer>(manager.ColorOutput);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_buffer_manager_uses_matching_texture_output_without_secondary_when_only_readable_color_is_requested()
     {
         using var manager = CreateRenderBufferManager();
@@ -642,7 +642,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.IsType<ViewportColorRenderBuffer>(manager.ColorOutput);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_buffer_manager_keeps_nearest_texture_output_when_only_readable_color_is_requested()
     {
         using var manager = CreateRenderBufferManager();
@@ -666,7 +666,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.IsType<ViewportColorRenderBuffer>(manager.ColorOutput);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Graphics_clear_framebuffer_pipeline_settings_follow_requested_targets()
     {
         var method = typeof(Graphics).GetMethod("GetClearFramebufferPipelineSettings", BindingFlags.NonPublic | BindingFlags.Static);
@@ -689,7 +689,7 @@ public sealed class RenderPipelineTests : IDisposable
             Assert.IsType<global::RedBolt.Bindings.Diligent.StencilOp>(GetNamedValue(stencilSettings, "StencilPassOp")));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_buffer_manager_derives_output_traits_from_render_target_texture()
     {
         using var manager = CreateRenderBufferManager();
@@ -721,7 +721,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.Equal(TextureFormat.TexFormatRgba16Float, secondaryColorTexture!.GetParams().Format);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_surface_derives_multisample_from_texture()
     {
         var colorTarget = new Texture2D { Name = "Textures/ViewportColor" };
@@ -736,7 +736,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.Equal(4, output.GetLinkedDepthStencil()?.GetView().GetMultiSample());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_buffer_manager_refreshes_managed_output_buffers_with_requested_multisample()
     {
         using var manager = CreateRenderBufferManager();
@@ -757,7 +757,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.Equal(4, manager.DepthStencilTexture!.GetParams().MultiSample);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Texture_render_buffer_propagates_no_auto_resolve_flag_into_managed_texture()
     {
         var pipeline = new TestRenderPipelineInterface();
@@ -772,7 +772,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.True((buffer.GetTexture()!.GetParams().Flags & TextureFlag.NoMultiSampledAutoResolve) != 0);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Texture_render_buffer_creates_depth_stencil_texture_for_all_depth_formats()
     {
         foreach (var format in new[]
@@ -794,7 +794,7 @@ public sealed class RenderPipelineTests : IDisposable
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_buffer_manager_respects_color_space_over_output_texture_format()
     {
         using var manager = CreateRenderBufferManager();
@@ -825,7 +825,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.IsType<TextureRenderBuffer>(manager.ColorOutput);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_surface_preserves_srgb_parent_texture_metadata()
     {
         var colorTarget = new Texture2D { Name = "Textures/ViewportColor" };
@@ -838,7 +838,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.True(output.GetParentTexture()!.GetSRGB());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_surface_preserves_float_parent_texture_format()
     {
         var colorTarget = new Texture2D { Name = "Textures/ViewportColor" };
@@ -850,7 +850,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.Equal(TextureFormat.TexFormatRg16Float, output.GetParentTexture()!.Format);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_buffer_manager_allocates_linear_ldr_intermediate_buffer_for_non_srgb_texture_output()
     {
         using var manager = CreateRenderBufferManager();
@@ -872,7 +872,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.IsType<TextureRenderBuffer>(manager.ColorOutput);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_buffer_manager_uses_matching_srgb_texture_output_for_linear_ldr()
     {
         using var manager = CreateRenderBufferManager();
@@ -895,7 +895,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.IsType<ViewportColorRenderBuffer>(manager.ColorOutput);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_buffer_manager_marks_linear_ldr_color_buffers_as_srgb()
     {
         using var manager = CreateRenderBufferManager();
@@ -920,7 +920,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.Equal(TextureFormat.TexFormatRgba8UnormSrgb, secondaryTexture!.GetParams().Format);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_buffer_manager_treats_optimized_rg16f_output_as_linear_hdr()
     {
         using var manager = CreateRenderBufferManager();
@@ -946,7 +946,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.Equal(TextureFormat.TexFormatRg16Float, manager.SecondaryColorTexture!.GetParams().Format);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_buffer_manager_uses_matching_texture_output_without_substitute_buffers()
     {
         using var manager = CreateRenderBufferManager();
@@ -969,7 +969,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.IsType<ViewportColorRenderBuffer>(manager.ColorOutput);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_buffer_manager_uses_matching_texture_output_as_primary_for_color_read_write_frames()
     {
         using var manager = CreateRenderBufferManager();
@@ -1003,7 +1003,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.IsType<TextureRenderBuffer>(manager.ColorOutput);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_buffer_manager_allocates_substitute_buffers_for_partial_texture_output()
     {
         using var manager = CreateRenderBufferManager();
@@ -1026,7 +1026,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.IsType<TextureRenderBuffer>(manager.ColorOutput);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Bloom_pass_allocates_scaled_intermediate_buffers()
     {
         using var manager = CreateRenderBufferManager();
@@ -1061,7 +1061,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.Equal(new Vector3i(32, 16, 1), third.GetTexture()!.GetParams().Size);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_buffer_manager_resizes_dynamic_intermediate_buffers_with_viewport_changes()
     {
         using var manager = CreateRenderBufferManager();
@@ -1087,7 +1087,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.Equal(new IntRect(0, 0, 12, 6), fixedSize.GetViewportRect());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Bloom_pass_cached_buffers_follow_viewport_resize()
     {
         using var manager = CreateRenderBufferManager();
@@ -1123,7 +1123,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.Equal(new Vector3i(128, 64, 1), second.GetTexture()!.GetParams().Size);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_buffer_manager_creates_cubemap_render_buffers_with_face_slice_views()
     {
         using var manager = CreateRenderBufferManager();
@@ -1144,7 +1144,7 @@ public sealed class RenderPipelineTests : IDisposable
         Assert.Equal(RenderTargetView.TextureSlice(cubeTexture, 5), cubemap.GetView(5));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pipeline_uses_default_renderpath_on_attach()
     {
         const string defaultRenderPathName = "RenderPaths/Default.renderpath";
@@ -1197,7 +1197,7 @@ public sealed class RenderPipelineTests : IDisposable
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pipeline_reacts_to_render_path_resource_reload()
     {
         const string renderPathName = "RenderPaths/Reload.renderpath";
@@ -1237,7 +1237,7 @@ public sealed class RenderPipelineTests : IDisposable
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pipeline_reload_event_observes_only_the_current_render_path()
     {
         var renderPipeline = new RenderPipeline();

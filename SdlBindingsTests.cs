@@ -9,19 +9,17 @@ public sealed class SdlBindingsTests
 {
     private const uint SdlInitVideo = 0x00000020u;
 
-    private static bool SdlAvailable
+    private static void RequireSdl()
     {
-        get
-        {
-            try { _ = SdlNativeBindings.SdlInit(0); SdlNativeBindings.SdlQuit(); return true; }
-            catch (DllNotFoundException) { return false; }
-        }
+        if (SdlNativeBindings.SdlInit(0) != 0)
+            throw new InvalidOperationException("SDL native capability could not initialize.");
+        SdlNativeBindings.SdlQuit();
     }
 
-    [Fact]
+    [SdlVideoFact]
     public void Init_and_was_init_work()
     {
-        if (!SdlAvailable) return;
+        RequireSdl();
         EnsureDummyVideoDriver();
         var result = SdlNativeBindings.SdlInit(SdlInitVideo);
         try
@@ -36,10 +34,10 @@ public sealed class SdlBindingsTests
         }
     }
 
-    [Fact]
+    [SdlVideoFact]
     public void CreateWindow_returns_valid_window()
     {
-        if (!SdlAvailable) return;
+        RequireSdl();
         EnsureDummyVideoDriver();
         var result = SdlNativeBindings.SdlInit(SdlInitVideo);
         Assert.Equal(0, result);
@@ -57,10 +55,10 @@ public sealed class SdlBindingsTests
         }
     }
 
-    [Fact]
+    [SdlVideoFact]
     public void PollEvent_works()
     {
-        if (!SdlAvailable) return;
+        RequireSdl();
         EnsureDummyVideoDriver();
         var result = SdlNativeBindings.SdlInit(SdlInitVideo);
         Assert.Equal(0, result);
@@ -80,13 +78,10 @@ public sealed class SdlBindingsTests
         }
     }
 
-    [Fact]
+    [SdlGraphicsFact]
     public void GlGetProcAddress_generated_utf8_marshaller_resolves_real_symbol()
     {
-        if (!SdlAvailable) return;
-
-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY")))
-            return;
+        RequireSdl();
 
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("SDL_VIDEODRIVER")))
             Environment.SetEnvironmentVariable("SDL_VIDEODRIVER", "x11");
@@ -135,7 +130,8 @@ public sealed class SdlBindingsTests
 
     private static void EnsureDummyVideoDriver()
     {
-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("SDL_VIDEODRIVER")))
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY"))
+            && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
             Environment.SetEnvironmentVariable("SDL_VIDEODRIVER", "dummy");
     }
 
@@ -146,6 +142,46 @@ public sealed class SdlBindingsTests
     }
 
     private static Utf8Pin PinUtf8(string value) => new(value);
+
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    private sealed class SdlVideoFactAttribute : Xunit.FactAttribute
+    {
+        public SdlVideoFactAttribute()
+        {
+            if (!HasNativeLibrary())
+            {
+                Skip = "SDL native capability is unavailable on this test host.";
+                return;
+            }
+
+            var hasDisplay = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY"))
+                || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"));
+            var driver = Environment.GetEnvironmentVariable("SDL_VIDEODRIVER");
+            if (!hasDisplay && !string.Equals(driver, "dummy", StringComparison.OrdinalIgnoreCase))
+                Skip = "SDL video tests need a display or SDL_VIDEODRIVER=dummy.";
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    private sealed class SdlGraphicsFactAttribute : Xunit.FactAttribute
+    {
+        public SdlGraphicsFactAttribute()
+        {
+            if (!HasNativeLibrary())
+            {
+                Skip = "SDL native capability is unavailable on this test host.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY")))
+                Skip = "SDL OpenGL symbol lookup requires an X11 display; use the software-renderer harness.";
+        }
+    }
+
+    private static bool HasNativeLibrary()
+    {
+        return NativeBindingCapability.IsAvailable;
+    }
 
     private sealed class Utf8Pin : IDisposable
     {

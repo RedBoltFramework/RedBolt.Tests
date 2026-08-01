@@ -22,6 +22,22 @@ public sealed class LightmapCharterTests
     }
 
     [Fact]
+    public void Empty_chart_and_default_region_have_no_allocated_elements()
+    {
+        var chart = new LightmapChart();
+        var region = new LightmapChartRegion();
+
+        Assert.Equal(0, chart.Index);
+        Assert.Equal(0, chart.LightmapSize);
+        Assert.Empty(chart.Elements);
+        Assert.False(region.RectUv.Defined);
+        Assert.True(float.IsNegativeInfinity(region.GetScale().X));
+        Assert.True(float.IsNegativeInfinity(region.GetScale().Y));
+        Assert.True(float.IsPositiveInfinity(region.GetOffset().X));
+        Assert.True(float.IsPositiveInfinity(region.GetOffset().Y));
+    }
+
+    [Fact]
     public void Chart_clone_copies_allocator_and_elements()
     {
         var chart = new LightmapChart(3, 16);

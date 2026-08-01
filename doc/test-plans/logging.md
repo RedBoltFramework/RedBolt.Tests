@@ -1,6 +1,6 @@
 # Logging subsystem test plan
 
-Source: `../RedBolt/src/RedBolt/RedBolt/Logging/Log.cs`. Existing coverage is in
+Source: `../../RedBolt/src/RedBolt/RedBolt/Logging/Log.cs`. Existing coverage is in
 `IOTests/LogTests.cs`.
 
 - `LogLevel`, `StoredLogMessage`, and `LogFileParams`: assert enum ordering,
@@ -31,4 +31,4 @@ frames, then assert no lost/corrupt messages and no event after disposal.
 ## Verified checks
 
 - [x] Log value defaults/copy semantics, logger cloning, main-thread dispatch, and worker-thread end-frame dispatch (`IOTests/LogTests`).
-- [ ] File rotation, duplicate suppression, concurrent sink writes, and disposal-failure matrix still need isolated temporary-sink coverage.
+- [x] File rotation (open and size), duplicate suppression/summary, concurrent sink writes, invalid-path fallback, repeated disposal, and unsupported-platform/null-device no-ops (`IOTests/LogSinkTests`). The tests use a temporary sink and a fake `RuntimeServices.Platform`.

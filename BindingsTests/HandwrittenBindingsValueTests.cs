@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 
 using RedBolt.Bindings.Diligent;
 using RedBolt.Bindings.Jolt;
+using RedBolt.JoltPhysics;
 
 public sealed class HandwrittenBindingsValueTests
 {
@@ -21,6 +22,12 @@ public sealed class HandwrittenBindingsValueTests
         Assert.Equal((IntPtr)0, Marshal.OffsetOf<JoltRayCastResult>(nameof(JoltRayCastResult.BodyId)));
         Assert.Equal((IntPtr)4, Marshal.OffsetOf<JoltRayCastResult>(nameof(JoltRayCastResult.Fraction)));
         Assert.Equal((IntPtr)8, Marshal.OffsetOf<JoltRayCastResult>(nameof(JoltRayCastResult.SubShapeId)));
+
+        var mixed = new BlendFactors(0.25f, 0.5f, 0.75f, 1.0f);
+        Assert.Equal(0.25f, mixed.Red);
+        Assert.Equal(0.5f, mixed.Green);
+        Assert.Equal(0.75f, mixed.Blue);
+        Assert.Equal(1.0f, mixed.Alpha);
     }
 
     [Fact]
@@ -36,5 +43,11 @@ public sealed class HandwrittenBindingsValueTests
         copy.Fraction = 0.5f;
         Assert.Equal(0u, result.BodyId);
         Assert.Equal(0.0f, result.Fraction);
+    }
+
+    [Fact]
+    public void Physics_library_registration_rejects_a_missing_context()
+    {
+        Assert.Throws<ArgumentNullException>(() => Physics.RegisterPhysicsLibrary(null!));
     }
 }

@@ -22,7 +22,7 @@ public sealed class DrawCommandQueueTests
         this._fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Draw_command_queue_has_native_reference_class_and_constructor_shape()
     {
         Assert.False(typeof(RedObject).IsAssignableFrom(typeof(DrawCommandQueue)));
@@ -34,7 +34,7 @@ public sealed class DrawCommandQueueTests
         Assert.Empty(GetPrivateField<List<DrawCommandDescription>>(queue, "_drawCommands"));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Draw_command_description_is_value_type_with_inline_copy_semantics()
     {
         Assert.True(typeof(DrawCommandDescription).IsValueType);
@@ -54,7 +54,7 @@ public sealed class DrawCommandQueueTests
         Assert.Equal(3, copy.ConstantBuffers[0].Size);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Draw_command_queue_records_graphics_commands_as_snapshots()
     {
         var queue = _fixture.RenderDevice.GetDefaultQueue();
@@ -115,7 +115,7 @@ public sealed class DrawCommandQueueTests
         Assert.Equal(0, commands[1].InstanceCount);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Shader_parameter_groups_allocate_store_and_reuse_reflected_blocks()
     {
         var queue = _fixture.RenderDevice.GetDefaultQueue();
@@ -147,7 +147,7 @@ public sealed class DrawCommandQueueTests
         Assert.True(queue.BeginShaderParameterGroup(ShaderParameterGroup.Material, differentFromPrevious: true));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Empty_resource_groups_commit_as_stable_command_ranges()
     {
         var queue = _fixture.RenderDevice.GetDefaultQueue();

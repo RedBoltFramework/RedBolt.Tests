@@ -18,14 +18,14 @@ public sealed class ShaderProgramReflectionTests
         this._fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Uniform_reflection_is_a_pod_value()
     {
         Assert.True(typeof(UniformReflection).IsValueType);
         Assert.False(System.Runtime.CompilerServices.RuntimeHelpers.IsReferenceOrContainsReferences<UniformReflection>());
     }
 
-    [Theory]
+    [GraphicsTheory]
     [InlineData("cLightMatrices[0]", true, "LightMatrices")]
     [InlineData("Light.cLightMatrices[0]", true, "LightMatrices")]
     [InlineData("cLightMatrices[1]", false, "")]
@@ -46,7 +46,7 @@ public sealed class ShaderProgramReflectionTests
         Assert.Equal(expectedName, arguments[1]);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Shader_program_reflection_discovers_native_shader_resources_from_compiled_shader_variations()
     {
         WithInitializedGraphics(() =>
@@ -65,7 +65,7 @@ public sealed class ShaderProgramReflectionTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Shader_program_reflection_discovers_native_uniform_buffers_from_compiled_shader_variations()
     {
         WithInitializedGraphics(() =>
@@ -96,7 +96,7 @@ public sealed class ShaderProgramReflectionTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Shader_program_reflection_discovers_native_custom_uniform_members_from_compiled_shader_variations()
     {
         WithInitializedGraphics(() =>
@@ -123,7 +123,7 @@ public sealed class ShaderProgramReflectionTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void OpenGL_program_reflection_discovers_lightmap_scale_offset()
     {
         WithInitializedGraphics(() =>
@@ -153,7 +153,7 @@ public sealed class ShaderProgramReflectionTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Pipeline_state_exposes_native_shader_program_reflection_for_compiled_shaders()
     {
         WithInitializedGraphics(() =>

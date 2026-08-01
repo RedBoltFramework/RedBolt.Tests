@@ -20,7 +20,7 @@ public sealed class RenderDeviceTests
         this._fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_device_is_registered_as_engine_subsystem()
     {
         Assert.Same(_fixture.RenderDevice, _fixture.Context.GetSubsystem<RenderDevice>());
@@ -32,7 +32,7 @@ public sealed class RenderDeviceTests
         Assert.Same(_fixture.Graphics.GetNativeSwapChain(), _fixture.RenderDevice.GetSwapChain());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Graphics_test_window_is_hidden()
     {
         var window = SdlWindow.CreateManagedWrapper(_fixture.Input.GetWindowHandle(), ownsHandle: false);
@@ -42,7 +42,7 @@ public sealed class RenderDeviceTests
         Assert.False((flags & SdlWindowFlags.SdlWindowShown) != 0);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_device_post_initialize_creates_default_raw_textures()
     {
         var parameters = new EngineParameters
@@ -80,7 +80,7 @@ public sealed class RenderDeviceTests
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_device_default_texture_settings_match_native_behavior()
     {
         var filterMode = _fixture.RenderDevice.GetDefaultTextureFilterMode();
@@ -104,13 +104,13 @@ public sealed class RenderDeviceTests
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_device_dpi_scale_matches_equal_window_and_swap_chain_sizes()
     {
         Assert.Equal(1.0f, _fixture.RenderDevice.GetDpiScale());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_device_stats_expose_render_context_counters()
     {
         var parameters = new EngineParameters
@@ -141,7 +141,7 @@ public sealed class RenderDeviceTests
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_device_present_advances_frame_index()
     {
         var parameters = new EngineParameters
@@ -167,7 +167,7 @@ public sealed class RenderDeviceTests
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_device_reports_native_swap_chain_and_window_sizes_separately()
     {
         var parameters = new EngineParameters
@@ -198,7 +198,7 @@ public sealed class RenderDeviceTests
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_device_updates_swap_chain_size_from_native_window()
     {
         var parameters = new EngineParameters
@@ -226,7 +226,7 @@ public sealed class RenderDeviceTests
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Graphics_takes_screenshot_into_image()
     {
         var parameters = new EngineParameters
@@ -255,7 +255,7 @@ public sealed class RenderDeviceTests
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void End_frame_emits_end_rendering_before_screenshot()
     {
         var parameters = new EngineParameters
@@ -288,7 +288,7 @@ public sealed class RenderDeviceTests
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_device_updates_native_window_settings()
     {
         var parameters = new EngineParameters
@@ -325,7 +325,7 @@ public sealed class RenderDeviceTests
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Graphics_exposes_native_window_and_display_queries()
     {
         var parameters = new EngineParameters
@@ -397,7 +397,7 @@ public sealed class RenderDeviceTests
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Restore_does_not_recreate_device_objects_on_desktop()
     {
         var parameters = new EngineParameters
@@ -424,7 +424,7 @@ public sealed class RenderDeviceTests
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_device_loss_restore_recreates_defaults_and_resets_context_state()
     {
         var parameters = new EngineParameters
@@ -462,7 +462,7 @@ public sealed class RenderDeviceTests
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Headless_engine_does_not_create_render_device()
     {
         var previousContext = Context.Instance;
@@ -485,7 +485,7 @@ public sealed class RenderDeviceTests
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Device_object_dispose_unregisters_from_render_device()
     {
         var deviceObject = new TrackingDeviceObject();
@@ -494,7 +494,7 @@ public sealed class RenderDeviceTests
         Assert.Equal(0, deviceObject.DestroyCalls);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Pipeline_state_uses_device_object_debug_name_surface()
     {
         var desc = new GraphicsPipelineStateDesc
@@ -510,7 +510,7 @@ public sealed class RenderDeviceTests
         Assert.False(pipelineState.IsValid);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_device_selects_closest_fullscreen_mode_like_native_implementation()
     {
         var modes = new[]
@@ -571,7 +571,7 @@ public sealed class RenderDeviceTests
 [Collection(nameof(GraphicsLifecycleCollection))]
 public sealed class RenderDeviceLifecycleTests
 {
-    [Fact]
+    [GraphicsFact]
     public void Device_object_receives_invalidate_restore_and_destroy_events()
     {
         TrackingDeviceObject deviceObject;
@@ -593,7 +593,7 @@ public sealed class RenderDeviceLifecycleTests
         Assert.Null(deviceObject.GetRenderDevice());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_device_exposes_separate_device_state_lifecycle()
     {
         TrackingDeviceObject deviceObject;

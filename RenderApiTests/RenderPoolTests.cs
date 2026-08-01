@@ -16,7 +16,7 @@ public sealed class RenderPoolTests
         this._fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pool_allocates_aligned_scratch_buffers_and_reuses_base_block_after_release()
     {
         var renderPool = _fixture.RenderDevice.GetRenderPool();
@@ -39,7 +39,7 @@ public sealed class RenderPoolTests
         renderPool.ReleaseScratchBuffer(reused);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pool_grows_base_scratch_buffer_after_temporary_overflow_is_released()
     {
         var renderPool = _fixture.RenderDevice.GetRenderPool();
@@ -53,7 +53,7 @@ public sealed class RenderPoolTests
         Assert.True(GetScratchBufferCapacity(renderPool) > initialCapacity);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Optional_raw_texture_rtv_maps_to_nullable_render_target_view()
     {
         RenderTargetView? empty = default;
@@ -65,7 +65,7 @@ public sealed class RenderPoolTests
         Assert.True(filled.Value.IsSwapChain);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pool_invalidation_only_discards_uniform_buffers()
     {
         var renderPool = _fixture.RenderDevice.GetRenderPool();
@@ -81,7 +81,7 @@ public sealed class RenderPoolTests
         Assert.NotSame(uniformBuffer, renderPool.GetUniformBuffer(2, 64));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pool_dispose_destroys_owned_resources()
     {
         var renderPool = new RenderPool(_fixture.RenderDevice);
@@ -96,7 +96,7 @@ public sealed class RenderPoolTests
         Assert.Null(uniformBuffer.GetRenderDevice());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pool_recycling_does_not_allocate_when_cache_shape_is_stable()
     {
         var renderPool = _fixture.RenderDevice.GetRenderPool();

@@ -17,7 +17,7 @@ public sealed class RenderContextTests
         this._fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_context_binds_swap_chain_targets_and_tracks_viewport_state()
     {
         WithInitializedGraphics(() =>
@@ -45,7 +45,7 @@ public sealed class RenderContextTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_context_binds_texture_targets_and_reports_bound_textures()
     {
         WithInitializedGraphics(() =>
@@ -86,7 +86,7 @@ public sealed class RenderContextTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_context_binds_and_clears_multiple_color_targets()
     {
         WithInitializedGraphics(() =>
@@ -112,7 +112,7 @@ public sealed class RenderContextTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_scope_submits_balanced_debug_group_when_enabled()
     {
         WithInitializedGraphics(() =>
@@ -131,13 +131,13 @@ public sealed class RenderContextTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Disabled_render_scope_does_not_format_debug_group_name()
     {
         using var scope = new RenderScope(null, "{", 0);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_scope_is_extensible_and_noncopyable()
     {
         Assert.False(typeof(RenderScope).IsSealed);

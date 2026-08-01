@@ -1,6 +1,6 @@
 # RenderPipeline subsystem test plan
 
-Source: `../RedBolt/src/RedBolt/RedBolt/RenderPipeline`. Existing tests are in
+Source: `../../RedBolt/src/RedBolt/RedBolt/RenderPipeline`. Existing tests are in
 `RenderPipelineTests`.
 
 ## Verified coverage

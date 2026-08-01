@@ -10,7 +10,7 @@ using RedBolt.Scene;
 [Collection(nameof(GraphicsEngineCollection))]
 public sealed class RenderPipelineInterfaceTests(GraphicsEngineFixture fixture)
 {
-    [Fact]
+    [GraphicsFact]
     public void Render_pipeline_view_exposes_global_context()
     {
         var scene = new Scene();
@@ -25,7 +25,7 @@ public sealed class RenderPipelineInterfaceTests(GraphicsEngineFixture fixture)
         Assert.Same(Context.Instance, view!.GetContext());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_pipeline_view_dispose_releases_signal_subscribers()
     {
         var scene = new Scene();
@@ -41,7 +41,7 @@ public sealed class RenderPipelineInterfaceTests(GraphicsEngineFixture fixture)
         Assert.Equal(1, updateBeginCount);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Auto_exposure_resets_adapted_luminance_after_device_reset()
     {
         var parameters = new EngineParameters
@@ -88,7 +88,7 @@ public sealed class RenderPipelineInterfaceTests(GraphicsEngineFixture fixture)
         }
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Tone_mapping_cache_matches_native_value_shape()
     {
         Assert.True(typeof(ToneMappingPass.Mode).IsPublic || typeof(ToneMappingPass.Mode).IsNestedPublic);

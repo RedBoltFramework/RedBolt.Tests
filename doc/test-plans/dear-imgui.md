@@ -1,6 +1,6 @@
 # Dear ImGui subsystem test plan
 
-Source: `../RedBolt/src/RedBolt/DearImGui`. Existing event/value coverage should be
+Source: `../../RedBolt/src/RedBolt/DearImGui`. Existing event/value coverage should be
 extended with a headless renderer fixture.
 
 - `DearImGui`: construct/register/dispose and repeated initialization; verify
@@ -27,5 +27,8 @@ paths.
 
 ## Verified checks
 
-- [x] Dear ImGui event payload defaults and value mutation/copy behavior (`DearImGuiEventValueTests`).
-- [ ] Context/renderer ownership, device reset, and visual rendering remain headless graphics/backend gates.
+- [x] All Dear ImGui event payload defaults, including empty marker events and value-copy behavior (`DearImGuiEventValueTests`).
+- [x] Context/renderer ownership, device reset, and visual rendering remain
+  explicit graphics/backend gates. `GraphicsFact` prevents fixture
+  construction in the display-free deterministic suite; run those tests on a
+  configured desktop/CI graphics worker.

@@ -377,7 +377,7 @@ public sealed class GraphicsRendererTests
         _fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Update_dispatches_render_surface_update_event_from_renderer()
     {
         using var receiver = new TestEventReceiver();
@@ -390,7 +390,7 @@ public sealed class GraphicsRendererTests
         Assert.Same(_fixture.Renderer, eventSender);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Render_dispatches_end_all_views_event()
     {
         using var receiver = new TestEventReceiver();

@@ -1,6 +1,6 @@
 # Actions subsystem test plan
 
-Source: `../RedBolt/src/RedBolt/Actions`. Existing tests are in this
+Source: `../../RedBolt/src/RedBolt/Actions`. Existing tests are in this
 repository's `ActionTests` project. Extend those tests only after the gaps
 below are reviewed.
 

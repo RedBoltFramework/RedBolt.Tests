@@ -30,7 +30,7 @@ public sealed class CubemapRendererTests
             list.Clear();
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Update_parameters_default_constructor_matches_cpp_member_initializers()
     {
         var parameters = new CubemapUpdateParameters();
@@ -45,7 +45,7 @@ public sealed class CubemapRendererTests
         Assert.Null(parameters.OverrideFinalTexture);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Borrowed_dependencies_are_stored_as_weak_references()
     {
         var scene = new Scene();
@@ -69,7 +69,7 @@ public sealed class CubemapRendererTests
         renderer.Dispose();
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Parameter_copy_keeps_an_independent_weak_alias()
     {
         var texture = new TextureCube { Name = "CubemapRendererTests.Copy" };
@@ -86,13 +86,13 @@ public sealed class CubemapRendererTests
         Assert.False(source.IsConsistentWith(copy));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Renderer_is_not_copyable()
     {
         Assert.False(typeof(ICloneable).IsAssignableFrom(typeof(CubemapRenderer)));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Dispose_releases_freestanding_camera_nodes()
     {
         var scene = new Scene();
@@ -109,7 +109,7 @@ public sealed class CubemapRendererTests
         Assert.All(cameraNodes, static cameraNode => Assert.Equal(0, cameraNode.GetNumComponents()));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void FilterCubemap_creates_uav_for_each_mip_when_compute_is_supported()
     {
         WithInitializedGraphics(() =>
@@ -142,7 +142,7 @@ public sealed class CubemapRendererTests
         });
     }
 
-    [Fact]
+    [GraphicsFact]
     public void DefineTexture_sets_size_format_and_render_target_flag()
     {
         var texture = new TextureCube { Name = "TestCubemap" };
@@ -157,7 +157,7 @@ public sealed class CubemapRendererTests
         Assert.Equal(TextureFilterMode.Trilinear, texture.GetFilterMode());
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Update_full_queues_all_faces_and_reports_complete()
     {
         ClearQueuedViewports();
@@ -178,7 +178,7 @@ public sealed class CubemapRendererTests
         ClearQueuedViewports();
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Update_sliced_renders_one_face_per_call_until_complete()
     {
         ClearQueuedViewports();
@@ -209,7 +209,7 @@ public sealed class CubemapRendererTests
         ClearQueuedViewports();
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Update_with_mismatched_override_returns_complete_error_result()
     {
         ClearQueuedViewports();

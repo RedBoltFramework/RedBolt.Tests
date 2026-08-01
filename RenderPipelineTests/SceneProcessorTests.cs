@@ -16,7 +16,7 @@ public sealed class SceneProcessorTests
         _fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void IsLightShadowed_RespectsSettingsAndDistance()
     {
         using var scene = new Scene();
@@ -36,7 +36,7 @@ public sealed class SceneProcessorTests
         Assert.False(processor.IsLightShadowed(light));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Define_RequiresOctreeAndCamera()
     {
         using var scene = new Scene();
@@ -62,7 +62,7 @@ public sealed class SceneProcessorTests
         Assert.NotNull(processor.GetFrameInfo().Camera);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void GetUserPass_ReturnsNullForBatchCompositor()
     {
         var pipeline = new TestRenderPipelineInterface();
@@ -70,7 +70,7 @@ public sealed class SceneProcessorTests
         Assert.Null(processor.GetUserPass(processor.GetBatchCompositor()));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void CreatePass_ForwardsProcessorDependenciesAndArguments()
     {
         var pipeline = new TestRenderPipelineInterface();
@@ -80,7 +80,7 @@ public sealed class SceneProcessorTests
         Assert.NotNull(pass);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void ScenePassDisposeReleasesDerivedBatchStorage()
     {
         var pipeline = new TestRenderPipelineInterface();
@@ -104,7 +104,7 @@ public sealed class SceneProcessorTests
         Assert.True(typeof(BackToFrontScenePass).GetMethod(nameof(BackToFrontScenePass.GetBatches))!.ReturnType.IsByRef);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void PipelineStateBuilderUsesNativePointerAndPropertyShape()
     {
         var type = typeof(PipelineStateBuilder);
@@ -118,7 +118,7 @@ public sealed class SceneProcessorTests
             Assert.Equal(System.Reflection.NullabilityState.Nullable, nullability.Create(parameter).ReadState);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void PipelineStateBuilderDisposeDestroysReusableState()
     {
         var pipeline = new TestRenderPipelineInterface();
@@ -137,7 +137,7 @@ public sealed class SceneProcessorTests
             GetPrivateField<ShaderProgramDesc>(builder, "_shaderProgramDesc").CommonShaderDefines);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void BatchCompositor_dispose_releases_pipeline_subscriptions()
     {
         var pipeline = new TestRenderPipelineInterface();
@@ -155,7 +155,7 @@ public sealed class SceneProcessorTests
         Assert.Equal(invalidationSubscribers, pipeline.PipelineStatesInvalidatedSubscriberCount);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Dispose_releases_owned_processors_and_pipeline_subscriptions()
     {
         var pipeline = new TestRenderPipelineInterface();

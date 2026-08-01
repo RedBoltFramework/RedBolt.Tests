@@ -20,7 +20,7 @@ public sealed class PipelineBatchSortKeyTests
         _fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void State_sort_key_matches_cpp_bit_layout()
     {
         using var material = new Material { Name = "Sort Material" };
@@ -64,7 +64,7 @@ public sealed class PipelineBatchSortKeyTests
         Assert.True(typeof(PipelineBatchDesc).IsValueType);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void State_sort_key_is_a_mutable_value()
     {
         var key = new PipelineBatchByState
@@ -90,7 +90,7 @@ public sealed class PipelineBatchSortKeyTests
             | (PipelineBatchByState.GeometryMask << (int)PipelineBatchByState.GeometryOffset));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Source_batch_is_borrowed_by_reference()
     {
         using var drawable = new CustomGeometry();
@@ -101,7 +101,7 @@ public sealed class PipelineBatchSortKeyTests
         Assert.True(Unsafe.AreSame(ref Unsafe.AsRef(in expected), ref Unsafe.AsRef(in actual)));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Back_to_front_key_sorts_render_order_then_descending_distance()
     {
         using var firstMaterial = new Material { Name = "First" };
@@ -134,7 +134,7 @@ public sealed class PipelineBatchSortKeyTests
         return new PipelineBatchBackToFront(batches, index, ref batch);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Back_to_front_key_preserves_cpp_unordered_float_comparison()
     {
         var left = new PipelineBatchBackToFront { RenderOrder = 1, Distance = float.NaN };
@@ -144,7 +144,7 @@ public sealed class PipelineBatchSortKeyTests
         Assert.Equal(0, right.CompareTo(left));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Batch_group_copy_preserves_batch_storage_and_copies_scalar_state()
     {
         using var material = new Material { Name = "Group Material" };
@@ -187,7 +187,7 @@ public sealed class PipelineBatchSortKeyTests
             .GetField(nameof(PipelineBatchGroup<PipelineBatchByState>.NumInstances))!.FieldType);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Sort_keys_retain_aliases_to_pipeline_batch_storage()
     {
         using var material = new Material { Name = "Alias Material" };

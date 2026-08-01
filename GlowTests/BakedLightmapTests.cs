@@ -6,6 +6,18 @@ using RedBolt.Math;
 public sealed class BakedLightmapTests
 {
     [Fact]
+    public void Default_baked_lightmap_is_empty_and_clone_is_independent()
+    {
+        var lightmap = new BakedLightmap();
+        var clone = lightmap.Clone();
+
+        Assert.Equal(0, lightmap.LightmapSize);
+        Assert.Empty(lightmap.Lightmap);
+        Assert.Empty(clone.Lightmap);
+        Assert.NotSame(lightmap.Lightmap, clone.Lightmap);
+    }
+
+    [Fact]
     public void Baked_lightmap_allocates_square_linear_buffer()
     {
         var lightmap = new BakedLightmap(4);

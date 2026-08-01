@@ -50,7 +50,7 @@ public sealed class BatchStateCacheTests
         _fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Batch_cache_reuses_and_invalidates_state_like_cpp()
     {
         using var geometry = new Geometry();
@@ -78,7 +78,7 @@ public sealed class BatchStateCacheTests
         Assert.Null(cache.GetPipelineState(key.LookupKey));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Placeholder_cache_keeps_invalid_state_without_recreating_it()
     {
         using var state = new PipelineState(_fixture.PipelineStateCache, CreateUnavailablePipelineStateDesc());
@@ -91,7 +91,7 @@ public sealed class BatchStateCacheTests
         Assert.Equal(1, callback.PlaceholderCount);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Cache_shape_and_teardown_match_cpp()
     {
         Assert.False(typeof(BatchStateCache).IsSealed);
@@ -125,7 +125,7 @@ public sealed class BatchStateCacheTests
             | System.Reflection.BindingFlags.NonPublic)!.GetValue(cache));
     }
 
-    [Fact]
+    [GraphicsFact]
     public void UI_batch_cache_reuses_and_invalidates_state_like_cpp()
     {
         using var material = new Material { Name = "UI Cache Material" };

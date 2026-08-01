@@ -13,7 +13,7 @@ public sealed class RmlRendererTests
         _fixture = fixture;
     }
 
-    [Fact]
+    [GraphicsFact]
     public unsafe void RmlRenderer_matches_texture_callback_behavior()
     {
         using var renderer = new RmlRenderer();
@@ -42,7 +42,7 @@ public sealed class RmlRendererTests
         renderer.ReleaseTexture(0);
     }
 
-    [Fact]
+    [GraphicsFact]
     public unsafe void RmlRenderer_submits_legacy_geometry()
     {
         RbfxTestData.AddResourceDirs(_fixture.Resources);

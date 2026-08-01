@@ -1,6 +1,6 @@
 # Handwritten bindings test plan
 
-Source: `../RedBolt/src/RedBolt/Bindings`. Generated binding files are build artifacts and
+Source: `../../RedBolt/src/RedBolt/Bindings`. Generated binding files are build artifacts and
 are tested through their owning subsystem and the binding smoke tests.
 
 - `BlendFactors`: verify constructor/property values, zero/one/mixed factors,
@@ -23,4 +23,8 @@ GPU/audio device.
 
 - [x] `BlendFactors` and `JoltRayCastResult` field order, size, defaults, and value-copy behavior (`HandwrittenBindingsValueTests`).
 - [x] Generated shader-library contexts can initialize and finalize when their native libraries are present (`ShaderLibraryBindingTests`).
-- [ ] Missing-library and wrong-architecture diagnostics are environment gates, not unconditional unit cases.
+- [x] Null-context registration failure is explicit (`HandwrittenBindingsValueTests`).
+- [x] Missing-library and wrong-architecture diagnostics are explicit
+  environment gates, not unconditional unit cases. `SdlBindingsTests` uses a
+  discovery-time xUnit skip for unavailable SDL; run native binding gates with
+  the platform native output available.

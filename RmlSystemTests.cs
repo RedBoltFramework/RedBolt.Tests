@@ -45,9 +45,6 @@ public sealed class RmlSystemTests
             Assert.False(system.LogMessage(LogType.LtMax, message));
 
             system.SetMouseCursor(message);
-            system.SetClipboardText(message);
-            system.GetClipboardText(translated);
-            Assert.Equal("RmlSystem test", translated.ToString());
             system.ActivateKeyboard(Vector2f.Zero, 0.0f);
             Assert.True(system.TextInputActivatedThisFrame());
             system.DeactivateKeyboard();
@@ -55,6 +52,40 @@ public sealed class RmlSystemTests
         finally
         {
             _fixture.Context.RemoveSubsystem<Localization>();
+        }
+    }
+
+    [RmlClipboardFact]
+    public void RmlSystem_clipboard_round_trip_uses_the_available_sdl_backend()
+    {
+        using var message = new Std.String();
+        using var retrieved = new Std.String();
+        using var system = new RmlSystem();
+        message.Assign("RmlSystem test");
+
+        system.SetClipboardText(message);
+        system.GetClipboardText(retrieved);
+
+        Assert.Equal("RmlSystem test", retrieved.ToString());
+    }
+
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    private sealed class RmlClipboardFactAttribute : Xunit.FactAttribute
+    {
+        public RmlClipboardFactAttribute()
+        {
+            if (!NativeBindingCapability.IsAvailable)
+            {
+                Skip = "SDL/Rml native capability is unavailable on this test host.";
+                return;
+            }
+
+            var hasDisplay = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY"))
+                || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"));
+            var dummyVideo = string.Equals(Environment.GetEnvironmentVariable("SDL_VIDEODRIVER"),
+                "dummy", StringComparison.OrdinalIgnoreCase);
+            if (!hasDisplay && !dummyVideo)
+                Skip = "SDL clipboard requires a display or SDL_VIDEODRIVER=dummy; the core RmlSystem checks remain headless.";
         }
     }
 }

@@ -1,0 +1,105 @@
+namespace RedBolt.Tests;
+
+/// <summary>
+/// Discovery-time gate for tests that construct the hidden SDL/OpenGL fixture.
+/// Keeping the decision in the fact attribute prevents xUnit from constructing
+/// a graphics collection fixture on a display-free worker.
+/// </summary>
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+internal sealed class GraphicsFactAttribute : Xunit.FactAttribute
+{
+    public GraphicsFactAttribute()
+    {
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY"))
+            && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
+            Skip = "Native graphics tests require a display; use run_visual_tests_offscreen.sh for llvmpipe.";
+    }
+}
+
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+internal sealed class GraphicsTheoryAttribute : Xunit.TheoryAttribute
+{
+    public GraphicsTheoryAttribute()
+    {
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY"))
+            && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
+            Skip = "Native graphics tests require a display; use run_visual_tests_offscreen.sh for llvmpipe.";
+    }
+}
+
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+internal sealed class NativeBindingFactAttribute : Xunit.FactAttribute
+{
+    public NativeBindingFactAttribute()
+    {
+        if (!NativeBindingCapability.IsAvailable)
+            Skip = "RedBolt.Native is unavailable or has the wrong architecture for this test host.";
+    }
+}
+
+internal static class NativeBindingCapability
+{
+    public static bool IsAvailable
+    {
+        get
+        {
+            if (System.Runtime.InteropServices.NativeLibrary.TryLoad("RedBolt.Native", out var directHandle))
+            {
+                System.Runtime.InteropServices.NativeLibrary.Free(directHandle);
+                return true;
+            }
+
+            var nativeDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "runtimes"));
+            var runtimeIds = new[]
+            {
+                System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier,
+                "linux-x64", "linux-arm64", "win-x64", "win-arm64", "osx-x64", "osx-arm64"
+            };
+            var libraryNames = OperatingSystem.IsWindows()
+                ? new[] { "RedBolt.Native.dll" }
+                : OperatingSystem.IsMacOS()
+                    ? new[] { "libRedBolt.Native.dylib" }
+                    : new[] { "libRedBolt.Native.so" };
+
+            foreach (var runtimeId in runtimeIds.Distinct(StringComparer.OrdinalIgnoreCase))
+            foreach (var libraryName in libraryNames)
+            {
+                var candidate = Path.Combine(nativeDirectory, runtimeId, "native", libraryName);
+                if (File.Exists(candidate)
+                    && System.Runtime.InteropServices.NativeLibrary.TryLoad(candidate, out var handle))
+                {
+                    System.Runtime.InteropServices.NativeLibrary.Free(handle);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+}
+
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+internal sealed class DiligentGraphicsFactAttribute : Xunit.FactAttribute
+{
+    public DiligentGraphicsFactAttribute()
+    {
+        if (!IsEnabled("REDBOLT_RUN_DILIGENT_GL_SMOKE"))
+        {
+            Skip = "Set REDBOLT_RUN_DILIGENT_GL_SMOKE=1 to enable the Diligent OpenGL smoke gate.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY"))
+            && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
+            Skip = "Diligent OpenGL smoke requires a display; use the software-renderer harness.";
+    }
+
+    private static bool IsEnabled(string name)
+    {
+        var value = Environment.GetEnvironmentVariable(name);
+        return value is not null &&
+            (value.Equals("1", StringComparison.OrdinalIgnoreCase) ||
+             value.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+             value.Equals("yes", StringComparison.OrdinalIgnoreCase));
+    }
+}

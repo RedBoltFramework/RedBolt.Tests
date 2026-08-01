@@ -1,6 +1,6 @@
 # RenderAPI subsystem test plan
 
-Source: `../RedBolt/src/RedBolt/RedBolt/RenderAPI`. Existing tests are in
+Source: `../../RedBolt/src/RedBolt/RedBolt/RenderAPI`. Existing tests are in
 `RenderApiTests`; visual/device gates are in
 `VisualRegression`.
 

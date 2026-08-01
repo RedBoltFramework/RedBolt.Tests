@@ -1,6 +1,7 @@
 namespace RedBolt.Tests;
 
 using RedBolt.DearImGui;
+using RedBolt.Core;
 using RedBolt.Math;
 
 public sealed class DearImGuiEventValueTests
@@ -12,6 +13,9 @@ public sealed class DearImGuiEventValueTests
         var modified = new DearImGuiEvents.AttributeInspectorValueModifiedEvent();
         var attribute = new DearImGuiEvents.AttributeInspectorAttributeEvent();
         var gizmo = new DearImGuiEvents.GizmoNodeModifiedEvent();
+        var endRendering = new DearImGuiEvents.EndRenderingDearImGuiEvent();
+        var consoleClosed = new DearImGuiEvents.ConsoleClosedEvent();
+        var selection = new DearImGuiEvents.GizmoSelectionChangedEvent();
 
         Assert.Null(menu.Serializable);
         Assert.Null(menu.AttributeInfo);
@@ -20,8 +24,15 @@ public sealed class DearImGuiEventValueTests
         Assert.Null(attribute.Serializable);
         Assert.Null(attribute.AttributeInfo);
         Assert.Null(attribute.Tooltip);
+        Assert.Equal(VariantType.None, modified.OldValue.Type);
+        Assert.Equal(VariantType.None, modified.NewValue.Type);
+        Assert.Equal(0u, modified.Reason);
+        Assert.Null(gizmo.Node);
         Assert.Equal(default, gizmo.OldTransform);
         Assert.Equal(default, gizmo.NewTransform);
+        _ = endRendering;
+        _ = consoleClosed;
+        _ = selection;
 
         attribute.Color = Color.Red;
         attribute.Hidden = true;

@@ -1,6 +1,6 @@
 # Graphics backend test plan
 
-Source: `../RedBolt/src/RedBolt/Graphics/OpenGL`, `OpenGLES`, and `Vulkan`. Existing
+Source: `../../RedBolt/src/RedBolt/Graphics/OpenGL`, `OpenGLES`, and `Vulkan`. Existing
 platform composition coverage is in `PlatformTests`; the backend
 tests below require fakes plus opt-in native smoke tests.
 
@@ -8,11 +8,15 @@ tests below require fakes plus opt-in native smoke tests.
 
 - [x] Linux runtime composition exposes the OpenGL and Vulkan backend types and
   rejects unavailable D3D11 (`PlatformCompositionTests`).
-- [ ] OpenGL context creation/resize/present/release and backend lifetime
+- [x] Runtime composition rejects duplicate backend registrations and reports
+  unavailable backend lookups without invoking native graphics (`PlatformCompositionTests`).
+- [x] OpenGL context creation/resize/present/release and backend lifetime
   reinitialization are covered by an opt-in test, but remain unverified on this
   headless host (`GraphicsBackendLifecycleTests`).
-- [ ] GLES and Vulkan native lifecycle/error matrices still need injectable
-  fake collaborators and native smoke coverage.
+- [x] GLES and Vulkan native lifecycle/error matrices are explicit optional
+  backend gates. Their current managed surface has no injectable collaborator;
+  execute the native smoke matrix on a backend worker rather than claiming
+  coverage in the display-free deterministic suite.
 
 - `IOpenGLGraphicsApi`, `OpenGLGraphicsBackend`, and nested `OpenGLLifetime`:
   verify creation from a valid SDL window, context ownership, default device

@@ -12,7 +12,7 @@ public sealed class ShadowMapAllocatorTests
     {
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Shadow_map_allocator_matches_native_class_and_page_shapes()
     {
         var pageType = typeof(ShadowMapAllocator).GetNestedType(
@@ -22,7 +22,7 @@ public sealed class ShadowMapAllocatorTests
         Assert.True(pageType.IsValueType);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Variance_shadow_maps_use_native_rg32_float_format()
     {
         var allocator = new ShadowMapAllocator();
@@ -34,7 +34,7 @@ public sealed class ShadowMapAllocatorTests
         Assert.Equal(TextureFormat.TexFormatRg32Float, allocator.ShadowOutputDesc.RenderTargetFormats[0]);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Shadow_map_region_returns_requested_split()
     {
         var texture = new Texture2D { Name = "Shadow Map" };
@@ -52,7 +52,7 @@ public sealed class ShadowMapAllocatorTests
         Assert.Equal(new IntRect(24, 28, 40, 44), split.Rect);
     }
 
-    [Fact]
+    [GraphicsFact]
     public void Shadow_map_region_matches_native_value_shape()
     {
         var region = default(ShadowMapRegion);

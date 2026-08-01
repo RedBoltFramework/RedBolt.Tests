@@ -1,6 +1,6 @@
 # Particles subsystem test plan
 
-Source: `../RedBolt/src/RedBolt/Particles`. Existing tests are in
+Source: `../../RedBolt/src/RedBolt/Particles`. Existing tests are in
 `ParticlesTests`.
 
 - `EmitFrom`: assert native enum/name order, name lookup for every value,
@@ -36,4 +36,8 @@ unchanged.
 ## Verified checks
 
 - [x] Emit-from native order/name table, spans, sparse indexing, memory/layout offsets, pin construction/connection, clone independence, and typed variant mapping (`ParticlesTests`).
-- [ ] Exhaustive public-value ABI assertions and randomized graph fuzzing remain follow-up work.
+- [x] Public particle value ABI/layout and boundary assertions for spans, layouts, pin connections, and enum underlying types (`ParticlesTests/ParticlePublicValueBoundaryTests`).
+- [x] Seeded replayable pin-operation coverage is included in
+  `ParticleGraphPinTests`; full graph-evaluator fuzzing is an explicit gate
+  because the managed surface has no evaluator or native particle backend
+  entry point.

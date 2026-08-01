@@ -15,7 +15,7 @@ public sealed class InputSdlEventTests
 
     private Input Input => _fixture.Input;
 
-    [Fact]
+    [GraphicsFact]
     public void Escape_key_does_not_request_exit()
     {
         InputEvents.KeyDownEvent keyDownEvent = default;

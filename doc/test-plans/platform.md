@@ -1,6 +1,6 @@
 # Platform subsystem test plan
 
-Source: `../RedBolt/src/RedBolt/Platform`. Existing composition tests are in
+Source: `../../RedBolt/src/RedBolt/Platform`. Existing composition tests are in
 `PlatformTests`.
 
 - `Application` (shared partial), `Application.Linux`, and `Application.Web`:
@@ -25,4 +25,8 @@ context creation.
 ## Verified checks
 
 - [x] Linux runtime composition, supported OpenGL/Vulkan backend lookup, file-logging capability, and unavailable-backend rejection (`PlatformCompositionTests`).
-- [ ] Application startup/update/shutdown failure paths and Web boot/thread restrictions remain platform gates.
+- [x] Headless application configuration and start/update/stop ordering are
+  deterministic, and update exceptions still run shutdown (`PlatformLifecycleTests`).
+- [x] Headless startup and update exceptions are covered by
+  `PlatformLifecycleTests`; Web boot/thread restrictions remain a platform
+  gate for the browser worker.
