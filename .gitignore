@@ -1,6 +1,7 @@
 # .NET outputs.
 bin/
 obj/
+TestResults/
 
 # Visual regression captures are generated beside their references.
 VisualRegression/References/**/*_shot.png
