@@ -74,6 +74,15 @@ public sealed class StringHashTests
     }
 
     [Fact]
+    public void Equality_compares_hash_values_directly()
+    {
+        var value = new StringHash(123u);
+
+        Assert.True(value.Equals(new StringHash(123u)));
+        Assert.False(value.Equals(new StringHash(124u)));
+    }
+
+    [Fact]
     public void Calculate_with_length_matches_prefix()
     {
         var chars = "Renderer.Debug.Extra".ToCharArray();

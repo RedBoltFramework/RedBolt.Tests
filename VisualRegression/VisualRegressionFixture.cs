@@ -20,14 +20,16 @@ internal readonly record struct VisualRegressionCapture(
     string ReferenceName,
     int ChannelTolerance = 8,
     double MaxDifferingPixelRatio = 0.02,
-    double MaxAverageChannelError = 2.0);
+    double MaxAverageChannelError = 2.0,
+    bool BackendSpecific = false);
 
 internal readonly record struct VisualRegressionImageCapture(
     VisualRegressionImage Image,
     string ReferenceName,
     int ChannelTolerance = 8,
     double MaxDifferingPixelRatio = 0.02,
-    double MaxAverageChannelError = 2.0);
+    double MaxAverageChannelError = 2.0,
+    bool BackendSpecific = false);
 
 internal sealed class VisualRegressionFixture : IDisposable
 {
@@ -36,7 +38,7 @@ internal sealed class VisualRegressionFixture : IDisposable
     private int _height;
 
     public VisualRegressionFixture(int width = 128, int height = 96, int multiSample = 1,
-        RenderBackend backend = RenderBackend.OpenGL,
+        RenderBackend? backend = null,
         MaterialQuality textureQuality = MaterialQuality.High,
         TextureFilterMode textureFilterMode = TextureFilterMode.Trilinear,
         int textureAnisotropy = 4)
@@ -57,19 +59,23 @@ internal sealed class VisualRegressionFixture : IDisposable
         _engineFixture.InitializeGraphics(new EngineParameters
         {
             ApplicationName = "RedBolt.Tests.VisualRegression",
-            RenderBackend = backend,
+            RenderBackend = backend ?? TestGraphicsBackend.Current,
+            DiscardShaderCache = Environment.GetEnvironmentVariable("REDBOLT_DISCARD_SHADER_CACHE") is "1",
             FullScreen = false,
             Borderless = false,
             MultiSample = multiSample,
             TextureQuality = textureQuality,
             TextureFilterMode = textureFilterMode,
             TextureAnisotropy = textureAnisotropy,
+            ShaderPolicy = Environment.GetEnvironmentVariable("REDBOLT_SHADER_POLICY"),
+            ShaderLogSources = Environment.GetEnvironmentVariable("REDBOLT_SHADER_LOG_SOURCES") is "1",
             VSync = false,
             WindowHidden = true,
             WindowMaximize = false,
             WindowWidth = width,
             WindowHeight = height
         });
+
     }
 
     public GraphicsEngineFixture EngineFixture => _engineFixture;
@@ -238,10 +244,10 @@ internal sealed class VisualRegressionFixture : IDisposable
 
     public void AssertMatches(Scene scene, Camera camera, string referenceName,
         int channelTolerance = 8, double maxDifferingPixelRatio = 0.02,
-        double maxAverageChannelError = 2.0)
+        double maxAverageChannelError = 2.0, bool backendSpecific = false)
     {
         AssertMatches(Capture(scene, camera), referenceName, channelTolerance,
-            maxDifferingPixelRatio, maxAverageChannelError);
+            maxDifferingPixelRatio, maxAverageChannelError, backendSpecific);
     }
 
     public void AssertMatches(string referenceName, params VisualRegressionView[] views)
@@ -259,7 +265,7 @@ internal sealed class VisualRegressionFixture : IDisposable
         {
             AssertMatches(capture.Scene, capture.Camera, capture.ReferenceName,
                 capture.ChannelTolerance, capture.MaxDifferingPixelRatio,
-                capture.MaxAverageChannelError);
+                capture.MaxAverageChannelError, capture.BackendSpecific);
         }
     }
 
@@ -272,16 +278,23 @@ internal sealed class VisualRegressionFixture : IDisposable
         foreach (var capture in captures)
         {
             AssertMatches(capture.Image, capture.ReferenceName, capture.ChannelTolerance,
-                capture.MaxDifferingPixelRatio, capture.MaxAverageChannelError);
+                capture.MaxDifferingPixelRatio, capture.MaxAverageChannelError,
+                capture.BackendSpecific);
         }
     }
 
     public void AssertMatches(VisualRegressionImage actual, string referenceName,
         int channelTolerance = 8, double maxDifferingPixelRatio = 0.02,
-        double maxAverageChannelError = 2.0)
+        double maxAverageChannelError = 2.0, bool backendSpecific = false)
     {
-        var referenceFile = VisualRegressionReferences.GetPath(referenceName);
-        if (VisualRegressionReferences.UpdateReferences)
+        var backend = _engineFixture.RenderDevice.GetBackend();
+        var effectiveBackend = backendSpecific && backend != RenderBackend.OpenGL
+            ? backend
+            : (RenderBackend?)null;
+        var updateReference = VisualRegressionReferences.UpdateReferences
+            || (effectiveBackend is not null && VisualRegressionReferences.UpdateBackendReferences);
+        var referenceFile = VisualRegressionReferences.GetPath(referenceName, effectiveBackend, updateReference);
+        if (updateReference)
         {
             actual.SavePng(referenceFile);
             return;
@@ -348,5 +361,8 @@ internal sealed class VisualRegressionFixture : IDisposable
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
 internal sealed class VisualFactAttribute : Xunit.FactAttribute
 {
-    public VisualFactAttribute() => Skip = VisualRegressionReferences.SkipReason;
+    public VisualFactAttribute()
+    {
+        Skip = VisualRegressionReferences.SkipReason;
+    }
 }

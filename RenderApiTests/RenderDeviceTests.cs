@@ -363,8 +363,8 @@ public sealed class RenderDeviceTests
             Assert.Equal(_fixture.RenderDevice.GetWindowSettings().MultiSample, _fixture.Graphics.GetMultiSample());
             Assert.Equal(_fixture.RenderDevice.GetWindowSettings().Mode == WindowMode.Fullscreen, _fixture.Graphics.GetFullscreen());
             Assert.Equal(_fixture.RenderDevice.GetWindowSettings().VSync, _fixture.Graphics.GetVSync());
-            Assert.Equal(RenderBackend.OpenGL, _fixture.Graphics.GetRenderBackend());
-            Assert.Equal("OpenGL", _fixture.Graphics.GetApiName());
+            Assert.Equal(TestGraphicsBackend.Current, _fixture.Graphics.GetRenderBackend());
+            Assert.Equal(TestGraphicsBackend.Current.ToString(), _fixture.Graphics.GetApiName());
             Assert.Equal(nint.Zero, _fixture.Graphics.GetExternalWindow());
             Assert.Equal(TextureFormat.TexFormatUnknown, _fixture.Graphics.GetDummyColorFormat());
             Assert.Equal(TextureFormat.TexFormatUnknown, _fixture.Graphics.GetShadowMapFormat());
@@ -580,7 +580,19 @@ public sealed class RenderDeviceLifecycleTests
             deviceObject = new TrackingDeviceObject();
             Assert.Same(fixture.RenderDevice, deviceObject.GetRenderDevice());
 
-            Assert.True(fixture.RenderDevice.EmulateLossAndRestore());
+            if (TestGraphicsBackend.Current == RenderBackend.Vulkan)
+            {
+                // Linux Vulkan keeps one Diligent device for the process. Its
+                // native context-loss emulation is not implemented, but the
+                // explicit device-state lifecycle is supported and exercises
+                // the same device-object notifications.
+                fixture.RenderDevice.InvalidateDeviceState();
+                fixture.RenderDevice.RestoreDeviceState();
+            }
+            else
+            {
+                Assert.True(fixture.RenderDevice.EmulateLossAndRestore());
+            }
             Assert.Equal(1, deviceObject.InvalidateCalls);
             Assert.Equal(1, deviceObject.RestoreCalls);
             Assert.Equal(0, deviceObject.DestroyCalls);

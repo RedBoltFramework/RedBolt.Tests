@@ -45,6 +45,7 @@ public sealed class Array2DTests
         Assert.Equal(7, array.GetClamped(new Vector2i(9, 9)));
         Assert.True(Unsafe.IsNullRef(ref array.GetOptional(new Vector2i(-1, 0))));
         Assert.True(Unsafe.IsNullRef(ref new Array2D<string>(3, 2).GetOptional(new Vector2i(-1, 0))));
+        Assert.Equal(9, array.GetOptional(new Vector2i(1, 1)));
         Assert.Equal(6, array.Begin().Length);
         Assert.Equal(0, array.End().Length);
         Assert.Equal(44, array.Sum());

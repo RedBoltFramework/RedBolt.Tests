@@ -79,6 +79,16 @@ public sealed class CStringTests
     }
 
     [Fact]
+    public void Format_handles_escaped_braces_alignment_and_null_arguments()
+    {
+        using var value = new CString();
+
+        value.FormatInPlace("{{{0,-4}}}:{1}", 7, null);
+
+        Assert.Equal("{7}:", value.ConvertToString());
+    }
+
+    [Fact]
     public void Static_Format_returns_formatted_string()
     {
         using var value = CString.Format("value={0}", 12);
@@ -204,6 +214,49 @@ public sealed class CStringTests
         var exception = Assert.Throws<FormatException>(() => value.FormatInPlace("value={0}", argument));
 
         Assert.Contains(nameof(HiddenAllocatingType), exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FormatInPlace_covers_empty_and_malformed_placeholder_paths()
+    {
+        using var value = new CString("seed");
+
+        value.FormatInPlace(string.Empty);
+        Assert.Equal(string.Empty, value.ConvertToString());
+
+        foreach (var format in new[] { "{", "{x}", "{0", "{2}", "{0,", "{0,+", "{0:00" })
+            Assert.ThrowsAny<FormatException>(() => value.FormatInPlace(format, 1));
+
+        Assert.Throws<FormatException>(() => value.FormatInPlace("text}"));
+        Assert.Throws<FormatException>(() => value.FormatInPlace("{0}", Array.Empty<object?>()));
+    }
+
+    [Fact]
+    public void CString_equals_handles_null_mismatched_lengths_invalid_utf16_and_other_objects()
+    {
+        using var value = new CString("abc");
+
+        Assert.False(value.Equals((CString?)null));
+        Assert.False(value.Equals((string?)null));
+        Assert.False(value.Equals("ab"));
+        Assert.False(value.Equals(new byte[] { (byte)'a' }));
+        Assert.False(value.Equals((object?)new object()));
+        Assert.False(value.Equals((object?)null));
+        Assert.False(value.Equals("\ud800"));
+        Assert.True(value.Equals("abc"u8));
+    }
+
+    [Fact]
+    public void CString_format_handles_empty_arguments_and_all_interpolated_argument_overloads()
+    {
+        using var value = new CString();
+        using var other = new CString("cstring");
+
+        value.FormatInPlace("{0}|{1}|{2}|{3}", null, other, 'x', 12);
+        Assert.Equal("|cstring|x|12", value.ConvertToString());
+
+        value.FormatInPlace($"literal {string.Empty} {other} {ReadOnlySpan<char>.Empty} {'z'} {12:D2}");
+        Assert.Equal("literal  cstring  z 12", value.ConvertToString());
     }
 
     [Fact]

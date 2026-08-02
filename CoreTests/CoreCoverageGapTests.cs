@@ -138,6 +138,10 @@ public sealed class CoreCoverageGapTests
         mutable.AddKnot(new Variant(7));
         Assert.Equal(3, mutable.GetKnots().Count);
 
+        using var emptyMutation = new Spline();
+        emptyMutation.SetKnot(new Variant(11.0f), -1);
+        Assert.Single(emptyMutation.GetKnots());
+
         using var replacement = new VariantVector { new(8.0f), new(9.0f) };
         mutable.SetKnots(replacement);
         mutable.RemoveKnot(1);

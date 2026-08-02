@@ -5,6 +5,7 @@ using RedBolt.Engine;
 using RedBolt.Logging;
 using RedBolt.Platform;
 
+[Collection(nameof(ApplicationLifecycleCollection))]
 public sealed class ApplicationCommandLineTests
 {
     [Fact]

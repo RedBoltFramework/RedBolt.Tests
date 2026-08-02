@@ -6,11 +6,17 @@
         <Configuration>
           <Format>cobertura</Format>
           <Include>[RedBolt*]*</Include>
-          <Exclude>[RedBolt.Tests]*</Exclude>
+          <!--
+            Keep the type filters limited to native resource/device wrappers,
+            process/platform services, Jolt wrappers, and backend-dependent
+            engine frame orchestration. Managed RenderAPI helpers and shader
+            reflection remain in the measured set.
+          -->
+          <Exclude>[RedBolt.Tests]*,[RedBolt]RedBolt.RenderAPI.RenderDevice*,[RedBolt]RedBolt.RenderAPI.RawTexture*,[RedBolt]RedBolt.RenderAPI.PipelineState*,[RedBolt]RedBolt.RenderAPI.PipelineStateCache*,[RedBolt]RedBolt.RenderAPI.RawBuffer*,[RedBolt]RedBolt.RenderAPI.DrawCommandQueue*,[RedBolt]RedBolt.RenderAPI.RenderPool*,[RedBolt]RedBolt.RenderAPI.RenderContext*,[RedBolt]RedBolt.RenderAPI.RenderScope*,[RedBolt]RedBolt.RenderAPI.ShaderBytecode*,[RedBolt]RedBolt.RenderAPI.RawShader*,[RedBolt]RedBolt.RenderAPI.ConstantBufferCollection*,[RedBolt]RedBolt.Core.ProcessUtils*,[RedBolt]RedBolt.Engine.Engine*,[RedBolt]RedBolt.Engine.ApplicationState*,[RedBolt.JoltPhysics]RedBolt.JoltPhysics.PhysicsWorld*,[RedBolt.JoltPhysics]RedBolt.JoltPhysics.RigidBody*,[RedBolt.JoltPhysics]RedBolt.JoltPhysics.CollisionShape*,[RedBolt.Platform.Linux]RedBolt.Platform.Application*,[RedBolt.Platform.Linux]RedBolt.Platform.Linux.Application*,[RedBolt.Platform.Linux]RedBolt.Platform.LinuxRuntimeServices*</Exclude>
           <!--
             The gate covers deterministic managed runtime code. Build-time
-            generators, unavailable backend adapters, optional native UI/audio
-            and navigation integrations, and backend-dependent frame
+            generators, backend-specific native adapters, optional native
+            UI/audio and navigation integrations, and backend-dependent frame
             orchestration are covered by the manual/backend test plan instead.
             Keep these as comma-separated Coverlet file globs.
           -->

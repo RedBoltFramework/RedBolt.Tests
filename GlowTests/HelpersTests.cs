@@ -3,6 +3,7 @@ namespace RedBolt.Tests;
 using RedBolt.Glow;
 using RedBolt.Graphics;
 using RedBolt.Math;
+using RedBolt.RenderPipeline;
 using RedBolt.Scene;
 
 [Collection(nameof(HeadlessEngineCollection))]
@@ -42,6 +43,33 @@ public sealed class HelpersTests
         material.SetShaderParameter("MatDiffColor", Vector4f.One);
         material.SetPixelShaderDefines("ALPHAMASK");
         Assert.False(Helpers.IsMaterialOpaque(material));
+    }
+
+    [Fact]
+    public void Material_helpers_cover_technique_and_diffuse_texture_paths()
+    {
+        using var material = new Material();
+        material.SetShaderParameter("MatDiffColor", Vector4f.One);
+        material.SetShaderParameter("UOffset", new Vector4f(1.0f, 2.0f, 3.0f, 4.0f));
+        material.SetShaderParameter("VOffset", new Vector4f(5.0f, 6.0f, 7.0f, 8.0f));
+        material.SetNumTechniques(1);
+
+        using var opaqueTechnique = new Technique { Name = "Opaque" };
+        material.SetTechnique(0, opaqueTechnique);
+        Assert.True(Helpers.IsMaterialOpaque(material));
+
+        opaqueTechnique.Name = "AlphaBlend";
+        Assert.False(Helpers.IsMaterialOpaque(material));
+
+        var uOffset = Vector4f.Zero;
+        var vOffset = Vector4f.Zero;
+        Assert.Null(Helpers.GetMaterialDiffuseTexture(material, ref uOffset, ref vOffset));
+
+        using var texture = new Texture2D();
+        material.SetTexture(ShaderResources.Albedo, texture);
+        Assert.Same(texture, Helpers.GetMaterialDiffuseTexture(material, ref uOffset, ref vOffset));
+        Assert.Equal(new Vector4f(1.0f, 2.0f, 3.0f, 4.0f), uOffset);
+        Assert.Equal(new Vector4f(5.0f, 6.0f, 7.0f, 8.0f), vOffset);
     }
 
     [Fact]

@@ -81,10 +81,19 @@ public sealed class ShaderProgramReflectionTests
             var cameraBuffer = reflection.GetUniformBuffer(ShaderParameterGroup.Camera);
             var customBuffer = reflection.GetUniformBuffer(ShaderParameterGroup.Custom);
 
-            Assert.NotNull(frameBuffer);
-            Assert.True(frameBuffer!.InternalName.Equals("Frame"));
-            Assert.True(frameBuffer.Size > 0);
-            Assert.True(frameBuffer.Hash != 0u);
+            if (_fixture.Graphics.GetRenderBackend() == RenderBackend.Vulkan)
+            {
+                // Vulkan SPIR-V drops the empty Frame block because its only
+                // members are optimized out of this shader variation.
+                Assert.Null(frameBuffer);
+            }
+            else
+            {
+                Assert.NotNull(frameBuffer);
+                Assert.True(frameBuffer!.InternalName.Equals("Frame"));
+                Assert.True(frameBuffer.Size > 0);
+                Assert.True(frameBuffer.Hash != 0u);
+            }
 
             Assert.NotNull(cameraBuffer);
             Assert.True(cameraBuffer!.InternalName.Equals("Camera"));
@@ -123,7 +132,7 @@ public sealed class ShaderProgramReflectionTests
         });
     }
 
-    [GraphicsFact]
+    [OpenGLFact]
     public void OpenGL_program_reflection_discovers_lightmap_scale_offset()
     {
         WithInitializedGraphics(() =>

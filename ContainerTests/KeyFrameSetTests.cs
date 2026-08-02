@@ -40,6 +40,21 @@ public sealed class KeyFrameSetTests
         Assert.False(source.IsDisposed);
     }
 
+    [Fact]
+    public void Base_clone_copies_empty_and_populated_keyframe_sets()
+    {
+        using var empty = new TestKeyFrameSet();
+        using var emptyClone = empty.Clone();
+        Assert.Empty(emptyClone.KeyFrames);
+
+        using var keyFrames = new TestKeyFrameSet();
+        keyFrames.AddKeyFrame(new TestKeyFrame { Time = 2.0f, Value = 7 });
+        using var clone = keyFrames.Clone();
+
+        Assert.Single(clone.KeyFrames);
+        Assert.Equal(keyFrames.KeyFrames[0], clone.KeyFrames[0]);
+    }
+
     private sealed class TestKeyFrameSet : KeyFrameSet<TestKeyFrame>
     {
         public TestKeyFrameSet()

@@ -67,6 +67,27 @@ public class HeadlessEngineFixture : IDisposable
 
 }
 
+internal static class TestGraphicsBackend
+{
+    public static RenderBackend Current
+    {
+        get
+        {
+            var value = Environment.GetEnvironmentVariable("REDBOLT_TEST_GRAPHICS_API");
+            if (string.IsNullOrWhiteSpace(value))
+                return RenderBackend.OpenGL;
+
+            return value.Trim().ToLowerInvariant() switch
+            {
+                "opengl" or "gl" => RenderBackend.OpenGL,
+                "vulkan" or "vk" => RenderBackend.Vulkan,
+                _ => throw new InvalidOperationException(
+                    $"Unsupported REDBOLT_TEST_GRAPHICS_API '{value}'. Expected 'opengl' or 'vulkan'.")
+            };
+        }
+    }
+}
+
 [CollectionDefinition(nameof(HeadlessEngineCollection), DisableParallelization = true)]
 public sealed class HeadlessEngineCollection : ICollectionFixture<HeadlessEngineFixture>
 {
@@ -77,7 +98,7 @@ public sealed class GraphicsEngineFixture : HeadlessEngineFixture
     private readonly EngineParameters _defaultGraphicsParameters = new()
     {
         ApplicationName = "RedBolt.Tests",
-        RenderBackend = RenderBackend.OpenGL,
+        RenderBackend = TestGraphicsBackend.Current,
         FullScreen = false,
         Borderless = false,
         MultiSample = 1,
@@ -99,6 +120,8 @@ public sealed class GraphicsEngineFixture : HeadlessEngineFixture
 
     public void InitializeGraphics(EngineParameters parameters)
     {
+        ArgumentNullException.ThrowIfNull(parameters);
+        parameters.RenderBackend ??= TestGraphicsBackend.Current;
         parameters.WindowHidden = true;
         if (Graphics.IsInitialized)
         {
@@ -137,9 +160,26 @@ public sealed class GraphicsEngineFixture : HeadlessEngineFixture
             MultiSample = parameters.MultiSample,
             SRgb = true
         };
+        var requestedShaderPolicy = parameters.ShaderPolicy switch
+        {
+            nameof(ShaderTranslationPolicy.Translate) => ShaderTranslationPolicy.Translate,
+            nameof(ShaderTranslationPolicy.Optimize) => ShaderTranslationPolicy.Optimize,
+            nameof(ShaderTranslationPolicy.Verbatim) => ShaderTranslationPolicy.Verbatim,
+            _ => (ShaderTranslationPolicy?)null
+        };
+        Graphics.Configure(new GraphicsSettings
+        {
+            RenderDevice = deviceSettings,
+            ShaderTranslationPolicy = RenderAPIUtils.SelectShaderTranslationPolicy(
+                deviceSettings.Backend, requestedShaderPolicy),
+            ShaderCacheDir = FileIdentifier.FromUri(parameters.ShaderCacheDir),
+            LogShaderSources = parameters.ShaderLogSources,
+            ValidateShaders = parameters.ValidateShaders,
+            DiscardShaderCache = parameters.DiscardShaderCache,
+            CacheShaders = parameters.SaveShaderCache
+        });
         Graphics.Initialize(parameters, deviceSettings, windowSettings, Input);
         Graphics.InitializePipelineStateCache(FileIdentifier.FromUri(parameters.PsoCache));
-        RenderDevice.RestoreDeviceState();
     }
 
     public void ResetGraphics()

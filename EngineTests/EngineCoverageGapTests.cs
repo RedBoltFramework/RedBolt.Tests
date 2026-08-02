@@ -1,6 +1,6 @@
 namespace RedBolt.Tests;
 
-using System.Threading.Tasks;
+using System.Threading;
 
 using RedBolt;
 using RedBolt.Container;
@@ -548,7 +548,9 @@ public sealed class EngineCoverageGapTests
 
         using var rejected = new BlockingState();
         using var bundle = new StringVariantMap();
-        Task.Run(() => manager.EnqueueState(rejected, bundle)).GetAwaiter().GetResult();
+        var worker = new Thread(() => manager.EnqueueState(rejected, bundle));
+        worker.Start();
+        worker.Join();
         Assert.Null(manager.State);
         manager.EnqueueState((ApplicationState?)null, bundle);
         Assert.Null(manager.State);
@@ -558,23 +560,26 @@ public sealed class EngineCoverageGapTests
     [GraphicsFact]
     public void Engine_uses_default_graphics_tweak_values_when_json_is_invalid()
     {
-        using var engine = new Engine();
-        Assert.True(engine.Initialize(new EngineParameters
+        foreach (var shaderPolicy in new[] { "Translate", "Optimize", "Verbatim", "UnsupportedPolicy" })
         {
-            ApplicationName = "RedBolt.EngineCoverage.GraphicsFallback",
-            ConfigName = string.Empty,
-            Headless = false,
-            RenderBackend = RenderBackend.OpenGL,
-            TweakD3D12 = "[",
-            TweakVulkan = "{",
-            ShaderPolicy = "UnsupportedPolicy",
-            WindowHidden = true,
-            WindowWidth = 64,
-            WindowHeight = 64,
-            LogName = "none://"
-        }));
+            using var engine = new Engine();
+            Assert.True(engine.Initialize(new EngineParameters
+            {
+                ApplicationName = "RedBolt.EngineCoverage.GraphicsFallback",
+                ConfigName = string.Empty,
+                Headless = false,
+                RenderBackend = RenderBackend.OpenGL,
+                TweakD3D12 = "[",
+                TweakVulkan = "{",
+                ShaderPolicy = shaderPolicy,
+                WindowHidden = true,
+                WindowWidth = 64,
+                WindowHeight = 64,
+                LogName = "none://"
+            }));
 
-        Assert.False(engine.IsHeadless);
+            Assert.False(engine.IsHeadless);
+        }
     }
 
     private static ConfigFile.ConfigFlavor CreateFlavor(string pattern, int value)

@@ -56,6 +56,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="scripts/coverage-merge/**/*.cs" />
     <None Remove="xunit.runner.json" />
     <None Remove="VisualRegression/References/**/*.png" />
     <None Remove="VisualRegression/References/**/*_shot.png" />

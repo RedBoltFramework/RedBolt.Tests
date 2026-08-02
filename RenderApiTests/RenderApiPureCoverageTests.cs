@@ -14,6 +14,7 @@ using DiligentFillMode = global::RedBolt.Bindings.Diligent.FillMode;
 using DiligentPrimitiveTopology = global::RedBolt.Bindings.Diligent.PrimitiveTopology;
 using DiligentShaderCodeBasicType = global::RedBolt.Bindings.Diligent.ShaderCodeBasicType;
 using DiligentShaderCodeVariableClass = global::RedBolt.Bindings.Diligent.ShaderCodeVariableClass;
+using DiligentShaderCodeVariableDesc = global::RedBolt.Bindings.Diligent.ShaderCodeVariableDesc;
 using DiligentShaderType = global::RedBolt.Bindings.Diligent.ShaderType;
 using DiligentStencilOp = global::RedBolt.Bindings.Diligent.StencilOp;
 using DiligentValueType = global::RedBolt.Bindings.Diligent.ValueType;
@@ -99,6 +100,25 @@ public sealed class RenderApiPureCoverageTests
         Assert.Equal(
             DiligentBindFlags.BindVertexBuffer | DiligentBindFlags.BindUnorderedAccess,
             flags);
+    }
+
+    [Fact]
+    public void Raw_buffer_rejects_dynamic_uav_and_initial_data_combinations()
+    {
+        Assert.ThrowsAny<Exception>(() =>
+            new RawBuffer(
+                new RawBufferParams(
+                    BufferType.Vertex,
+                    16,
+                    4,
+                    BufferFlag.Dynamic | BufferFlag.BindUnorderedAccess),
+                flags: DeviceObjectFlag.Headless));
+
+        Assert.ThrowsAny<Exception>(() =>
+            new RawBuffer(
+                new RawBufferParams(BufferType.Vertex, 16, 4, BufferFlag.Dynamic),
+                new byte[16],
+                DeviceObjectFlag.Headless));
     }
 
     [Fact]
@@ -200,6 +220,36 @@ public sealed class RenderApiPureCoverageTests
     }
 
     [Fact]
+    public void Shader_reflection_uniform_size_fallbacks_cover_arrays_and_unknown_classes()
+    {
+        var method = PrivateStaticMethod<ShaderProgramReflection>(
+            "GetUniformSize", typeof(DiligentShaderCodeVariableDesc));
+
+        Assert.Equal(32, Invoke<int>(method, CreateVariable(
+            DiligentShaderCodeVariableClass.ShaderCodeVariableClassScalar, arraySize: 2)));
+        Assert.Equal(32, Invoke<int>(method, CreateVariable(
+            DiligentShaderCodeVariableClass.ShaderCodeVariableClassVector, arraySize: 2, numColumns: 2)));
+        Assert.Equal(64, Invoke<int>(method, CreateVariable(
+            DiligentShaderCodeVariableClass.ShaderCodeVariableClassMatrixColumns,
+            arraySize: 2, numRows: 3, numColumns: 2)));
+        Assert.Equal(64, Invoke<int>(method, CreateVariable(
+            DiligentShaderCodeVariableClass.ShaderCodeVariableClassMatrixRows,
+            arraySize: 2, numRows: 2, numColumns: 3)));
+        Assert.Equal(0, Invoke<int>(method, CreateVariable(
+            (DiligentShaderCodeVariableClass)99, arraySize: 2)));
+        Assert.Equal(32, Invoke<int>(method, CreateVariable(
+            DiligentShaderCodeVariableClass.ShaderCodeVariableClassMatrixRows,
+            numRows: 2, numColumns: 3)));
+    }
+
+    [Fact]
+    public void Shader_reflection_constructor_disposes_when_shader_enumeration_throws()
+    {
+        Assert.Throws<InvalidOperationException>(() =>
+            new ShaderProgramReflection(ThrowingShaders()));
+    }
+
+    [Fact]
     public void Render_api_value_keys_and_sampler_descriptors_cover_copy_and_hash_paths()
     {
         var defaultSampler = SamplerStateDesc.Default();
@@ -256,6 +306,39 @@ public sealed class RenderApiPureCoverageTests
             DiligentComponentType.ComponentTypeCompressed, false, 4, 4);
         Assert.Equal(4, uncompressed.GetElementSize());
         Assert.Equal(8, compressed.GetElementSize());
+    }
+
+    [Fact]
+    public void Render_api_helpers_cover_platform_and_policy_fallback_branches()
+    {
+        Assert.False(RenderAPIUtils.IsOpenGLESBackend(RenderBackend.OpenGL));
+        Assert.False(RenderAPIUtils.IsOpenGLESBackend(RenderBackend.Vulkan));
+        Assert.False(RenderAPIUtils.IsMetalBackend(RenderBackend.Vulkan));
+        Assert.False(RenderAPIUtils.IsMetalBackend(RenderBackend.OpenGL));
+
+        Assert.Equal(
+            ShaderTranslationPolicy.Verbatim,
+            RenderAPIUtils.SelectShaderTranslationPolicy(
+                RenderBackend.OpenGL, (ShaderTranslationPolicy)99));
+    }
+
+    [Fact]
+    public void Sampler_descriptors_cover_invalid_coordinates_and_capacity_guard()
+    {
+        var sampler = new SamplerStateDesc();
+        var invalidCoordinate = (TextureCoordinate)99;
+        Assert.Throws<ArgumentOutOfRangeException>(() => _ = sampler[invalidCoordinate]);
+        Assert.Throws<ArgumentOutOfRangeException>(() => sampler[invalidCoordinate] = ApiTextureAddressMode.Clamp);
+
+        var samplers = new ImmutableSamplersDesc();
+        for (var index = 0; index < RenderApiLimits.MaxNumImmutableSamplers; ++index)
+            samplers.Add(new StringHash($"Sampler{index}"), SamplerStateDesc.Default());
+
+        Assert.Equal(RenderApiLimits.MaxNumImmutableSamplers, samplers.Size);
+        var overflowException = Record.Exception(() =>
+            samplers.Add(new StringHash("Overflow"), SamplerStateDesc.Default()));
+        Assert.True(overflowException is null || overflowException.GetType().Name == "DebugAssertException");
+        Assert.Equal(RenderApiLimits.MaxNumImmutableSamplers, samplers.Size);
     }
 
     [Fact]
@@ -719,5 +802,25 @@ public sealed class RenderApiPureCoverageTests
             _ => throw new ArgumentOutOfRangeException(nameof(name))
         };
         return InvokePrivateStatic<ShaderProgramReflection, int>(name, parameterTypes, arguments);
+    }
+
+    private static DiligentShaderCodeVariableDesc CreateVariable(
+        DiligentShaderCodeVariableClass variableClass,
+        uint arraySize = 0,
+        int numRows = 1,
+        int numColumns = 1)
+    {
+        var variable = new DiligentShaderCodeVariableDesc();
+        variable.Class = variableClass;
+        variable.BasicType = DiligentShaderCodeBasicType.ShaderCodeBasicTypeFloat;
+        variable.ArraySize = arraySize;
+        variable.NumRows = checked((byte)numRows);
+        variable.NumColumns = checked((byte)numColumns);
+        return variable;
+    }
+
+    private static IEnumerable<RawShader?> ThrowingShaders()
+    {
+        throw new InvalidOperationException("synthetic shader enumeration failure");
     }
 }

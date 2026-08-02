@@ -30,8 +30,8 @@ public sealed class VisualRegressionTextureTests
 
         fixture.AssertMatches(
             new VisualRegressionImageCapture(firstLayer, "textures/array-layer-first.png"),
-            new VisualRegressionImageCapture(middleLayer, "textures/array-layer-middle.png"),
-            new VisualRegressionImageCapture(lastLayer, "textures/array-layer-last.png"));
+            new VisualRegressionImageCapture(middleLayer, "textures/array-layer-middle.png", BackendSpecific: true),
+            new VisualRegressionImageCapture(lastLayer, "textures/array-layer-last.png", BackendSpecific: true));
     }
 
     [VisualFact]
@@ -115,7 +115,7 @@ public sealed class VisualRegressionTextureTests
         fixture.AssertMatches(
             new VisualRegressionImageCapture(unorm, "textures/format-rgba8.png"),
             new VisualRegressionImageCapture(compressed, "textures/format-dxt1.png"),
-            new VisualRegressionImageCapture(packed, "textures/format-rgb10a2.png"),
+            new VisualRegressionImageCapture(packed, "textures/format-rgb10a2.png", BackendSpecific: true),
             new VisualRegressionImageCapture(floatingPoint, "textures/format-rgba-f16.png"));
     }
 

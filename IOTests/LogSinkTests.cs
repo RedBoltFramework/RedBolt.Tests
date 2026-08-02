@@ -7,6 +7,7 @@ using RedBolt.Core;
 using RedBolt.Engine;
 using RedBolt.Logging;
 using RedBolt.Platform;
+using IOEvents = RedBolt.IO.IOEvents;
 
 [Collection(nameof(HeadlessEngineCollection))]
 public sealed class LogSinkTests
@@ -187,6 +188,78 @@ public sealed class LogSinkTests
         Assert.False(File.Exists(Path.Combine(scope.DirectoryPath, "unsupported.log")));
     }
 
+    [Fact]
+    public void Logger_formatting_and_invalid_levels_cover_managed_logging_edges()
+    {
+        using var scope = new TestArtifactScope(nameof(Logger_formatting_and_invalid_levels_cover_managed_logging_edges));
+        var fileName = Path.Combine(scope.DirectoryPath, "format.log");
+
+        WithLog(true, log =>
+        {
+            log.SetQuiet(true);
+            log.SetLevel(LogLevel.Trace);
+            log.SetLogFormat("%v");
+            var parameters = new LogFileParams { RotateOnOpen = false, MaxFiles = 0 };
+            log.Open(fileName, in parameters);
+
+            var logger = Log.GetLogger("format");
+            logger.Info("plain");
+            logger.Info("escaped {{value}} {0} {1}", "inserted", null);
+            logger.Info("unclosed {", "ignored");
+            logger.Write((LogLevel)999, "invalid-level");
+            log.SetLevel((LogLevel)999);
+
+            logger.Log(Microsoft.Extensions.Logging.LogLevel.Information, default, "microsoft", null,
+                static (state, _) => state);
+            logger.Log(Microsoft.Extensions.Logging.LogLevel.Error, default, "microsoft-error",
+                new InvalidOperationException("expected"), static (state, _) => state);
+            logger.Log(Microsoft.Extensions.Logging.LogLevel.Trace, default, "microsoft-trace", null,
+                static (state, _) => state);
+            logger.Log(Microsoft.Extensions.Logging.LogLevel.Debug, default, "microsoft-debug", null,
+                static (state, _) => state);
+            logger.Log(Microsoft.Extensions.Logging.LogLevel.Warning, default, "microsoft-warning", null,
+                static (state, _) => state);
+            logger.Log(Microsoft.Extensions.Logging.LogLevel.Critical, default, "microsoft-critical", null,
+                static (state, _) => state);
+            logger.Log(Microsoft.Extensions.Logging.LogLevel.None, default, "microsoft-none", null,
+                static (state, _) => state);
+            logger.Log(LogLevel.Info, default, "native", null, static (state, _) => state);
+            logger.Log(LogLevel.Error, default, "native-error", new InvalidOperationException("expected"),
+                static (state, _) => state);
+            logger.Write(LogLevel.None, "native-none");
+            logger.Write(LogLevel.MaxLogLevels, "native-max");
+            logger.Write((LogLevel)(-1), "native-negative");
+
+            var receiver = new LogEventReceiver(log);
+            logger.Info("recursive");
+            receiver.Dispose();
+
+            var worker = new Thread(log.PumpThreadMessages);
+            worker.Start();
+            worker.Join();
+            log.SendMessageEvent(LogLevel.None, 0, "invalid", "ignored");
+            log.SendMessageEvent((LogLevel)(-1), 0, "invalid-negative", "ignored");
+            log.Close();
+        });
+
+        Assert.Contains("plain", File.ReadAllLines(fileName));
+
+        var previous = Context.Instance;
+        var context = new Context();
+        Context.SetInstance(context);
+        try
+        {
+            Log.GetLogger("without-log").Info("ignored");
+            using var noLog = new Log();
+            noLog.SendMessageEvent(LogLevel.Info, 0, "no-log-subsystem", "ignored");
+        }
+        finally
+        {
+            Context.SetInstance(previous);
+            context.Dispose();
+        }
+    }
+
     private static void WithLog(bool supportsFileLogging, Action<Log> action)
     {
         SetMainThreadMethod.Invoke(null, null);
@@ -205,6 +278,22 @@ public sealed class LogSinkTests
             log.Dispose();
             Context.SetInstance(previous);
             context.Dispose();
+        }
+    }
+
+    private sealed class LogEventReceiver : RedObject
+    {
+        private readonly Log _log;
+
+        public LogEventReceiver(Log log)
+        {
+            _log = log;
+            SubscribeToEvent<IOEvents.LogMessage>(_log, HandleLogMessage);
+        }
+
+        private void HandleLogMessage(ref IOEvents.LogMessage _)
+        {
+            _log.SendMessageEvent(LogLevel.Info, 0, "recursive", "ignored");
         }
     }
 

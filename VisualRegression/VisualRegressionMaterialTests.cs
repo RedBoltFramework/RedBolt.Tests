@@ -129,7 +129,7 @@ public sealed class VisualRegressionMaterialTests
         using var flat = normal.Clone("VisualRegression.FlatMapped");
         flat.SetTexture("Normal", null);
         using var pbr = fixture.Resources.Get<Material>("Materials/CheckboardProperties.xml").Clone(
-            "VisualRegression.PropertiesMapped");
+            "VisualRegression.PbrProperties");
 
         var node = scene.CreateChild("Surface");
         node.SetScale(1.5f);
@@ -265,6 +265,25 @@ public sealed class VisualRegressionMaterialTests
             new Vector3f(0.0f, 0.0f, 0.9f), 1.8f);
         using var material = fixture.Resources.Get<Material>("Materials/Constant/MattTransparent.xml")
             .Clone("VisualRegression.DepthCompareModes");
+        using var technique = material.GetTechnique(0)!.Clone("VisualRegression.DepthCompareModes");
+        var sourcePass = Assert.IsType<Pass>(technique.GetPass("alpha"));
+        var pass = technique.CreatePass("postopaque");
+        pass.SetCullMode(sourcePass.CullMode);
+        pass.SetBlendMode(sourcePass.BlendMode);
+        pass.SetDepthTestMode(sourcePass.DepthTestMode);
+        pass.SetColorWrite(sourcePass.ColorWrite);
+        pass.SetDepthWrite(sourcePass.DepthWrite);
+        pass.SetAlphaToCoverage(sourcePass.AlphaToCoverage);
+        pass.SetVertexShader(sourcePass.VertexShader);
+        pass.SetPixelShader(sourcePass.PixelShader);
+        pass.SetVertexShaderDefines(sourcePass.VertexShaderDefines);
+        pass.SetPixelShaderDefines(sourcePass.PixelShaderDefines);
+        pass.SetVertexShaderDefineExcludes(sourcePass.VertexShaderDefineExcludes);
+        pass.SetPixelShaderDefineExcludes(sourcePass.PixelShaderDefineExcludes);
+        pass.SetVertexTextureDefines(sourcePass.VertexTextureDefines);
+        pass.SetPixelTextureDefines(sourcePass.PixelTextureDefines);
+        technique.RemovePass("alpha");
+        material.SetTechnique(0, technique);
         material.SetShaderParameter("MatDiffColor", new Vector4f(1.0f, 0.15f, 0.05f, 0.55f));
         var node = scene.CreateChild("DepthCompareBox");
         node.SetPosition(new Vector3f(0.0f, 0.0f, -0.1f));
@@ -272,7 +291,6 @@ public sealed class VisualRegressionMaterialTests
         var model = node.CreateComponent<StaticModel>();
         model.SetModel(fixture.Resources.Get<Model>("Models/Box.mdl"));
         model.SetMaterial(material);
-        var pass = Assert.IsType<Pass>(material.GetTechnique(0)?.GetPass("alpha"));
 
         var captures = new List<VisualRegressionImageCapture>(8);
         foreach (var (mode, name) in new[]
@@ -415,7 +433,7 @@ public sealed class VisualRegressionMaterialTests
             new VisualRegressionImageCapture(normal, "materials/defines-normal-map.png"),
             new VisualRegressionImageCapture(pbr, "materials/defines-pbr-properties.png"),
             new VisualRegressionImageCapture(emissive, "materials/defines-emissive.png"),
-            new VisualRegressionImageCapture(invalid, "materials/defines-invalid-fallback.png"));
+            new VisualRegressionImageCapture(invalid, "materials/defines-invalid-fallback.png", BackendSpecific: true));
     }
 
     private static VisualRegressionImage CaptureMaterial(

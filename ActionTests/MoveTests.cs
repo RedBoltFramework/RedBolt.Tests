@@ -198,6 +198,7 @@ public partial class MoveTests
             action.SetPositionDelta(new Vector3f(4.0f, 6.0f, 8.0f));
             manager.AddAction(action, target);
             manager.Update(0.0f);
+            manager.Update(0.5f);
             Assert.Equal(new Vector2f(5.0f, 8.0f), target.Position2);
         }
 
@@ -208,6 +209,7 @@ public partial class MoveTests
             action.SetPositionDelta(new Vector3f(4.0f, 6.0f, 8.0f));
             manager.AddAction(action, target);
             manager.Update(0.0f);
+            manager.Update(0.5f);
             Assert.Equal(new Vector2i(5, 8), target.Position2i);
         }
 
@@ -218,6 +220,7 @@ public partial class MoveTests
             action.SetPositionDelta(new Vector3f(4.0f, 6.0f, 8.0f));
             manager.AddAction(action, target);
             manager.Update(0.0f);
+            manager.Update(0.5f);
             Assert.Equal(new Vector3i(5, 8, 11), target.Position3i);
         }
     }

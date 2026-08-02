@@ -121,7 +121,10 @@ public sealed class RawShaderTests
 
             var bytecode = vertexShader.GetBytecode();
             Assert.Equal(ShaderType.VS, bytecode.Type);
-            Assert.Equal("application/glsl", bytecode.Mime);
+            var expectedMime = _fixture.Graphics.GetRenderBackend() == RenderBackend.Vulkan
+                ? "application/spirv"
+                : "application/glsl";
+            Assert.Equal(expectedMime, bytecode.Mime);
             if (bytecode.VertexAttributes.Count == 0
                 && _fixture.Graphics.GetSupportedMultiSample(TextureFormat.TexFormatRgba8Unorm, 4) <= 1)
                 return;

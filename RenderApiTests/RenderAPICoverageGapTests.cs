@@ -413,6 +413,65 @@ public sealed class RenderAPICoverageGapTests
             RenderAPIUtils.SerializeValue(output, null!, ref descriptorPool));
     }
 
+    [Fact]
+    public void Serialization_helpers_initialize_missing_optional_settings_on_input()
+    {
+        using var vulkanInput = new TestJSONInputArchive(
+            "{\"settings\":{\"mainDescriptorPoolSize\":{\"maxDescriptorSets\":0," +
+            "\"numSeparateSamplerDescriptors\":0,\"numCombinedSamplerDescriptors\":0," +
+            "\"numSampledImageDescriptors\":0,\"numStorageImageDescriptors\":0," +
+            "\"numUniformBufferDescriptors\":0,\"numStorageBufferDescriptors\":0," +
+            "\"numUniformTexelBufferDescriptors\":0,\"numStorageTexelBufferDescriptors\":0," +
+            "\"numInputAttachmentDescriptors\":0,\"numAccelStructDescriptors\":0}," +
+            "\"dynamicDescriptorPoolSize\":{\"maxDescriptorSets\":0," +
+            "\"numSeparateSamplerDescriptors\":0,\"numCombinedSamplerDescriptors\":0," +
+            "\"numSampledImageDescriptors\":0,\"numStorageImageDescriptors\":0," +
+            "\"numUniformBufferDescriptors\":0,\"numStorageBufferDescriptors\":0," +
+            "\"numUniformTexelBufferDescriptors\":0,\"numStorageTexelBufferDescriptors\":0," +
+            "\"numInputAttachmentDescriptors\":0,\"numAccelStructDescriptors\":0}," +
+            "\"deviceLocalMemoryPageSize\":0,\"hostVisibleMemoryPageSize\":0," +
+            "\"deviceLocalMemoryReserveSize\":0,\"hostVisibleMemoryReserveSize\":0," +
+            "\"uploadHeapPageSize\":0,\"dynamicHeapSize\":0,\"dynamicHeapPageSize\":0," +
+            "\"queryPoolSize_occlusion\":0,\"queryPoolSize_binaryOcclusion\":0," +
+            "\"queryPoolSize_timestamp\":0,\"queryPoolSize_pipelineStatistics\":0," +
+            "\"queryPoolSize_duration\":0}}");
+        var vulkan = new RenderDeviceSettingsVulkan();
+        using (vulkanInput.OpenUnorderedBlock("Root"))
+            RenderAPIUtils.SerializeValue(vulkanInput, "settings", ref vulkan);
+
+        using var d3dInput = new TestJSONInputArchive(
+            "{\"settings\":{" +
+            "\"mainDescriptorPoolSize_cvb_srv_uav\":0,\"mainDescriptorPoolSize_sampler\":0," +
+            "\"mainDescriptorPoolSize_rtv\":0,\"mainDescriptorPoolSize_dsv\":0," +
+            "\"gpuDescriptorHeapSize_cvb_srv_uav\":0,\"gpuDescriptorHeapSize_sampler\":0," +
+            "\"gpuDescriptorHeapDynamicSize_cvb_srv_uav\":0,\"gpuDescriptorHeapDynamicSize_sampler\":0," +
+            "\"dynamicDescriptorAllocationChunkSize_cvb_srv_uav\":0," +
+            "\"dynamicDescriptorAllocationChunkSize_sampler\":0,\"dynamicHeapPageSize\":0," +
+            "\"numDynamicHeapPagesToReserve\":0,\"queryPoolSize_occlusion\":0," +
+            "\"queryPoolSize_binaryOcclusion\":0,\"queryPoolSize_timestamp\":0," +
+            "\"queryPoolSize_pipelineStatistics\":0,\"queryPoolSize_duration\":0}}");
+        var d3d = new RenderDeviceSettingsD3D12();
+        using (d3dInput.OpenUnorderedBlock("Root"))
+            RenderAPIUtils.SerializeValue(d3dInput, "settings", ref d3d);
+
+        Assert.NotNull(vulkan.MainDescriptorPoolSize);
+        Assert.NotNull(vulkan.DynamicDescriptorPoolSize);
+        var queryIndices = new[]
+        {
+            (int)global::RedBolt.Bindings.Diligent.QueryType.QueryTypeOcclusion,
+            (int)global::RedBolt.Bindings.Diligent.QueryType.QueryTypeBinaryOcclusion,
+            (int)global::RedBolt.Bindings.Diligent.QueryType.QueryTypeTimestamp,
+            (int)global::RedBolt.Bindings.Diligent.QueryType.QueryTypePipelineStatistics,
+            (int)global::RedBolt.Bindings.Diligent.QueryType.QueryTypeDuration
+        };
+        foreach (var index in queryIndices)
+            Assert.Equal(0, vulkan.QueryPoolSizes[index]);
+        for (var index = 0; index < 4; ++index)
+            Assert.Equal(0, d3d.CpuDescriptorHeapAllocationSize[index]);
+        foreach (var index in queryIndices)
+            Assert.Equal(0, d3d.QueryPoolSizes[index]);
+    }
+
     private static VulkanDescriptorPoolSize MakeDescriptorPoolSize(int value)
     {
         return new VulkanDescriptorPoolSize

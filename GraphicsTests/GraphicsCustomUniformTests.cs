@@ -25,7 +25,10 @@ public sealed class GraphicsCustomUniformTests
             var layout = CreateLayout("P_Outline", "URHO3D_GEOMETRY_STATIC");
             var fields = GetFields(layout);
 
-            Assert.Equal<uint>(16u, (uint)(GetProperty(layout, "Size") ?? 0u));
+            // Vulkan SPIR-V reports the vec2 block's active range (8 bytes), while
+            // OpenGL's std140 reflection includes the trailing block alignment.
+            var expectedSize = _fixture.Graphics.GetRenderBackend() == RenderBackend.Vulkan ? 8u : 16u;
+            Assert.Equal<uint>(expectedSize, (uint)(GetProperty(layout, "Size") ?? 0u));
             Assert.Single(fields);
             Assert.Equal("InputInvSize", GetProperty(fields[0], "UniformName"));
             Assert.Equal("InputInvSize", GetProperty(fields[0], "ParameterName"));
@@ -41,7 +44,8 @@ public sealed class GraphicsCustomUniformTests
             var layout = CreateLayout("P_Outline", "URHO3D_GEOMETRY_STATIC", includeVertexShader: false);
             var fields = GetFields(layout);
 
-            Assert.Equal<uint>(16u, (uint)(GetProperty(layout, "Size") ?? 0u));
+            var expectedSize = _fixture.Graphics.GetRenderBackend() == RenderBackend.Vulkan ? 8u : 16u;
+            Assert.Equal<uint>(expectedSize, (uint)(GetProperty(layout, "Size") ?? 0u));
             Assert.Single(fields);
             Assert.Equal("InputInvSize", GetProperty(fields[0], "UniformName"));
             Assert.Equal("InputInvSize", GetProperty(fields[0], "ParameterName"));

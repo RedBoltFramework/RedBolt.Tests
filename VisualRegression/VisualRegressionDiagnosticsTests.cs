@@ -53,7 +53,7 @@ public sealed class VisualRegressionDiagnosticsTests
             scene, new Vector3f(0.0f, 0.0f, -5.0f), Vector3f.Zero, 256.0f / 192.0f,
             orthographic: true, orthoSize: 3.2f);
 
-        fixture.AssertMatches(scene, camera, "diagnostics/debug-geometry.png");
+        fixture.AssertMatches(scene, camera, "diagnostics/debug-geometry.png", backendSpecific: true);
     }
 
     [VisualFact]
@@ -128,7 +128,7 @@ public sealed class VisualRegressionDiagnosticsTests
             octree.GetDrawables(query);
         Assert.Equal(positions.Length, allResults.Count);
 
-        fixture.AssertMatches(scene, camera, "diagnostics/octree-query-shapes.png");
+        fixture.AssertMatches(scene, camera, "diagnostics/octree-query-shapes.png", backendSpecific: true);
     }
 
     private static void DrawBounds(DebugRenderer debug, IEnumerable<Drawable> drawables, Color color)

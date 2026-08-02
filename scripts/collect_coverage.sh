@@ -48,7 +48,7 @@ branch_rate="$(printf '%s\n' "$coverage_header" | sed -n 's/.*branch-rate="\([^"
 lines_covered="$(printf '%s\n' "$coverage_header" | sed -n 's/.*lines-covered="\([^"]*\)".*/\1/p')"
 lines_valid="$(printf '%s\n' "$coverage_header" | sed -n 's/.*lines-valid="\([^"]*\)".*/\1/p')"
 
-minimum_coverage="${REDBOLT_COVERAGE_MINIMUM:-80}"
+minimum_coverage="${REDBOLT_COVERAGE_MINIMUM:-95}"
 
 awk -v line_rate="$line_rate" -v branch_rate="$branch_rate" \
     -v lines_covered="$lines_covered" -v lines_valid="$lines_valid" \

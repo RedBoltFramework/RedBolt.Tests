@@ -1,7 +1,9 @@
 namespace RedBolt.Tests;
 
+using RedBolt.RenderAPI;
+
 /// <summary>
-/// Discovery-time gate for tests that construct the hidden SDL/OpenGL fixture.
+/// Discovery-time gate for tests that construct the hidden SDL graphics fixture.
 /// Keeping the decision in the fact attribute prevents xUnit from constructing
 /// a graphics collection fixture on a display-free worker.
 /// </summary>
@@ -10,9 +12,25 @@ internal sealed class GraphicsFactAttribute : Xunit.FactAttribute
 {
     public GraphicsFactAttribute()
     {
+        if (TestGraphicsBackend.Current == RenderBackend.Vulkan
+            && !IsEnabled("REDBOLT_RUN_VULKAN_GRAPHICS_TESTS"))
+        {
+            Skip = "Set REDBOLT_RUN_VULKAN_GRAPHICS_TESTS=1 to run Vulkan graphics tests; the backend shares one Diligent device per test process.";
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY"))
             && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
             Skip = "Native graphics tests require a display; use run_visual_tests_offscreen.sh for llvmpipe.";
+    }
+
+    private static bool IsEnabled(string name)
+    {
+        var value = Environment.GetEnvironmentVariable(name);
+        return value is not null &&
+            (value.Equals("1", StringComparison.OrdinalIgnoreCase) ||
+             value.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+             value.Equals("yes", StringComparison.OrdinalIgnoreCase));
     }
 }
 
@@ -21,6 +39,39 @@ internal sealed class GraphicsTheoryAttribute : Xunit.TheoryAttribute
 {
     public GraphicsTheoryAttribute()
     {
+        if (TestGraphicsBackend.Current == RenderBackend.Vulkan
+            && !IsEnabled("REDBOLT_RUN_VULKAN_GRAPHICS_TESTS"))
+        {
+            Skip = "Set REDBOLT_RUN_VULKAN_GRAPHICS_TESTS=1 to run Vulkan graphics tests; the backend shares one Diligent device per test process.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY"))
+            && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
+            Skip = "Native graphics tests require a display; use run_visual_tests_offscreen.sh for llvmpipe.";
+    }
+
+    private static bool IsEnabled(string name)
+    {
+        var value = Environment.GetEnvironmentVariable(name);
+        return value is not null &&
+            (value.Equals("1", StringComparison.OrdinalIgnoreCase) ||
+             value.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+             value.Equals("yes", StringComparison.OrdinalIgnoreCase));
+    }
+}
+
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+internal sealed class OpenGLFactAttribute : Xunit.FactAttribute
+{
+    public OpenGLFactAttribute()
+    {
+        if (TestGraphicsBackend.Current != RenderBackend.OpenGL)
+        {
+            Skip = "This test exercises an OpenGL-specific native reflection API.";
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY"))
             && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
             Skip = "Native graphics tests require a display; use run_visual_tests_offscreen.sh for llvmpipe.";
@@ -83,6 +134,12 @@ internal sealed class DiligentGraphicsFactAttribute : Xunit.FactAttribute
 {
     public DiligentGraphicsFactAttribute()
     {
+        if (TestGraphicsBackend.Current != RenderBackend.OpenGL)
+        {
+            Skip = "The Diligent smoke test exercises the OpenGL backend; use the OpenGL coverage run.";
+            return;
+        }
+
         if (!IsEnabled("REDBOLT_RUN_DILIGENT_GL_SMOKE"))
         {
             Skip = "Set REDBOLT_RUN_DILIGENT_GL_SMOKE=1 to enable the Diligent OpenGL smoke gate.";

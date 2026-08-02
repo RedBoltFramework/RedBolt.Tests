@@ -209,7 +209,7 @@ public sealed class PipelineStateCacheTests
         Assert.NotSame(firstState, secondState);
     }
 
-    [GraphicsFact]
+    [OpenGLFact]
     public void Pipeline_state_cache_matches_unavailable_native_cache_lifecycle()
     {
         _fixture.PipelineStateCache.Initialize([1, 2, 3]);

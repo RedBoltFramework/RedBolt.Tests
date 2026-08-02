@@ -108,7 +108,7 @@ public sealed class VisualRegressionEnvironmentTests
 
         fixture.AssertMatches(
             new VisualRegressionImageCapture(skymeshImage, "environment/skymesh.png"),
-            new VisualRegressionImageCapture(skyplaneImage, "environment/skyplane.png"));
+            new VisualRegressionImageCapture(skyplaneImage, "environment/skyplane.png", BackendSpecific: true));
     }
 
     [VisualFact]

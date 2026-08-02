@@ -28,6 +28,37 @@ public class VectorParityTests
     }
 
     [Fact]
+    public void RealVectorsNormalize_and_report_special_components_at_boundaries()
+    {
+        var vector2 = new Vector2f(3.0f, 4.0f);
+        vector2.Normalize();
+        Assert.Equal(new Vector2f(0.6f, 0.8f), vector2);
+        Assert.Equal(Vector2f.Zero, Vector2f.Zero.Normalized);
+        Assert.Equal(Vector2f.Right, Vector2f.Right.Normalized);
+
+        var vector3 = new Vector3f(2.0f, 3.0f, 6.0f);
+        vector3.Normalize();
+        Assert.True(vector3.ApproximatelyEquivalent(new Vector3f(2.0f, 3.0f, 6.0f) / 7.0f));
+        Assert.Equal(Vector3f.Zero, Vector3f.Zero.Normalized);
+
+        Assert.True(new Vector2f(float.NaN, 0.0f).IsNaN);
+        Assert.True(new Vector2f(0.0f, float.NaN).IsNaN);
+        Assert.False(Vector2f.Zero.IsNaN);
+        Assert.True(new Vector2f(float.PositiveInfinity, 0.0f).IsInf);
+        Assert.True(new Vector2f(0.0f, float.NegativeInfinity).IsInf);
+        Assert.False(Vector2f.Zero.IsInf);
+
+        Assert.True(new Vector3f(float.NaN, 0.0f, 0.0f).IsNaN);
+        Assert.True(new Vector3f(0.0f, float.NaN, 0.0f).IsNaN);
+        Assert.True(new Vector3f(0.0f, 0.0f, float.NaN).IsNaN);
+        Assert.False(Vector3f.Zero.IsNaN);
+        Assert.True(new Vector3f(float.PositiveInfinity, 0.0f, 0.0f).IsInf);
+        Assert.True(new Vector3f(0.0f, float.PositiveInfinity, 0.0f).IsInf);
+        Assert.True(new Vector3f(0.0f, 0.0f, float.NegativeInfinity).IsInf);
+        Assert.False(Vector3f.Zero.IsInf);
+    }
+
+    [Fact]
     public void RealVector2HasNativePodShapeStorageDefaultsCopyHashAndConversions()
     {
         Assert.False(RuntimeHelpers.IsReferenceOrContainsReferences<Vector2f>());
@@ -214,5 +245,86 @@ public class VectorParityTests
     {
         Assert.Equal(new Vector3f(1, 2, 3), new Vector3f([1, 2, 3]));
         Assert.Equal(new Quaternion(0, 0, 0, 0), Quaternion.ZERO);
+    }
+
+    [Fact]
+    public void RealVectorTemplates_cover_double_normalization_hash_and_projection_edges()
+    {
+        var vector2 = new Vector2d(3.0, 4.0);
+        vector2.Normalize();
+        Assert.True(vector2.ApproximatelyEquivalent(new Vector2d(0.6, 0.8)));
+        Assert.Equal(Vector2d.Zero, Vector2d.Zero.Normalized);
+        Assert.Equal(new Vector2d(3.0, 0.0),
+            new Vector2d(3.0, 4.0).ProjectOntoLine(new Vector2d(0.0, 0.0), new Vector2d(6.0, 0.0), clamped: false));
+        Assert.Equal(new Vector2d(6.0, 0.0),
+            new Vector2d(9.0, 8.0).ProjectOntoLine(new Vector2d(0.0, 0.0), new Vector2d(6.0, 0.0), clamped: true));
+        Assert.Equal(new Vector2d(7.0, 7.0),
+            Vector2d.Zero.NormalizedOrDefault(new Vector2d(7.0, 7.0), 0.1));
+        Assert.True(new Vector2d(3.0, 4.0).ReNormalized(2.0, 3.0).ApproximatelyEquivalent(new Vector2d(1.8, 2.4)));
+        Assert.NotEqual(0u, new Vector2d(1.0, double.MaxValue).ToHash());
+        Assert.NotEqual(0u, new Vector3d(1.0, double.MaxValue, 3.0).ToHash());
+
+        var vector3 = new Vector3d(2.0, 3.0, 6.0);
+        vector3.Normalize();
+        Assert.True(vector3.ApproximatelyEquivalent(new Vector3d(2.0, 3.0, 6.0) / 7.0));
+        Assert.Equal(Vector3d.Zero, Vector3d.Zero.Normalized);
+        Assert.True(new Vector3d(1.0, 0.0, 0.0).SignedAngle(
+            new Vector3d(0.0, 1.0, 0.0), new Vector3d(0.0, 0.0, -1.0)) < 0.0);
+        Assert.Equal(new Vector3d(5.0, 5.0, 5.0),
+            Vector3d.Zero.NormalizedOrDefault(new Vector3d(5.0, 5.0, 5.0), 0.1));
+        Assert.Equal(new Vector3d(5.0, 5.0, 5.0),
+            Vector3d.Zero.ReNormalized(1.0, 2.0, new Vector3d(5.0, 5.0, 5.0), 0.1));
+
+        Assert.False(new Vector2d(1.0, 2.0).Equals((object?)new Vector3d(1.0, 2.0, 0.0)));
+        Assert.False(new Vector3d(1.0, 2.0, 3.0).Equals((object?)new Vector2d(1.0, 2.0)));
+    }
+
+    [Fact]
+    public void IntegerVectorTemplates_cover_comparison_min_max_and_large_scalar_edges()
+    {
+        var low = new BaseIntegerVector2<int>(1, 2);
+        Assert.True(low < new BaseIntegerVector2<int>(2, 0));
+        Assert.True(low < new BaseIntegerVector2<int>(1, 3));
+        Assert.False(low < new BaseIntegerVector2<int>(1, 2));
+        Assert.True(low <= new BaseIntegerVector2<int>(1, 2));
+        Assert.True(new BaseIntegerVector2<int>(2, 0) > low);
+        Assert.True(new BaseIntegerVector2<int>(2, 0) >= low);
+        Assert.Equal(new BaseIntegerVector2<int>(1, 2),
+            BaseIntegerVector2<int>.Min(new BaseIntegerVector2<int>(1, 4), new BaseIntegerVector2<int>(2, 2)));
+        Assert.Equal(new BaseIntegerVector2<int>(2, 4),
+            BaseIntegerVector2<int>.Max(new BaseIntegerVector2<int>(1, 4), new BaseIntegerVector2<int>(2, 2)));
+        Assert.Equal("? ? ?", new BaseIntegerVector2<long>(1, 2).ToString());
+
+        var first = new BaseIntegerVector3<int>(1, 2, 3);
+        Assert.True(first < new BaseIntegerVector3<int>(2, 0, 0));
+        Assert.True(first < new BaseIntegerVector3<int>(1, 3, 0));
+        Assert.True(first < new BaseIntegerVector3<int>(1, 2, 4));
+        Assert.False(first < new BaseIntegerVector3<int>(1, 2, 3));
+        Assert.True(first <= new BaseIntegerVector3<int>(1, 2, 3));
+        Assert.True(new BaseIntegerVector3<int>(2, 0, 0) > first);
+        Assert.True(new BaseIntegerVector3<int>(2, 0, 0) >= first);
+        Assert.Equal(new BaseIntegerVector3<int>(1, 2, 3),
+            BaseIntegerVector3<int>.Min(new BaseIntegerVector3<int>(1, 4, 5), new BaseIntegerVector3<int>(2, 2, 3)));
+        Assert.Equal(new BaseIntegerVector3<int>(2, 4, 5),
+            BaseIntegerVector3<int>.Max(new BaseIntegerVector3<int>(1, 4, 5), new BaseIntegerVector3<int>(2, 2, 3)));
+        Assert.Equal("? ? ?", new BaseIntegerVector3<long>(1, 2, 3).ToString());
+    }
+
+    [Fact]
+    public void Vector4_covers_index_constructors_special_values_and_object_equality_edges()
+    {
+        var value = new Vector4f(new Vector3f(1.0f, 2.0f, 3.0f), 4.0f);
+        Assert.Equal(new Vector4f(1.0f, 2.0f, 3.0f, 4.0f), value);
+        Assert.Equal(new Vector4f(1.0f, 2.0f, 3.0f, 4.0f),
+            new Vector4f(new Vector2f(1.0f, 2.0f), new Vector2f(3.0f, 4.0f)));
+        for (var i = 0; i < 4; ++i)
+            value[i] = i + 10.0f;
+        Assert.Equal([10.0f, 11.0f, 12.0f, 13.0f], value.Data().ToArray());
+        Assert.Throws<IndexOutOfRangeException>(() => _ = value[-1]);
+        Assert.Throws<IndexOutOfRangeException>(() => value[4] = 0.0f);
+        Assert.True(new Vector4f(float.NaN, 0, 0, 0).IsNaN);
+        Assert.True(new Vector4f(0, 0, 0, float.PositiveInfinity).IsInf);
+        Assert.False(value.Equals((object?)new Vector3f(10, 11, 12)));
+        Assert.True(value.Equals((object?)value));
     }
 }

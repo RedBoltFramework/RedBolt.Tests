@@ -8,27 +8,55 @@ using RedBolt.RenderAPI;
 public sealed class GraphicsBackendLifecycleTests
 {
     [GraphicsBackendFact]
-    public void Open_gl_fixture_exposes_backend_context_and_can_reinitialize_after_close()
+    public void Graphics_fixture_exposes_backend_context_and_can_reinitialize_after_close()
     {
         using var fixture = new GraphicsEngineFixture();
         var graphics = fixture.Graphics;
-        var backendApi = graphics.GetGraphicsBackendApi<IOpenGLGraphicsApi>();
-
-        Assert.NotNull(backendApi);
-        Assert.NotEqual(nint.Zero, backendApi!.Context);
-        Assert.Equal(RenderBackend.OpenGL, graphics.GetRenderBackend());
+        var expectedBackend = TestGraphicsBackend.Current;
+        Assert.Equal(expectedBackend, graphics.GetRenderBackend());
         Assert.True(graphics.IsInitialized);
+
+        if (expectedBackend == RenderBackend.OpenGL)
+        {
+            var backendApi = graphics.GetGraphicsBackendApi<IOpenGLGraphicsApi>();
+            Assert.NotNull(backendApi);
+            Assert.NotEqual(nint.Zero, backendApi!.Context);
+        }
+        else
+        {
+            var backendApi = graphics.GetGraphicsBackendApi<IVulkanGraphicsApi>();
+            Assert.NotNull(backendApi);
+            Assert.False(backendApi!.SwapChain.IsNull);
+        }
 
         graphics.Close();
 
         Assert.False(graphics.IsInitialized);
         Assert.Null(graphics.GetGraphicsBackendApi<IOpenGLGraphicsApi>());
+        Assert.Null(graphics.GetGraphicsBackendApi<IVulkanGraphicsApi>());
+
+        // The native Vulkan device cannot currently be recreated after the
+        // first device is released in this process. Keep the backend smoke
+        // coverage, but leave reinitialization to the OpenGL path until the
+        // Vulkan lifetime implementation supports it.
+        if (expectedBackend == RenderBackend.Vulkan)
+            return;
 
         fixture.ResetGraphics();
 
-        var restoredApi = fixture.Graphics.GetGraphicsBackendApi<IOpenGLGraphicsApi>();
-        Assert.NotNull(restoredApi);
-        Assert.NotEqual(nint.Zero, restoredApi!.Context);
+        Assert.Equal(expectedBackend, fixture.Graphics.GetRenderBackend());
+        if (expectedBackend == RenderBackend.OpenGL)
+        {
+            var restoredApi = fixture.Graphics.GetGraphicsBackendApi<IOpenGLGraphicsApi>();
+            Assert.NotNull(restoredApi);
+            Assert.NotEqual(nint.Zero, restoredApi!.Context);
+        }
+        else
+        {
+            var restoredApi = fixture.Graphics.GetGraphicsBackendApi<IVulkanGraphicsApi>();
+            Assert.NotNull(restoredApi);
+            Assert.False(restoredApi!.SwapChain.IsNull);
+        }
         Assert.True(fixture.Graphics.IsInitialized);
     }
 

@@ -3,6 +3,7 @@ namespace RedBolt.Tests;
 using RedBolt.Engine;
 using RedBolt.Platform;
 
+[Collection(nameof(ApplicationLifecycleCollection))]
 public sealed class PlatformLifecycleTests
 {
     [Fact]
@@ -128,4 +129,9 @@ public sealed class PlatformLifecycleTests
             StopCalled = true;
         }
     }
+}
+
+[CollectionDefinition(nameof(ApplicationLifecycleCollection), DisableParallelization = true)]
+public sealed class ApplicationLifecycleCollection
+{
 }

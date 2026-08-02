@@ -154,4 +154,37 @@ public class MatrixParityTests
         Assert.True((matrix * matrix.Inverse).ApproximatelyEquivalent(Matrix4.Identity, 0.0001f));
         Assert.Equal(0.0f, matrix.Element(2, 1));
     }
+
+    [Fact]
+    public void AffineMatrices_cover_special_values_object_equality_and_reflected_scale()
+    {
+        var matrix3x4 = Matrix3x4.Identity;
+        Assert.False(matrix3x4.IsNaN);
+        Assert.False(matrix3x4.IsInf);
+        Assert.True(matrix3x4.Equals((object)matrix3x4));
+        Assert.False(matrix3x4.Equals((object?)null));
+
+        matrix3x4.M23 = float.NaN;
+        Assert.True(matrix3x4.IsNaN);
+        matrix3x4 = Matrix3x4.Identity;
+        matrix3x4.M00 = float.PositiveInfinity;
+        Assert.True(matrix3x4.IsInf);
+
+        var reflected3x4 = new Matrix3x4(
+            Vector3f.Zero, Quaternion.IDENTITY, new Vector3f(-2.0f, 3.0f, 4.0f));
+        reflected3x4.Decompose(out _, out _, out var scale3x4);
+        Assert.True(scale3x4.ApproximatelyEquivalent(new Vector3f(-2.0f, 3.0f, 4.0f)));
+
+        var matrix4 = Matrix4.Identity;
+        Assert.False(matrix4.IsNaN);
+        Assert.False(matrix4.IsInf);
+        Assert.True(matrix4.Equals((object)matrix4));
+        Assert.False(matrix4.Equals((object?)null));
+
+        matrix4.M30 = float.NaN;
+        Assert.True(matrix4.IsNaN);
+        matrix4 = Matrix4.Identity;
+        matrix4.M33 = float.NegativeInfinity;
+        Assert.True(matrix4.IsInf);
+    }
 }

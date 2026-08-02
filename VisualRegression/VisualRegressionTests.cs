@@ -75,6 +75,16 @@ public sealed class VisualRegressionTests
         Assert.Equal(Path.Combine("references", "mushroom-ambient_shot.png"), shotFile);
     }
 
+    [Fact]
+    public void Visual_backend_reference_name_preserves_directory_and_extension()
+    {
+        var referenceName = Path.Combine("textures", "packed.png");
+
+        var backendName = VisualRegressionReferences.GetBackendFileName(referenceName, RenderBackend.Vulkan);
+
+        Assert.Equal(Path.Combine("textures", "packed.vulkan.png"), backendName);
+    }
+
     [VisualFact]
     public void Mushroom_model_renders_with_zone_ambient_lighting()
     {
@@ -123,6 +133,8 @@ internal static class VisualRegressionReferences
 
     public static bool UpdateReferences => IsEnabled("REDBOLT_UPDATE_VISUAL_REFERENCES");
 
+    public static bool UpdateBackendReferences => IsEnabled("REDBOLT_UPDATE_BACKEND_VISUAL_REFERENCES");
+
     public static string? SkipReason
     {
         get
@@ -140,20 +152,30 @@ internal static class VisualRegressionReferences
         }
     }
 
-    public static string GetPath(string fileName)
+    public static string GetPath(string fileName, RenderBackend? backend = null, bool allowMissing = false)
     {
         ArgumentException.ThrowIfNullOrEmpty(fileName);
         var root = Environment.GetEnvironmentVariable("REDBOLT_VISUAL_REFERENCE_ROOT");
         if (string.IsNullOrWhiteSpace(root))
             root = Path.Combine(AppContext.BaseDirectory, "VisualRegression", "References");
 
-        var path = Path.Combine(root, fileName);
-        if (UpdateReferences || File.Exists(path))
+        var effectiveFileName = backend is not null ? GetBackendFileName(fileName, backend.Value) : fileName;
+        var path = Path.Combine(root, effectiveFileName);
+        if (allowMissing || File.Exists(path))
             return path;
 
         throw new FileNotFoundException(
-            $"Visual regression reference '{fileName}' was not found. "
+            $"Visual regression reference '{effectiveFileName}' was not found. "
             + "Set REDBOLT_VISUAL_REFERENCE_ROOT or rebuild the test project.", path);
+    }
+
+    public static string GetBackendFileName(string fileName, RenderBackend backend)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(fileName);
+        var directory = Path.GetDirectoryName(fileName);
+        var backendName = backend.ToString().ToLowerInvariant();
+        var name = $"{Path.GetFileNameWithoutExtension(fileName)}.{backendName}{Path.GetExtension(fileName)}";
+        return string.IsNullOrEmpty(directory) ? name : Path.Combine(directory, name);
     }
 
     public static string GetShotPath(string referenceFile)
