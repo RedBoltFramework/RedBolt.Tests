@@ -15,6 +15,7 @@
     <RedBoltUseParentRuntimeAssemblies DependencyFile="$(ProjectDepsFilePath)"
                                        MainProjectName="$(AssemblyName)"
                                        NativeRuntimeDirectory="$(RedBoltNativeOutputRoot)"
+                                       NativeModuleManifestDirectory="$(RedBoltNativeModuleManifestDirectory)"
                                        RelocateAllProjectLibraries="false"
                                        RuntimeIdentifier="$(RuntimeIdentifier)" />
   </Target>

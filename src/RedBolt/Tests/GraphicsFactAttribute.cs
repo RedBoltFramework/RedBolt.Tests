@@ -84,7 +84,7 @@ internal sealed class NativeBindingFactAttribute : Xunit.FactAttribute
     public NativeBindingFactAttribute()
     {
         if (!NativeBindingCapability.IsAvailable)
-            Skip = "RedBolt.Native is unavailable or has the wrong architecture for this test host.";
+            Skip = "No RedBolt native module is available or the module architecture is incompatible with this test host.";
     }
 }
 
@@ -94,10 +94,21 @@ internal static class NativeBindingCapability
     {
         get
         {
-            if (System.Runtime.InteropServices.NativeLibrary.TryLoad("RedBolt.Native", out var directHandle))
+            var moduleNames = new[]
             {
-                System.Runtime.InteropServices.NativeLibrary.Free(directHandle);
-                return true;
+                "Sdl", "Diligent", "DearImGui", "Stb", "Lz4", "HarfBuzz", "RmlUi",
+                "WebP", "XAtlas", "Embree", "Glslang", "SpirVCross", "SpirVTools",
+                "ShaderCompiler", "Jolt"
+            };
+
+            foreach (var moduleName in moduleNames)
+            {
+                if (System.Runtime.InteropServices.NativeLibrary.TryLoad(
+                    "RedBolt.Native." + moduleName, out var directHandle))
+                {
+                    System.Runtime.InteropServices.NativeLibrary.Free(directHandle);
+                    return true;
+                }
             }
 
             var nativeDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "runtimes"));
@@ -107,20 +118,24 @@ internal static class NativeBindingCapability
                 "linux-x64", "linux-arm64", "win-x64", "win-arm64", "osx-x64", "osx-arm64"
             };
             var libraryNames = OperatingSystem.IsWindows()
-                ? new[] { "RedBolt.Native.dll" }
+                ? new[] { "RedBolt.Native.*.dll" }
                 : OperatingSystem.IsMacOS()
-                    ? new[] { "libRedBolt.Native.dylib" }
-                    : new[] { "libRedBolt.Native.so" };
+                    ? new[] { "libRedBolt.Native.*.dylib" }
+                    : new[] { "libRedBolt.Native.*.so" };
 
             foreach (var runtimeId in runtimeIds.Distinct(StringComparer.OrdinalIgnoreCase))
             foreach (var libraryName in libraryNames)
             {
-                var candidate = Path.Combine(nativeDirectory, runtimeId, "native", libraryName);
-                if (File.Exists(candidate)
-                    && System.Runtime.InteropServices.NativeLibrary.TryLoad(candidate, out var handle))
+                var runtimeNativeDirectory = Path.Combine(nativeDirectory, runtimeId, "native");
+                if (!Directory.Exists(runtimeNativeDirectory))
+                    continue;
+                foreach (var candidate in Directory.EnumerateFiles(runtimeNativeDirectory, libraryName))
                 {
-                    System.Runtime.InteropServices.NativeLibrary.Free(handle);
-                    return true;
+                    if (System.Runtime.InteropServices.NativeLibrary.TryLoad(candidate, out var handle))
+                    {
+                        System.Runtime.InteropServices.NativeLibrary.Free(handle);
+                        return true;
+                    }
                 }
             }
 
