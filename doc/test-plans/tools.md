@@ -18,8 +18,8 @@ in `finally`.
 
 ## Verified checks
 
-- [x] Empty/hidden-file filtering, nested files, binary round trips, compressed/uncompressed archives, listing, and package inspection (`IOTests/PackageToolTests`).
-- [x] Invalid archive rejection through `PackageFile.Open`, missing-input/output-parent failures, invalid-option diagnostics, and deterministic output-conflict/up-to-date behavior (`IOTests/PackageToolTests`).
+- [x] Empty/hidden-file filtering, nested files, binary round trips, compressed/uncompressed archives, listing, and package inspection (`src/RedBolt/RedBolt/IO/PackageToolTests`).
+- [x] Invalid archive rejection through `PackageFile.Open`, missing-input/output-parent failures, invalid-option diagnostics, and deterministic output-conflict/up-to-date behavior (`src/RedBolt/RedBolt/IO/PackageToolTests`).
 - [x] PackageTool has no extraction API or entry-name policy hook, so
   path-traversal rejection is an explicit production-API gate rather than a
   falsely claimed end-to-end test.

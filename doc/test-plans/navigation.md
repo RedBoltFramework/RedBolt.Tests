@@ -1,7 +1,7 @@
 # Navigation subsystem test plan
 
 Source: `../../RedBolt/src/RedBolt/Navigation`. Existing tests are in
-`NavigationTests/NavigationTests.cs`. Detour/Recast calls need a
+`src/RedBolt/Navigation/NavigationTests.cs`. Detour/Recast calls need a
 fake seam for unit tests and one real headless integration fixture.
 
 ## Verified deterministic coverage

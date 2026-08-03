@@ -157,7 +157,8 @@ internal static class VisualRegressionReferences
         ArgumentException.ThrowIfNullOrEmpty(fileName);
         var root = Environment.GetEnvironmentVariable("REDBOLT_VISUAL_REFERENCE_ROOT");
         if (string.IsNullOrWhiteSpace(root))
-            root = Path.Combine(AppContext.BaseDirectory, "VisualRegression", "References");
+            root = Path.Combine(AppContext.BaseDirectory, "src", "RedBolt", "Tests",
+                "VisualRegression", "References");
 
         var effectiveFileName = backend is not null ? GetBackendFileName(fileName, backend.Value) : fileName;
         var path = Path.Combine(root, effectiveFileName);

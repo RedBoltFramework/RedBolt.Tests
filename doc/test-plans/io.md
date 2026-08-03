@@ -7,16 +7,16 @@ Source: `../../RedBolt/src/RedBolt/RedBolt/IO`. Existing tests are in
 
 - [x] `MemoryBuffer` bounded reads/writes, seek clamping, sliced read-only
   memory, unmanaged/null pointers, clone state, and repeated disposal
-  (`IOTests/MemoryBufferBoundaryTests.cs`).
+  (`src/RedBolt/RedBolt/IO/MemoryBufferBoundaryTests.cs`).
 - [x] VLE boundary values, embedded-NUL/UTF-8 strings, empty lines, and EOF
-  behavior (`IOTests/SerializationBoundaryTests.cs`).
+  behavior (`src/RedBolt/RedBolt/IO/SerializationBoundaryTests.cs`).
 - [x] Serializer/deserializer compound values, short-write propagation,
   variant payloads, resource-reference lists, and nested archive ownership
-  (`IOTests/SerializerTests.cs`, `IOTests/DeserializerTests.cs`,
-  `IOTests/ArchiveTests.cs`).
+  (`src/RedBolt/RedBolt/IO/SerializerTests.cs`, `src/RedBolt/RedBolt/IO/DeserializerTests.cs`,
+  `src/RedBolt/RedBolt/IO/ArchiveTests.cs`).
 - [x] Binary and human-readable archive round trips for vectors, matrices,
   variants, resource references, curves, and tetrahedral mesh data
-  (`IOTests/ArchiveTests.cs`, `ResourceTests/JSONArchiveTests.cs`).
+  (`src/RedBolt/RedBolt/IO/ArchiveTests.cs`, `src/RedBolt/RedBolt/Resource/JSONArchiveTests.cs`).
 
 ## File identifiers, streams, and buffers
 

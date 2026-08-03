@@ -30,7 +30,7 @@ The current test project provides:
 - xUnit, Microsoft.NET.Test.Sdk, and coverlet collector in
   [`RedBolt.Tests.csproj`](../RedBolt.Tests.csproj);
 - a shared headless engine fixture and a hidden native graphics fixture in
-  [`HeadlessEngineFixture.cs`](../HeadlessEngineFixture.cs);
+  [`HeadlessEngineFixture.cs`](../src/RedBolt/Tests/HeadlessEngineFixture.cs);
 - a globally serialized xUnit runner configuration in
   [`xunit.runner.json`](../xunit.runner.json), plus disabled parallelism on
   engine and graphics collections;

@@ -136,8 +136,8 @@ normalization, volume classification, and packed color conversion.
 
 - [x] Scalars/easing/ranges/randomness/noise/allocator behavior and geometry primitives (`MathTests`).
 - [x] Vector/color/matrix/quaternion ABI and parity cases (`MathTests`).
-- [x] `Transform`/`DoubleTransform` identity, matrix round trip, interpolation, and value semantics (`MathTests/TransformTests`).
-- [x] Deterministic scalar/easing/range/wrapped-range boundary properties, matrix inverse cases, and public math value ABI/layout assertions (`MathTests/DeterministicBoundaryPropertyTests`).
+- [x] `Transform`/`DoubleTransform` identity, matrix round trip, interpolation, and value semantics (`src/RedBolt/RedBolt/Math/TransformTests`).
+- [x] Deterministic scalar/easing/range/wrapped-range boundary properties, matrix inverse cases, and public math value ABI/layout assertions (`src/RedBolt/RedBolt/Math/DeterministicBoundaryPropertyTests`).
 - [x] Seeded replayable scalar property coverage is included in
   `DeterministicBoundaryPropertyTests`; malformed-buffer fuzzing and native
   parity remain separate nightly/backend work.

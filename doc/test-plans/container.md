@@ -6,18 +6,18 @@ Source: `../../RedBolt/src/RedBolt/RedBolt/Container`. Existing tests are in
 ## Verified coverage
 
 - [x] `CString` malformed, unclosed, negative, and out-of-range formatting
-  placeholders (`ContainerTests/BoundaryOwnershipTests.cs`).
+  placeholders (`src/RedBolt/RedBolt/Container/BoundaryOwnershipTests.cs`).
 - [x] `KeyFrameSet<T>` sorted insertion, before/between/after lookup, empty
   lookup, clone ownership, and disposal of stored cloneable values
-  (`ContainerTests/BoundaryOwnershipTests.cs`,
-  `ContainerTests/KeyFrameSetTests.cs`).
+  (`src/RedBolt/RedBolt/Container/BoundaryOwnershipTests.cs`,
+  `src/RedBolt/RedBolt/Container/KeyFrameSetTests.cs`).
 - [x] `Array2D<T>` row-major indexing, clamped/wrapped access, ref mutation,
   deep cloning, and disposable-element lifetime
-  (`ContainerTests/Array2DTests.cs`).
+  (`src/RedBolt/RedBolt/Container/Array2DTests.cs`).
 - [x] `IndexAllocator`/`IDFamily<T>` allocation, reuse, shrink, clear, and
-  idempotent release (`ContainerTests/IndexAllocatorTests.cs`).
+  idempotent release (`src/RedBolt/RedBolt/Container/IndexAllocatorTests.cs`).
 - [x] `CString` UTF-8/embedded storage, no-allocation hot paths, clone
-  independence, formatting, and repeated disposal (`ContainerTests/CStringTests.cs`).
+  independence, formatting, and repeated disposal (`src/RedBolt/RedBolt/Container/CStringTests.cs`).
 
 - `ArrayDimensions2D`: default/positive/zero/negative dimensions, capacity
   overflow, containment, clamp and wrap (including negative coordinates and

@@ -1,7 +1,7 @@
 # Inverse-kinematics subsystem test plan
 
 Source: `../../RedBolt/src/RedBolt/IK`. Existing tests are in
-`IKTests/IKSolverTests.cs`.
+`src/RedBolt/IK/IKSolverTests.cs`.
 
 ## Shared fixture
 

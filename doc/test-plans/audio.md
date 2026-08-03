@@ -1,7 +1,7 @@
 # Audio subsystem test plan
 
 Source: `../../RedBolt/src/RedBolt/Audio`. Existing tests are in
-`AudioTests/AudioTests.cs`.
+`src/RedBolt/Audio/AudioTests.cs`.
 
 ## Test seams
 

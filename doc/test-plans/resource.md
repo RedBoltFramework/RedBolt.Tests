@@ -6,19 +6,19 @@ Source: `../../RedBolt/src/RedBolt/RedBolt/Resource`. Existing tests are in
 ## Verified coverage
 
 - [x] Synchronous resource begin/end lifecycle, failure propagation, and
-  restoration to `Done` (`ResourceTests/ResourceBoundaryTests.cs`).
+  restoration to `Done` (`src/RedBolt/RedBolt/Resource/ResourceBoundaryTests.cs`).
 - [x] `JSONValue` owned array mutation, deep clone independence, recursive
-  value handling, and repeated disposal (`ResourceTests/ResourceBoundaryTests.cs`,
-  `ResourceTests/JsonXmlResourceTests.cs`).
+  value handling, and repeated disposal (`src/RedBolt/RedBolt/Resource/ResourceBoundaryTests.cs`,
+  `src/RedBolt/RedBolt/Resource/JsonXmlResourceTests.cs`).
 - [x] `JSONFile` empty/malformed input preservation, UTF-8/NUL-terminated
   input, indentation, archive callbacks, and callback error boundaries
-  (`ResourceTests/ResourceBoundaryTests.cs`,
-  `ResourceTests/JsonXmlResourceTests.cs`).
+  (`src/RedBolt/RedBolt/Resource/ResourceBoundaryTests.cs`,
+  `src/RedBolt/RedBolt/Resource/JsonXmlResourceTests.cs`).
 - [x] `PListValue` wrong-type/malformed geometry defaults, recursive clone
-  ownership, and repeated disposal (`ResourceTests/ResourceBoundaryTests.cs`,
-  `ResourceTests/PListFileTests.cs`).
+  ownership, and repeated disposal (`src/RedBolt/RedBolt/Resource/ResourceBoundaryTests.cs`,
+  `src/RedBolt/RedBolt/Resource/PListFileTests.cs`).
 - [x] Background success/failure/unknown-type events, queue cleanup, and
-  disposal while a load is blocked (`ResourceTests/ResourceCacheTests.cs`).
+  disposal while a load is blocked (`src/RedBolt/RedBolt/Resource/ResourceCacheTests.cs`).
 
 ## Resource identity, formats, and ownership
 

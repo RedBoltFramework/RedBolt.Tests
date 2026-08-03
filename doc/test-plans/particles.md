@@ -36,7 +36,7 @@ unchanged.
 ## Verified checks
 
 - [x] Emit-from native order/name table, spans, sparse indexing, memory/layout offsets, pin construction/connection, clone independence, and typed variant mapping (`ParticlesTests`).
-- [x] Public particle value ABI/layout and boundary assertions for spans, layouts, pin connections, and enum underlying types (`ParticlesTests/ParticlePublicValueBoundaryTests`).
+- [x] Public particle value ABI/layout and boundary assertions for spans, layouts, pin connections, and enum underlying types (`src/RedBolt/Particles/ParticlePublicValueBoundaryTests`).
 - [x] Seeded replayable pin-operation coverage is included in
   `ParticleGraphPinTests`; full graph-evaluator fuzzing is an explicit gate
   because the managed surface has no evaluator or native particle backend
