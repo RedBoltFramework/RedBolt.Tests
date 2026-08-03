@@ -1,6 +1,7 @@
 namespace RedBolt.Tests;
 
 using System.Collections;
+using System.Reflection;
 
 using RedBolt.Core;
 using RedBolt.Glow;
@@ -173,6 +174,136 @@ public sealed class GlowResidualCoverageTests
         var staticModel = new StaticModelForLightmap();
         staticModel.Dispose();
         staticModel.Dispose();
+    }
+
+    [Fact]
+    public void Baked_light_buffers_expose_locations_and_normalize_weighted_indirect_light()
+    {
+        var direct = new LightmapChartBakedDirect(2);
+        direct.SurfaceLight[1] = new Vector3f(1.0f, 2.0f, 3.0f);
+        direct.Albedo[1] = new Vector3f(0.25f, 0.5f, 0.75f);
+
+        Assert.Equal(new Vector2i(0, 0), direct.GetNearestLocation(new Vector2f(0.25f, 0.25f)));
+        Assert.Equal(new Vector2i(1, 1), direct.GetNearestLocation(new Vector2f(2.0f, 2.0f)));
+        Assert.Equal(new Vector3f(1.0f, 2.0f, 3.0f), direct.GetSurfaceLight(new Vector2i(1, 0)));
+        Assert.Equal(new Vector3f(0.25f, 0.5f, 0.75f), direct.GetAlbedo(new Vector2i(1, 0)));
+
+        var indirect = new LightmapChartBakedIndirect(2);
+        indirect.Light[0] = new Vector4f(2.0f, 4.0f, 6.0f, 2.0f);
+        indirect.Light[1] = new Vector4f(3.0f, 4.0f, 5.0f, 0.0f);
+        indirect.NormalizeLight();
+
+        Assert.Equal(new Vector4f(1.0f, 2.0f, 3.0f, 1.0f), indirect.Light[0]);
+        Assert.Equal(new Vector4f(3.0f, 4.0f, 5.0f, 0.0f), indirect.Light[1]);
+    }
+
+    [Fact]
+    public void Lightmap_filters_cover_every_supported_kernel_radius_and_invalid_radius()
+    {
+        var geometry = new LightmapChartGeometryBuffer(0, 3);
+        var direct = new LightmapChartBakedDirect(3);
+        var indirect = new LightmapChartBakedIndirect(3);
+        for (var i = 0; i < geometry.GeometryIds.Count; ++i)
+        {
+            geometry.GeometryIds[i] = i == 4 ? 0 : 1;
+            geometry.Positions[i] = new Vector3f(i, 0.0f, 0.0f);
+            geometry.SmoothNormals[i] = Vector3f.Up;
+            direct.DirectLight[i] = new Vector3f(i, i + 1.0f, i + 2.0f);
+            indirect.Light[i] = new Vector4f(i, i + 1.0f, i + 2.0f, 1.0f);
+        }
+
+        for (var radius = 0; radius <= 5; ++radius)
+        {
+            var parameters = new EdgeStoppingGaussFilterParameters(radius)
+            {
+                LuminanceSigma = 1.0f,
+                PositionSigma = 1.0f,
+                NormalPower = 1.0f
+            };
+            var directOutput = new Vector3f[geometry.GeometryIds.Count];
+            var indirectOutput = new Vector4f[geometry.GeometryIds.Count];
+
+            LightmapFilter.FilterDirectLight(direct, directOutput, geometry, parameters, 2);
+            LightmapFilter.FilterIndirectLight(indirect, indirectOutput, geometry, parameters, 2);
+
+            Assert.Equal(Vector3f.Zero, directOutput[4]);
+            Assert.Equal(Vector4f.Zero, indirectOutput[4]);
+            Assert.All(directOutput, value => Assert.False(float.IsNaN(value.X)));
+            Assert.All(indirectOutput, value => Assert.False(float.IsNaN(value.X)));
+        }
+
+        var invalid = new EdgeStoppingGaussFilterParameters(-1);
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            LightmapFilter.FilterDirectLight(direct, new Vector3f[9], geometry, invalid, 1));
+    }
+
+    [Fact]
+    public void Incremental_baker_status_formats_all_phases_and_tracks_progress()
+    {
+        var status = new IncrementalLightBakerStatus();
+        Assert.Equal("Not started.", status.ToString());
+
+        var phase = typeof(IncrementalLightBakerStatus).GetProperty(nameof(status.Phase))!;
+        var processed = typeof(IncrementalLightBakerStatus).GetProperty(nameof(status.ProcessedElements))!;
+        var total = typeof(IncrementalLightBakerStatus).GetProperty(nameof(status.TotalElements))!;
+
+        processed.SetValue(status, 2);
+        total.SetValue(status, 5);
+        phase.SetValue(status, IncrementalLightBakerPhase.BakingDirectLighting);
+        Assert.Equal("Baking direct lighting: 2/5 lightmaps...", status.ToString());
+
+        phase.SetValue(status, IncrementalLightBakerPhase.BakingIndirectLighting);
+        Assert.Equal("Baking indirect lighting: 2/5 lightmaps...", status.ToString());
+
+        phase.SetValue(status, IncrementalLightBakerPhase.Finalizing);
+        Assert.Equal("Finalizing...", status.ToString());
+    }
+
+    [Fact]
+    public void Raytracing_material_converts_uvs_and_clamps_image_samples()
+    {
+        using var image = new Image();
+        Assert.True(image.SetSize(2, 2, 4));
+        image.SetPixel(0, 0, Color.Red);
+        image.SetPixel(1, 1, Color.Blue);
+
+        var material = new RaytracingGeometryMaterial
+        {
+            UOffset = new Vector4f(2.0f, 3.0f, 0.0f, 0.25f),
+            VOffset = new Vector4f(4.0f, 5.0f, 0.0f, -0.5f),
+            DiffuseImage = image
+        };
+
+        Assert.Equal(new Vector2f(5.25f, 8.5f), material.ConvertUv(new Vector2f(1.0f, 1.0f)));
+        Assert.Equal(Color.Red, material.SampleDiffuse(new Vector2f(-1.0f, -1.0f)));
+        Assert.Equal(Color.Blue, material.SampleDiffuse(new Vector2f(1.0f, 1.0f)));
+    }
+
+    [NativeBindingFact]
+    public void Memory_cache_replaces_chunks_and_reports_missing_entries()
+    {
+        using var cache = new BakedLightMemoryCache();
+        var firstScene = RaytracerScene.Create(_fixture.Context, [], 0, []);
+        var secondScene = RaytracerScene.Create(_fixture.Context, [], 0, []);
+        var firstChunk = new BakedSceneChunk { RaytracerScene = firstScene };
+        var secondChunk = new BakedSceneChunk { RaytracerScene = secondScene };
+
+        var chunkIndex = new Vector3i(1, 2, 3);
+        cache.StoreBakedChunk(chunkIndex, firstChunk);
+        Assert.Same(firstChunk, cache.LoadBakedChunk(chunkIndex));
+        cache.StoreBakedChunk(chunkIndex, secondChunk);
+        Assert.Same(secondChunk, cache.LoadBakedChunk(chunkIndex));
+        Assert.Null(cache.LoadBakedChunk(new Vector3i(9, 9, 9)));
+
+        var direct = new LightmapChartBakedDirect(1);
+        cache.StoreDirectLight(4, direct);
+        Assert.Same(direct, cache.LoadDirectLight(4));
+        Assert.Null(cache.LoadDirectLight(5));
+
+        var lightmap = new BakedLightmap(1);
+        cache.StoreLightmap(4, lightmap);
+        Assert.Equal(lightmap.Lightmap, cache.LoadLightmap(4)!.Value.Lightmap);
+        Assert.Null(cache.LoadLightmap(5));
     }
 
     [NativeBindingFact]

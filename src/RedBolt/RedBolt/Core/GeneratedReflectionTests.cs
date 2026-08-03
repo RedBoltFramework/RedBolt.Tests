@@ -234,7 +234,7 @@ public sealed partial class GeneratedReflectionTests
             var reflection = context.GetReflection<GeneratedExplicitInheritance>();
 
             Assert.Equal(
-                ["Before", "Named Field", "Field", "Property", "Backed Property", "Custom", "Setter Target", "After"],
+                ["Before", "Named Field", "Field", "Property", "Backed Property", "Custom", "Setter Target", "Run", "After"],
                 reflection.Attributes.Select(static attribute => attribute.Name));
             Assert.DoesNotContain(reflection.Attributes, static attribute => attribute.Name == "Intermediate");
         }

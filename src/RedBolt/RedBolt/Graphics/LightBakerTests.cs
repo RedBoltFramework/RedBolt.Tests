@@ -17,7 +17,7 @@ public sealed class LightBakerTests
     }
 
     [Fact]
-    public void Bake_WithoutGlow_ReturnsToIdle()
+    public void Bake_WithoutScene_ReturnsToIdle()
     {
         var baker = new LightBaker();
         baker.Bake();
