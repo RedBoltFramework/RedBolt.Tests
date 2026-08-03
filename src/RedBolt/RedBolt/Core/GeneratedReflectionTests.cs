@@ -23,6 +23,8 @@ public partial class GeneratedReflectionObject : Serializable
 
     private int _setterTarget = GetSetterTargetDefault();
 
+    public int CallCount { get; private set; }
+
     public int Field => _field;
 
     [Serialized("Backed Property")]
@@ -49,6 +51,11 @@ public partial class GeneratedReflectionObject : Serializable
 
     [Serialized("Setter Target", DefaultSource = nameof(GetSetterTargetDefault), Getter = nameof(GetSetterTarget))]
     private void SetSetterTarget(int value) => _setterTarget = value;
+
+    [Callable("Run", LabelSource = nameof(GetRunLabel))]
+    private void Run() => ++CallCount;
+
+    private string GetRunLabel() => $"Run {CallCount}";
 }
 
 [Reflected("Tests")]
@@ -149,13 +156,21 @@ public sealed partial class GeneratedReflectionTests
             Assert.Equal(17, reflection.GetAttribute("Custom").DefaultValue.GetInt());
             Assert.Equal(29, reflection.GetAttribute("Setter Target").DefaultValue.GetInt());
 
+            var run = reflection.GetAttribute("Run");
+            Assert.Equal(AttributeMode.Edit, run.Mode);
+            Assert.True(run.GetMetadata<bool>(AttributeMetadata.IsAction));
+            Assert.Equal("Run 0", run.Accessor!.GetObject(instance));
+            run.Accessor.SetObject(instance, true);
+            Assert.Equal(1, instance.CallCount);
+            Assert.Equal("Run 1", run.Accessor.GetObject(instance));
+
             reflection.GetAttribute("Custom").Accessor!.SetObject(instance, 31);
             reflection.GetAttribute("Setter Target").Accessor!.SetObject(instance, 37);
             Assert.Equal(31, reflection.GetAttribute("Custom").Accessor!.GetObject(instance));
             Assert.Equal(37, reflection.GetAttribute("Setter Target").Accessor!.GetObject(instance));
 
             context.RegisterAssembly(typeof(GeneratedReflectionObject).Assembly);
-            Assert.Equal(6u, reflection.NumAttributes);
+            Assert.Equal(7u, reflection.NumAttributes);
         }
         finally
         {

@@ -75,7 +75,7 @@ public sealed class GeneratorContractTests
         var surfaces = new[]
         {
             "sdl", "diligent", "dearimgui", "stb", "lz4", "harfbuzz", "rmlui",
-            "webp", "xatlas", "glslang", "spirvcross", "spirvtools", "shadercompiler", "jolt"
+            "webp", "xatlas", "glslang", "spirvcross", "spirvtools", "shadercompiler", "jolt", "embree"
         };
 
         foreach (var surface in surfaces)
