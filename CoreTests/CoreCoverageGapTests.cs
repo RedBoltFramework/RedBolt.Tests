@@ -332,6 +332,10 @@ public sealed class CoreCoverageGapTests
         queue.Update();
         Assert.True(fallback);
 
+        queue.PostTask(() => Thread.Sleep(5), TaskPriority.Low);
+        queue.PostTask(() => { }, TaskPriority.Low);
+        queue.Update();
+
         var threadTask = false;
         queue.PostTaskForThread(() => threadTask = true, TaskPriority.Immediate, 0);
         Assert.True(threadTask);
@@ -435,6 +439,51 @@ public sealed class CoreCoverageGapTests
         queue.CompleteAll();
         Assert.True(threadIndices.Count >= 4);
         Assert.True(queue.IsCompleted());
+
+        using var release = new ManualResetEventSlim();
+        using var started = new ManualResetEventSlim();
+        var disposingQueue = CreateWorkQueue(1);
+        disposingQueue.PostTaskForThread((_, _) =>
+        {
+            started.Set();
+            release.Wait();
+        }, TaskPriority.Immediate, 1);
+        Assert.True(started.Wait(TimeSpan.FromSeconds(1)));
+        var disposeTask = Task.Run(disposingQueue.Dispose);
+        Thread.Sleep(10);
+        Assert.False(disposeTask.IsCompleted);
+        release.Set();
+        Assert.True(disposeTask.Wait(TimeSpan.FromSeconds(1)));
+    }
+
+    [Fact]
+    public void Work_queue_routes_external_thread_targeted_tasks_through_main_thread()
+    {
+        using var queue = CreateWorkQueue();
+        var queueField = typeof(WorkQueue).GetField("_workQueue", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var threadCountField = typeof(WorkQueue).GetField("_threadIndexCount", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var previousQueue = queueField.GetValue(null);
+        var previousThreadCount = threadCountField.GetValue(null);
+        try
+        {
+            queueField.SetValue(null, queue);
+            threadCountField.SetValue(null, 1);
+
+            var called = false;
+            var external = new Thread(() => queue.PostTaskForThread(
+                () => called = true, TaskPriority.Immediate, 0));
+            external.Start();
+            external.Join();
+
+            Assert.False(called);
+            queue.CompleteAll();
+            Assert.True(called);
+        }
+        finally
+        {
+            queueField.SetValue(null, previousQueue);
+            threadCountField.SetValue(null, previousThreadCount);
+        }
     }
 
     [Fact]

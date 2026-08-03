@@ -1,5 +1,8 @@
 namespace RedBolt.Tests;
 
+using System.Collections;
+using System.Reflection;
+
 using RedBolt.Glow;
 using RedBolt.Graphics;
 using RedBolt.Math;
@@ -67,5 +70,26 @@ public sealed class StaticModelForLightmapTests
         Assert.Equal(expectedWorldBoundingBox, staticModelForLightmap.GetWorldBoundingBox());
         Assert.Equal(0.0f, staticModelForLightmap.GetDistance());
         Assert.Equal(0.0f, staticModelForLightmap.GetLodDistance());
+    }
+
+    [Fact]
+    public void Initialize_skips_a_geometry_without_lod_levels()
+    {
+        var scene = new Scene();
+        var sourceObject = scene.CreateChild("Source").CreateComponent<StaticModel>();
+        var sourceModel = new Model();
+        sourceModel.SetNumGeometries(1);
+        var geometries = (IList)typeof(Model).GetField("_geometries", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(sourceModel)!;
+        ((IList)geometries[0]!).Clear();
+        sourceObject.SetModel(sourceModel);
+        sourceObject.SetMaterial(new Material());
+
+        var bakingObject = scene.CreateChild("Baking").CreateComponent<StaticModelForLightmap>();
+        var mapping = bakingObject.Initialize(
+            1, sourceObject, new Material(), 1, ReadOnlySpan<Vector2f>.Empty,
+            Vector2f.Zero, Vector4f.One, Vector2f.Zero);
+
+        Assert.Empty(mapping);
     }
 }

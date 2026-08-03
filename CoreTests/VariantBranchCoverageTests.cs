@@ -1,11 +1,46 @@
 namespace RedBolt.Tests;
 
+using System.Reflection;
+
 using RedBolt.Container;
 using RedBolt.Core;
 using RedBolt.Math;
 
 public sealed class VariantBranchCoverageTests
 {
+    [Fact]
+    public void Variant_container_assignment_failures_release_the_cloned_value()
+    {
+        using var value = new Variant(1);
+
+        using var map = new VariantMap();
+        var mapSetter = typeof(VariantMap).GetMethod(
+            "SetValue", BindingFlags.Instance | BindingFlags.NonPublic,
+            binder: null, [typeof(StringHash), typeof(Variant), typeof(bool)], modifiers: null)!;
+        var mapException = Assert.Throws<TargetInvocationException>(() => mapSetter.Invoke(
+            map, [new StringHash("missing"), value, true]));
+        Assert.IsType<InvalidOperationException>(mapException.InnerException);
+        Assert.Empty(map);
+
+        using var vector = new VariantVector();
+        var vectorAdder = typeof(VariantVector).GetMethod(
+            "AddValue", BindingFlags.Instance | BindingFlags.NonPublic,
+            binder: null, [typeof(Variant), typeof(bool)], modifiers: null)!;
+        var vectorException = Assert.Throws<TargetInvocationException>(() => vectorAdder.Invoke(
+            vector, [value, true]));
+        Assert.IsType<InvalidOperationException>(vectorException.InnerException);
+        Assert.Empty(vector);
+
+        using var stringMap = new StringVariantMap();
+        var stringMapSetter = typeof(StringVariantMap).GetMethod(
+            "SetValue", BindingFlags.Instance | BindingFlags.NonPublic,
+            binder: null, [typeof(string), typeof(Variant), typeof(bool)], modifiers: null)!;
+        var stringMapException = Assert.Throws<TargetInvocationException>(() => stringMapSetter.Invoke(
+            stringMap, ["missing", value, true]));
+        Assert.IsType<InvalidOperationException>(stringMapException.InnerException);
+        Assert.Empty(stringMap);
+    }
+
     [Fact]
     public void Variant_custom_object_and_generic_get_paths_cover_cloneable_and_fallback_values()
     {

@@ -1,5 +1,7 @@
 namespace RedBolt.Tests;
 
+using System.Diagnostics;
+
 using RedBolt.Glow;
 using RedBolt.Graphics;
 using RedBolt.Math;
@@ -89,5 +91,23 @@ public sealed class HelpersTests
         Helpers.SetLightmapScaleOffset(terrain, scaleOffset);
         Assert.Equal(4, Helpers.GetLightmapIndex(terrain));
         Assert.Equal(scaleOffset, Helpers.GetLightmapScaleOffset(terrain));
+    }
+
+    [Fact]
+    public void Unknown_lightmap_component_getters_return_defaults_after_debug_assertion()
+    {
+        var listeners = Trace.Listeners.Cast<TraceListener>().ToArray();
+        Trace.Listeners.Clear();
+        try
+        {
+            var component = new Component();
+            Assert.Equal(0, Helpers.GetLightmapIndex(component));
+            Assert.Equal(Vector4f.Zero, Helpers.GetLightmapScaleOffset(component));
+        }
+        finally
+        {
+            foreach (var listener in listeners)
+                Trace.Listeners.Add(listener);
+        }
     }
 }

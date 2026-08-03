@@ -150,11 +150,109 @@ public sealed class TetrahedralMeshCoverageGapTests
             mesh.Tetrahedrons.Add(tetrahedron);
         }
 
+        var forcedSkip = new List<bool> { false, false, false };
+        PrivateInstance("FilterMeshSurface", typeof(List<bool>), typeof(bool)).Invoke(mesh, [forcedSkip, true]);
+        Assert.DoesNotContain(true, forcedSkip);
+
         var removed = new List<bool> { false, false, false };
         PrivateInstance("FilterMeshSurface", typeof(List<bool>)).Invoke(mesh, [removed]);
 
         Assert.Contains(true, removed);
         Assert.Equal(3, mesh.Tetrahedrons.Count);
+    }
+
+    [Fact]
+    public void Filter_mesh_surface_skips_tetrahedrons_removed_by_an_earlier_edge()
+    {
+        var mesh = new TetrahedralMesh();
+        mesh.Vertices.AddRange(
+        [
+            new Vector3f(0.0f, 0.0f, 0.0f),
+            new Vector3f(10.0f, 0.0f, 0.0f),
+            new Vector3f(0.0f, 1.0f, 0.0f),
+            new Vector3f(0.0f, 0.0f, 1.0f),
+            new Vector3f(0.0f, 0.0f, 2.0f),
+            new Vector3f(0.0f, 0.0f, 3.0f),
+            new Vector3f(5.0f, 8.66f, 0.0f),
+            new Vector3f(5.0f, 0.0f, 8.66f),
+            new Vector3f(5.0f, -8.66f, 0.0f),
+            new Vector3f(5.0f, 0.0f, -8.66f)
+        ]);
+
+        foreach (var indices in new uint[][]
+        {
+            [0, 1, 2, 3],
+            [0, 1, 2, 4],
+            [0, 1, 2, 5],
+            [0, 1, 6, 7],
+            [0, 1, 8, 9]
+        })
+        {
+            var tetrahedron = new Tetrahedron();
+            for (var index = 0; index < 4; ++index)
+                tetrahedron.Indices[index] = indices[index];
+            mesh.Tetrahedrons.Add(tetrahedron);
+        }
+
+        var removed = new List<bool> { false, false, false, false, false };
+        PrivateInstance("FilterMeshSurface", typeof(List<bool>)).Invoke(mesh, [removed]);
+
+        Assert.True(removed.Count(static value => value) >= 3);
+    }
+
+    [Fact]
+    public void Tetrahedral_mesh_public_barycentric_fallbacks_are_reached()
+    {
+        var outer = new TetrahedralMesh();
+        outer.Vertices.AddRange([Vector3f.Zero, Vector3f.Right, Vector3f.Up]);
+        var outerTetrahedron = new Tetrahedron();
+        outerTetrahedron.Indices[0] = 0;
+        outerTetrahedron.Indices[1] = 1;
+        outerTetrahedron.Indices[2] = 2;
+        outer.Tetrahedrons.Add(outerTetrahedron);
+
+        Assert.Equal(new Vector4f(0.0f, 0.0f, 0.0f, -1.0f),
+            outer.GetOuterBarycentricCoords(0, Vector3f.Back));
+
+        var inner = new TetrahedralMesh();
+        inner.Vertices.AddRange([Vector3f.Zero, Vector3f.Right, Vector3f.Up, Vector3f.Forward]);
+        var innerTetrahedron = new Tetrahedron();
+        innerTetrahedron.Indices[0] = 0;
+        innerTetrahedron.Indices[1] = 1;
+        innerTetrahedron.Indices[2] = 2;
+        innerTetrahedron.Indices[3] = 3;
+        innerTetrahedron.CalculateInnerMatrix(inner.Vertices);
+        for (var i = 0; i < 4; ++i)
+            innerTetrahedron.Neighbors[i] = 0;
+        inner.Tetrahedrons.Add(innerTetrahedron);
+        inner.NumInnerTetrahedrons = 1;
+
+        uint hint = 0;
+        var result = inner.GetInterpolationFactors(new Vector3f(2.0f, 2.0f, 2.0f), ref hint);
+        Assert.Equal(0u, hint);
+        Assert.True(result.X < 0.0f);
+    }
+
+    [Fact]
+    public void Define_retries_degenerate_positions_and_finishes_with_ignored_vertices()
+    {
+        var mesh = new TetrahedralMesh();
+        mesh.Define([Vector3f.Zero, Vector3f.Zero, Vector3f.Zero, Vector3f.Zero]);
+
+        Assert.Equal(4, mesh.IgnoredVertices.Count);
+    }
+
+    [Fact]
+    public void BuildTetrahedrons_requeues_a_position_that_cannot_be_located()
+    {
+        var mesh = new TetrahedralMesh();
+        PrivateInstance("InitializeSuperMesh", typeof(BoundingBox)).Invoke(
+            mesh, [new BoundingBox(Vector3f.Zero, Vector3f.One)]);
+
+        PrivateInstance("BuildTetrahedrons", typeof(IReadOnlyList<Vector3f>)).Invoke(
+            mesh, [new List<Vector3f> { new(float.NaN, 0.0f, 0.0f) }]);
+
+        Assert.NotEmpty(mesh.IgnoredVertices);
     }
 
     [Fact]
@@ -213,6 +311,53 @@ public sealed class TetrahedralMeshCoverageGapTests
         Assert.Single(successRemoved);
         Assert.Equal(4, successSurface.Faces.Count);
         Assert.True(successSurface.IsClosedSurface());
+
+        var invalidAdjacencyMesh = new TetrahedralMesh();
+        invalidAdjacencyMesh.Vertices.AddRange(
+        [
+            Vector3f.Zero,
+            Vector3f.Right,
+            Vector3f.Up,
+            Vector3f.Forward
+        ]);
+        invalidAdjacencyMesh.Vertices.AddRange(
+        [
+            new Vector3f(2.0f, 0.0f, 0.0f),
+            new Vector3f(0.0f, 2.0f, 0.0f)
+        ]);
+        for (var index = 0; index < 3; ++index)
+        {
+            var tetrahedron = new Tetrahedron();
+            tetrahedron.Indices[0] = 0;
+            tetrahedron.Indices[1] = 1;
+            tetrahedron.Indices[2] = 2;
+            tetrahedron.Indices[3] = (uint)(3 + index);
+            tetrahedron.CalculateInnerMatrix(invalidAdjacencyMesh.Vertices);
+            invalidAdjacencyMesh.Tetrahedrons.Add(tetrahedron);
+        }
+
+        var first = invalidAdjacencyMesh.Tetrahedrons[0];
+        first.Neighbors[0] = 1;
+        invalidAdjacencyMesh.Tetrahedrons[0] = first;
+        var second = invalidAdjacencyMesh.Tetrahedrons[1];
+        second.Neighbors[0] = 0;
+        second.Neighbors[1] = 2;
+        invalidAdjacencyMesh.Tetrahedrons[1] = second;
+        var third = invalidAdjacencyMesh.Tetrahedrons[2];
+        third.Neighbors[1] = 1;
+        invalidAdjacencyMesh.Tetrahedrons[2] = third;
+
+        var invalidAdjacencyContext = CreateDelaunayContext(
+            [
+                new HighPrecisionSphere { Radius = 100.0 },
+                new HighPrecisionSphere { Radius = 100.0 },
+                new HighPrecisionSphere { Radius = 100.0 }
+            ], [false, false, false]);
+        var invalidAdjacencySurface = new TetrahedralMeshSurface();
+        var invalidAdjacencyRemoved = new List<uint>();
+        Assert.False((bool)findAndRemove.Invoke(invalidAdjacencyMesh, [
+            invalidAdjacencyContext, new Vector3f(0.1f, 0.1f, 0.1f),
+            invalidAdjacencySurface, invalidAdjacencyRemoved, false])!);
     }
 
     [Fact]

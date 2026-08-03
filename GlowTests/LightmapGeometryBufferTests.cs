@@ -32,7 +32,9 @@ public sealed class LightmapGeometryBufferTests
         Assert.Equal(new Vector2f(18.0f, 29.0f), transformed.OtherPositions[1]);
 
         var clone = seam.Clone();
+        var interfaceClone = Assert.IsType<LightmapSeam>(((ICloneable)seam).Clone());
         clone.Positions[0] = Vector2f.Zero;
+        interfaceClone.Positions[0] = Vector2f.Zero;
 
         Assert.Equal(new Vector2f(1.0f, 2.0f), seam.Positions[0]);
     }

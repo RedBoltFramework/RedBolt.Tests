@@ -1,5 +1,7 @@
 namespace RedBolt.Tests;
 
+using System.Reflection;
+
 using RedBolt;
 using RedBolt.Math;
 
@@ -12,7 +14,9 @@ public sealed class RandomEngineTests
         Assert.False(typeof(RandomEngine).IsSealed);
         Assert.True(typeof(ICloneable).IsAssignableFrom(typeof(RandomEngine)));
         Assert.NotNull(typeof(RandomEngine).GetMethod("GetStandardNormalFloatArray", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic));
-        Assert.NotNull(typeof(RandomEngine).GetMethod("GetDirection", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic));
+        Assert.NotNull(typeof(RandomEngine).GetMethod(
+            "GetDirection", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
+            binder: null, [typeof(Span<float>)], modifiers: null));
     }
 
     [Fact]
@@ -84,6 +88,25 @@ public sealed class RandomEngineTests
     }
 
     [Fact]
+    public void Bounded_integers_retry_after_a_sample_outside_the_rejection_limit()
+    {
+        var range = RandomEngine.MaxRange() / 2 + 1;
+        uint? rejectingSeed = null;
+        for (var seed = 1u; seed <= 100000u; ++seed)
+        {
+            if (new RandomEngine(seed).GetUInt() >= range)
+            {
+                rejectingSeed = seed;
+                break;
+            }
+        }
+
+        Assert.True(rejectingSeed.HasValue);
+        var rng = new RandomEngine(rejectingSeed!.Value);
+        Assert.InRange(rng.GetUInt(range), 0u, range - 1);
+    }
+
+    [Fact]
     public void Scalar_random_respects_ranges()
     {
         var rng = new RandomEngine(7u);
@@ -106,6 +129,19 @@ public sealed class RandomEngineTests
         Assert.True(vec.X is >= 0.0f and <= 1.0f);
         Assert.True(vec.Y is >= 0.0f and <= 1.0f);
         Assert.True(vec.Z is >= 0.0f and <= 1.0f);
+    }
+
+    [Fact]
+    public void Direction_fallback_is_reached_through_the_testable_retry_seam()
+    {
+        var method = typeof(RandomEngine).GetMethod(
+            "GetDirection", BindingFlags.Instance | BindingFlags.NonPublic,
+            binder: null, [typeof(float[]), typeof(bool)], modifiers: null)!;
+        var direction = new float[3];
+
+        method.Invoke(new RandomEngine(2u), [direction, true]);
+
+        Assert.Equal([1.0f, 0.0f, 0.0f], direction);
     }
 
     [Fact]

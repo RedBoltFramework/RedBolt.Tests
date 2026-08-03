@@ -1,5 +1,7 @@
 namespace RedBolt.Tests;
 
+using System.Reflection;
+
 using RedBolt;
 using RedBolt.Engine;
 
@@ -43,5 +45,17 @@ public sealed class ApplicationFlavorTests
         var invalid = new ApplicationFlavorPattern("platform;quality=high");
         Assert.Single(invalid.Components);
         Assert.Equal("platform=desktop,linux;quality=fast,high", flavor.ToString());
+    }
+
+    [Fact]
+    public void Platform_flavor_formatter_handles_each_supported_platform_family()
+    {
+        var formatter = typeof(ApplicationFlavor).GetMethod(
+            "GetPlatformFlavorString", BindingFlags.Static | BindingFlags.NonPublic)!;
+
+        Assert.Equal("platform=desktop,windows", formatter.Invoke(null, [true, false, false]));
+        Assert.Equal("platform=desktop,macos", formatter.Invoke(null, [false, true, false]));
+        Assert.Equal("platform=desktop,linux", formatter.Invoke(null, [false, false, true]));
+        Assert.Equal(string.Empty, formatter.Invoke(null, [false, false, false]));
     }
 }

@@ -1,5 +1,7 @@
 namespace RedBolt.Tests;
 
+using System.Reflection;
+
 using RedBolt;
 using RedBolt.Core;
 
@@ -28,5 +30,18 @@ public sealed class TimeTests
         time.EndFrame();
         Assert.False(time.IsFrameInProgress);
         time.Dispose();
+    }
+
+    [Fact]
+    public void Sleep_splits_uint_durations_without_waiting_for_the_real_delay()
+    {
+        var sleep = typeof(Time).GetMethod(
+            "Sleep", BindingFlags.Static | BindingFlags.NonPublic,
+            binder: null, [typeof(uint), typeof(Action<int>)], modifiers: null)!;
+        var calls = new List<int>();
+
+        sleep.Invoke(null, [uint.MaxValue, (Action<int>)(milliseconds => calls.Add(milliseconds))]);
+
+        Assert.Equal([int.MaxValue, int.MaxValue, 1], calls);
     }
 }

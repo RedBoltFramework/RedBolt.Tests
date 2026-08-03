@@ -163,4 +163,49 @@ public sealed class ConfigFileTests
             defaultsMount.Dispose();
         }
     }
+
+    [Fact]
+    public void Config_file_reports_a_failed_override_write()
+    {
+        var fileSystem = _fixture.Context.GetSubsystem<VirtualFileSystem>()!;
+        var mount = new FailingSaveMountPoint();
+        fileSystem.Mount(mount);
+
+        try
+        {
+            using var configFile = new ConfigFile();
+            configFile.DefineVariable("Value", new Variant(1)).Overridable();
+            configFile.SetVariable("Value", new Variant(2));
+
+            Assert.False(configFile.SaveOverrides("failing-save://config.json", ApplicationFlavor.Empty));
+        }
+        finally
+        {
+            fileSystem.Unmount(mount);
+        }
+    }
+
+    private sealed class FailingSaveMountPoint : MountPoint
+    {
+        public override bool AcceptsScheme(string scheme) => scheme == "failing-save";
+
+        public override bool Exists(FileIdentifier fileName) => false;
+
+        public override AbstractFile OpenFile(FileIdentifier fileName, FileMode mode) => new FailingSaveFile();
+
+        public override string GetName() => "failing-save";
+
+        public override void Scan(ICollection<string> result, string pathName, string filter, ScanFlags flags)
+        {
+        }
+    }
+
+    private sealed class FailingSaveFile : AbstractFile
+    {
+        public override uint Read(Span<byte> destination) => 0;
+
+        public override uint Seek(uint position) => 0;
+
+        public override uint Write(ReadOnlySpan<byte> data) => 0;
+    }
 }

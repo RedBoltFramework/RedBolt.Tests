@@ -1,5 +1,8 @@
 namespace RedBolt.Tests;
 
+using System.Reflection;
+
+using RedBolt.Bindings.XAtlas;
 using RedBolt.Glow;
 using RedBolt.Graphics;
 using RedBolt.Math;
@@ -48,6 +51,55 @@ public sealed class LightmapUVGeneratorTests
         Assert.True(lightmapSize.Y > 0);
         Assert.Equal(4.0f, modelView.GetMetadata(LightmapUVGenerationSettings.LightmapDensityKey).GetFloat());
         Assert.False(modelView.GetMetadata(LightmapUVGenerationSettings.LightmapSharedUV).GetBool());
+    }
+
+    [NativeBindingFact]
+    public void GenerateLightmapUV_rejects_indices_outside_the_vertex_array()
+    {
+        using var modelView = new ModelView();
+        var lod = new GeometryLODView { PrimitiveType = PrimitiveType.TriangleList };
+        lod.VertexFormat.Position = VertexElementType.Vector3;
+        lod.VertexFormat.Normal = VertexElementType.Vector3;
+        lod.Vertices.Add(CreateVertex(Vector3f.Zero));
+        lod.Vertices.Add(CreateVertex(Vector3f.Right));
+        lod.Vertices.Add(CreateVertex(Vector3f.Up));
+        lod.Indices.AddRange([0, 1, 3]);
+        var geometry = new GeometryView();
+        geometry.Lods.Add(lod);
+        modelView.SetGeometries([geometry]);
+
+        Assert.False(LightmapUVGenerator.GenerateLightmapUV(modelView, new LightmapUVGenerationSettings()));
+    }
+
+    [NativeBindingFact]
+    public void GenerateLightmapUV_reports_a_forced_native_mesh_add_failure()
+    {
+        using var modelView = new ModelView();
+        var lod = new GeometryLODView { PrimitiveType = PrimitiveType.TriangleList };
+        lod.VertexFormat.Position = VertexElementType.Vector3;
+        lod.VertexFormat.Normal = VertexElementType.Vector3;
+        lod.Vertices.Add(CreateVertex(Vector3f.Zero));
+        lod.Vertices.Add(CreateVertex(Vector3f.Right));
+        lod.Vertices.Add(CreateVertex(Vector3f.Up));
+        lod.Indices.AddRange([0, 1, 2]);
+        var geometry = new GeometryView();
+        geometry.Lods.Add(lod);
+        modelView.SetGeometries([geometry]);
+
+        var method = typeof(LightmapUVGenerator).GetMethod(
+            "GenerateLightmapUV", BindingFlags.Static | BindingFlags.NonPublic,
+            binder: null, [typeof(ModelView), typeof(LightmapUVGenerationSettings), typeof(bool)], modifiers: null)!;
+        Assert.False((bool)method.Invoke(null, [modelView, new LightmapUVGenerationSettings(), true])!);
+    }
+
+    [Fact]
+    public void Lightmap_mesh_add_failure_is_reported()
+    {
+        var method = typeof(LightmapUVGenerator).GetMethod(
+            "TryAddMesh", BindingFlags.Static | BindingFlags.NonPublic)!;
+        using var meshDecl = new MeshDecl();
+
+        Assert.False((bool)method.Invoke(null, [null, meshDecl, true])!);
     }
 
     private static ModelVertex CreateVertex(Vector3f position)

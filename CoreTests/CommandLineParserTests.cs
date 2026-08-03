@@ -1,5 +1,7 @@
 namespace RedBolt.Tests;
 
+using System.Reflection;
+
 using RedBolt;
 using RedBolt.Core;
 
@@ -53,5 +55,22 @@ public sealed class CommandLineParserTests
         Assert.Contains("Usage: RedBolt.Tests [options]", usage);
         Assert.Contains("--name <value>", usage);
         Assert.Contains("-h, --help", usage);
+    }
+
+    [Fact]
+    public void Command_line_option_base_operations_are_safe_for_the_wrong_option_shape()
+    {
+        const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        var flagType = typeof(CommandLineParser).GetNestedType("FlagCommandLineOption", BindingFlags.NonPublic)!;
+        var flag = flagType.GetConstructors(flags).Single().Invoke(
+            [new[] { "--flag" }, "flag", (Action)(static () => { })]);
+        flagType.GetMethod("Apply", flags, binder: null, [typeof(string)], modifiers: null)!
+            .Invoke(flag, ["ignored"]);
+
+        var valueType = typeof(CommandLineParser).GetNestedType("ValueCommandLineOption", BindingFlags.NonPublic)!;
+        var value = valueType.GetConstructors(flags).Single().Invoke(
+            [new[] { "--value" }, "value", "text", (Action<string>)(static _ => { })]);
+        valueType.GetMethod("Apply", flags, binder: null, Type.EmptyTypes, modifiers: null)!
+            .Invoke(value, null);
     }
 }
