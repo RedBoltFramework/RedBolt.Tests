@@ -92,6 +92,20 @@ public sealed class LogTests
     }
 
     [Fact]
+    public void Headless_fixture_captures_quiet_engine_logs()
+    {
+        var log = _fixture.Engine.GetSubsystem<Log>()!;
+        Assert.True(log.IsQuiet);
+
+        var message = $"fixture-log-capture-{Guid.NewGuid():N}";
+        Log.GetLogger("fixture-log-capture").Info(message);
+
+        var captured = Assert.Single(_fixture.LogSink.Messages,
+            entry => entry.Logger == "fixture-log-capture" && entry.Message == message);
+        Assert.Equal(LogLevel.Info, captured.Level);
+    }
+
+    [Fact]
     public void Worker_thread_log_sends_log_message_event_on_engine_end_frame()
     {
         SetMainThreadMethod.Invoke(null, null);

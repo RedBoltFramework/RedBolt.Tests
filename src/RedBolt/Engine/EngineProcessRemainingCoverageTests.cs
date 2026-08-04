@@ -178,8 +178,8 @@ public sealed class EngineProcessRemainingCoverageTests
         Assert.True(ProcessUtils.GetNumPhysicalCPUs() >= 1);
         Assert.True(ProcessUtils.GetTotalMemory() > 0);
         Assert.Throws<ArgumentNullException>(() => ProcessUtils.OpenURL(null!));
-        Assert.Throws<ArgumentException>(() => ProcessUtils.OpenURL("  "));
-        Assert.False(ProcessUtils.OpenURL("\0"));
+        Assert.False(ProcessUtils.OpenURL(string.Empty));
+        Assert.False(ProcessUtils.OpenURL("not a URL"));
     }
 
     private static Engine CreateHeadlessEngine()

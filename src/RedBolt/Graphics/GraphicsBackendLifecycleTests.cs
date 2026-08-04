@@ -60,29 +60,14 @@ public sealed class GraphicsBackendLifecycleTests
         Assert.True(fixture.Graphics.IsInitialized);
     }
 
-    private static bool IsEnabled(string name)
-    {
-        var value = Environment.GetEnvironmentVariable(name);
-        return value is not null &&
-            (value.Equals("1", StringComparison.OrdinalIgnoreCase) ||
-             value.Equals("true", StringComparison.OrdinalIgnoreCase) ||
-             value.Equals("yes", StringComparison.OrdinalIgnoreCase));
-    }
-
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     private sealed class GraphicsBackendFactAttribute : Xunit.FactAttribute
     {
         public GraphicsBackendFactAttribute()
         {
-            if (!IsEnabled("REDBOLT_RUN_GRAPHICS_BACKEND_LIFECYCLE"))
-            {
-                Skip = "Set REDBOLT_RUN_GRAPHICS_BACKEND_LIFECYCLE=1 to enable the native graphics lifecycle gate.";
-                return;
-            }
-
             if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY"))
                 && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
-                Skip = "Native graphics lifecycle requires a display; use the software-renderer harness.";
+                Skip = "Native graphics lifecycle requires a display; run with the workspace software-renderer helper.";
         }
     }
 }

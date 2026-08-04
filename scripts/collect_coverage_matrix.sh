@@ -108,7 +108,6 @@ for requested_api in "${requested_apis[@]}"; do
     printf 'Collecting %s coverage into %s\n' "$api" "$run_directory"
     if [[ "$api" == "vulkan" ]]; then
         REDBOLT_TEST_GRAPHICS_API="$api" \
-        REDBOLT_RUN_VULKAN_GRAPHICS_TESTS=1 \
         REDBOLT_COVERAGE_RESULTS_DIR="$run_directory" \
         REDBOLT_COVERAGE_MINIMUM=0 \
             "$script_directory/collect_coverage.sh" "${api_test_arguments[@]}"

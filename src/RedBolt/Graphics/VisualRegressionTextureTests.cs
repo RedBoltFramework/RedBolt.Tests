@@ -19,13 +19,14 @@ public sealed class VisualRegressionTextureTests
         var model = node.CreateComponent<StaticModel>();
         model.SetModel(fixture.Resources.Get<Model>("Models/Box.mdl"));
         model.SetMaterial(fixture.Resources.Get<Material>("Materials/Showcase/PreviewTexture2DArray.xml"));
+        node.SetPosition(new Vector3f(0.0f, 0.0f, 0.025f));
         var camera = VisualRegressionSceneFactory.AddCamera(
             scene, new Vector3f(3.2f, 2.3f, -5.0f), Vector3f.Zero, 256.0f / 192.0f, fov: 40.0f);
 
         var firstLayer = fixture.Capture(scene, camera);
-        node.SetPosition(new Vector3f(0.0f, 0.0f, 0.1f));
+        node.SetPosition(new Vector3f(0.0f, 0.0f, 0.125f));
         var middleLayer = fixture.Capture(scene, camera);
-        node.SetPosition(new Vector3f(0.0f, 0.0f, 0.2f));
+        node.SetPosition(new Vector3f(0.0f, 0.0f, 0.225f));
         var lastLayer = fixture.Capture(scene, camera);
 
         fixture.AssertMatches(

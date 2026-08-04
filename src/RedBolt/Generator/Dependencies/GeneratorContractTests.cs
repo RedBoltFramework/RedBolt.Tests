@@ -45,6 +45,22 @@ public sealed class GeneratorContractTests
     }
 
     [Fact]
+    public void Compiler_toolchain_discovery_finds_standard_headers()
+    {
+        if (!OperatingSystem.IsLinux())
+            return;
+
+        var discoveryType = GeneratorAssembly.GetType("RedBolt.Generator.Dependencies.CompilerToolchainDiscovery")!;
+        var discover = discoveryType.GetMethod("Discover", BindingFlags.Public | BindingFlags.Static)!;
+        var toolchainInfo = discover.Invoke(null, [Environment.GetEnvironmentVariable("CXX") ?? "c++"])!;
+        var includeDirectories = (IReadOnlyList<string>)toolchainInfo.GetType()
+            .GetProperty("IncludeDirectories")!.GetValue(toolchainInfo)!;
+
+        Assert.Contains(includeDirectories,
+            static includeDirectory => File.Exists(Path.Combine(includeDirectory, "stddef.h")));
+    }
+
+    [Fact]
     public void Generator_program_reports_unknown_surface_and_prints_usage()
     {
         using var artifacts = new TestArtifactScope(nameof(Generator_program_reports_unknown_surface_and_prints_usage));

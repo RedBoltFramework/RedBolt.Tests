@@ -88,12 +88,11 @@ public sealed class VisualRegressionEnvironmentTests
         skyplaneMaterial.SetNumTechniques(1);
         skyplaneMaterial.SetTechnique(0,
             fixture.Resources.Get<Technique>("Techniques/DiffSkyplane.xml"));
+        skyplaneMaterial.SetShaderParameter("Alignment", new Vector2f(0.5f, 0.5f));
+        skyplaneMaterial.SetShaderParameter("PixelPerfect", 0.0f);
         var skyplaneNode = scene.CreateChild("Skyplane");
-        skyplaneNode.SetRotation(new Quaternion(90.0f, Vector3f.Right));
-        skyplaneNode.SetPosition(Vector3f.Zero);
-        skyplaneNode.SetScale(100.0f);
-        var skyplane = skyplaneNode.CreateComponent<StaticModel>();
-        skyplane.SetModel(fixture.Resources.Get<Model>("Models/Plane.mdl"));
+        var skyplane = skyplaneNode.CreateComponent<Skybox>();
+        skyplane.SetModel(fixture.Resources.Get<Model>("Models/Sphere.mdl"));
         skyplane.SetMaterial(skyplaneMaterial);
 
         var camera = VisualRegressionSceneFactory.AddCamera(

@@ -9,10 +9,24 @@ parent-directory/
 └── RedBolt.Tests/
 ```
 
-Run the suite from this repository with:
+Run the suite from the workspace root with:
 
 ```bash
-./scripts/run_tests.sh --verbosity minimal
+dotnet test ./RedBolt.Tests/RedBolt.Tests.csproj
+```
+
+On a host without a desktop display, use the workspace software-renderer
+helper for display-dependent tests:
+
+```bash
+./RedBolt.Tests/scripts/with_software_renderer.sh dotnet test ./RedBolt.Tests/RedBolt.Tests.csproj
+```
+
+Select the graphics backend through the test executor environment:
+
+```bash
+REDBOLT_TEST_GRAPHICS_API=vulkan \
+  ./RedBolt.Tests/scripts/with_software_renderer.sh dotnet test ./RedBolt.Tests/RedBolt.Tests.csproj
 ```
 
 Collect production line and branch coverage with the software-rendered
@@ -22,8 +36,7 @@ off-screen harness and a 95% line/branch gate:
 ./scripts/collect_coverage.sh
 ```
 
-The command uses an available desktop graphics session, or falls back to
-Xvfb/llvmpipe when no desktop display is available. Set
+The command uses Xvfb/llvmpipe for display-dependent tests. Set
 `REDBOLT_COVERAGE_MINIMUM` to override the gate for local experiments. The
 report is written under `TestResults/coverage/` in Cobertura format.
 

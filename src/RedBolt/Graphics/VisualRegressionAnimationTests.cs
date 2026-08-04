@@ -162,9 +162,24 @@ public sealed class VisualRegressionAnimationTests
     public void Animated_model_morph_weights_render_zero_half_and_full_shapes()
     {
         using var fixture = new VisualRegressionFixture();
-        var zero = CaptureMorph(fixture, 0.0f, byName: false);
-        var half = CaptureMorph(fixture, 0.5f, byName: true);
-        var full = CaptureMorph(fixture, 1.0f, byName: false);
+        using var scene = VisualRegressionSceneFactory.CreateScene(new Color(0.08f, 0.08f, 0.08f));
+        var node = scene.CreateChild("MorphModel");
+        var animated = node.CreateComponent<AnimatedModel>();
+        animated.SetModel(CreateMorphModel(), false);
+        animated.SetMaterial(fixture.Resources.Get<Material>("Materials/Constant/UnlitWhite.xml"));
+        var camera = VisualRegressionSceneFactory.AddCamera(
+            scene, new Vector3f(0.0f, 0.0f, -4.0f), Vector3f.Zero, 128.0f / 96.0f,
+            orthographic: true, orthoSize: 2.8f);
+
+        animated.SetMorphWeight(0, 0.0f);
+        animated.ApplyAnimation();
+        var zero = fixture.Capture(scene, camera);
+        animated.SetMorphWeight("Raise", 0.5f);
+        animated.ApplyAnimation();
+        var half = fixture.Capture(scene, camera);
+        animated.SetMorphWeight(0, 1.0f);
+        animated.ApplyAnimation();
+        var full = fixture.Capture(scene, camera);
 
         fixture.AssertMatches(
             new VisualRegressionImageCapture(zero, "animation/morph-zero.png"),
@@ -306,26 +321,6 @@ public sealed class VisualRegressionAnimationTests
             scene, new Vector3f(0.0f, 1.25f, -4.2f), new Vector3f(0.0f, 1.0f, 0.0f),
             128.0f / 96.0f, fov: 40.0f);
         return scene;
-    }
-
-    private static VisualRegressionImage CaptureMorph(
-        VisualRegressionFixture fixture, float weight, bool byName)
-    {
-        using var scene = VisualRegressionSceneFactory.CreateScene(new Color(0.08f, 0.08f, 0.08f));
-        var node = scene.CreateChild("MorphModel");
-        var animated = node.CreateComponent<AnimatedModel>();
-        var model = CreateMorphModel();
-        animated.SetModel(model, false);
-        animated.SetMaterial(fixture.Resources.Get<Material>("Materials/Constant/UnlitWhite.xml"));
-        if (byName)
-            animated.SetMorphWeight("Raise", weight);
-        else
-            animated.SetMorphWeight(0, weight);
-        animated.ApplyAnimation();
-        var camera = VisualRegressionSceneFactory.AddCamera(
-            scene, new Vector3f(0.0f, 0.0f, -4.0f), Vector3f.Zero, 128.0f / 96.0f,
-            orthographic: true, orthoSize: 2.8f);
-        return fixture.Capture(scene, camera);
     }
 
     private static Model CreateMorphModel()

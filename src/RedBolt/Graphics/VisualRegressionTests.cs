@@ -129,8 +129,6 @@ public sealed class VisualRegressionTests
 
 internal static class VisualRegressionReferences
 {
-    public static bool RunVisualTests => IsEnabled("REDBOLT_RUN_VISUAL_TESTS");
-
     public static bool UpdateReferences => IsEnabled("REDBOLT_UPDATE_VISUAL_REFERENCES");
 
     public static bool UpdateBackendReferences => IsEnabled("REDBOLT_UPDATE_BACKEND_VISUAL_REFERENCES");
@@ -139,9 +137,6 @@ internal static class VisualRegressionReferences
     {
         get
         {
-            if (!RunVisualTests)
-                return "Set REDBOLT_RUN_VISUAL_TESTS=1 to run GPU visual regression tests.";
-
             if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY"))
                 && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
             {

@@ -12,25 +12,9 @@ internal sealed class GraphicsFactAttribute : Xunit.FactAttribute
 {
     public GraphicsFactAttribute()
     {
-        if (TestGraphicsBackend.Current == RenderBackend.Vulkan
-            && !IsEnabled("REDBOLT_RUN_VULKAN_GRAPHICS_TESTS"))
-        {
-            Skip = "Set REDBOLT_RUN_VULKAN_GRAPHICS_TESTS=1 to run Vulkan graphics tests; the backend shares one Diligent device per test process.";
-            return;
-        }
-
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY"))
             && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
-            Skip = "Native graphics tests require a display; use run_tests.sh for a headless software-rendered run.";
-    }
-
-    private static bool IsEnabled(string name)
-    {
-        var value = Environment.GetEnvironmentVariable(name);
-        return value is not null &&
-            (value.Equals("1", StringComparison.OrdinalIgnoreCase) ||
-             value.Equals("true", StringComparison.OrdinalIgnoreCase) ||
-             value.Equals("yes", StringComparison.OrdinalIgnoreCase));
+            Skip = "Native graphics tests require a display; run with the workspace software-renderer helper.";
     }
 }
 
@@ -39,25 +23,9 @@ internal sealed class GraphicsTheoryAttribute : Xunit.TheoryAttribute
 {
     public GraphicsTheoryAttribute()
     {
-        if (TestGraphicsBackend.Current == RenderBackend.Vulkan
-            && !IsEnabled("REDBOLT_RUN_VULKAN_GRAPHICS_TESTS"))
-        {
-            Skip = "Set REDBOLT_RUN_VULKAN_GRAPHICS_TESTS=1 to run Vulkan graphics tests; the backend shares one Diligent device per test process.";
-            return;
-        }
-
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY"))
             && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
-            Skip = "Native graphics tests require a display; use run_tests.sh for a headless software-rendered run.";
-    }
-
-    private static bool IsEnabled(string name)
-    {
-        var value = Environment.GetEnvironmentVariable(name);
-        return value is not null &&
-            (value.Equals("1", StringComparison.OrdinalIgnoreCase) ||
-             value.Equals("true", StringComparison.OrdinalIgnoreCase) ||
-             value.Equals("yes", StringComparison.OrdinalIgnoreCase));
+            Skip = "Native graphics tests require a display; run with the workspace software-renderer helper.";
     }
 }
 
@@ -74,7 +42,7 @@ internal sealed class OpenGLFactAttribute : Xunit.FactAttribute
 
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY"))
             && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
-            Skip = "Native graphics tests require a display; use run_tests.sh for a headless software-rendered run.";
+            Skip = "Native graphics tests require a display; run with the workspace software-renderer helper.";
     }
 }
 
@@ -155,23 +123,8 @@ internal sealed class DiligentGraphicsFactAttribute : Xunit.FactAttribute
             return;
         }
 
-        if (!IsEnabled("REDBOLT_RUN_DILIGENT_GL_SMOKE"))
-        {
-            Skip = "Set REDBOLT_RUN_DILIGENT_GL_SMOKE=1 to enable the Diligent OpenGL smoke gate.";
-            return;
-        }
-
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY"))
             && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
-            Skip = "Diligent OpenGL smoke requires a display; use the software-renderer harness.";
-    }
-
-    private static bool IsEnabled(string name)
-    {
-        var value = Environment.GetEnvironmentVariable(name);
-        return value is not null &&
-            (value.Equals("1", StringComparison.OrdinalIgnoreCase) ||
-             value.Equals("true", StringComparison.OrdinalIgnoreCase) ||
-             value.Equals("yes", StringComparison.OrdinalIgnoreCase));
+            Skip = "Diligent OpenGL smoke requires a display; run with the workspace software-renderer helper.";
     }
 }

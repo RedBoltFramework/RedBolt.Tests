@@ -7,6 +7,7 @@ using RedBolt.Engine;
 using RedBolt.Graphics;
 using RedBolt.IO;
 using RedBolt.Input;
+using RedBolt.Logging;
 using RedBolt.RenderAPI;
 using RedBolt.Resource;
 
@@ -19,11 +20,15 @@ public class HeadlessEngineFixture : IDisposable
     public HeadlessEngineFixture()
     {
         Engine = new Engine();
+        var log = Engine.GetSubsystem<Log>()!;
+        log.SetQuiet(true);
+        LogSink = new TestLogSink(log);
         Audio.RegisterAudioSubsystem(Engine.Context);
         var parameters = new EngineParameters
         {
             ApplicationName = "RedBolt.Tests",
             Headless = true,
+            LogQuiet = true,
             ResourcePaths = "CoreData;Data",
             ResourcePrefixPaths = ".;..",
             WindowMaximize = false,
@@ -41,6 +46,8 @@ public class HeadlessEngineFixture : IDisposable
     }
 
     public Engine Engine { get; }
+
+    public TestLogSink LogSink { get; }
 
     public Context Context => Engine.Context;
 
@@ -62,7 +69,14 @@ public class HeadlessEngineFixture : IDisposable
 
     public virtual void Dispose()
     {
-        Engine.Shutdown();
+        try
+        {
+            Engine.Shutdown();
+        }
+        finally
+        {
+            LogSink.Dispose();
+        }
     }
 
 }
