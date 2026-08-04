@@ -91,9 +91,9 @@ process.
 The software-rendered native path is provided by
 [`run_visual_tests_offscreen.sh`](../../RedBolt/scripts/run_visual_tests_offscreen.sh).
 It starts Xvfb, selects llvmpipe, enables the native graphics lifecycle gate,
-and runs the hidden-window/visual checks. A user-local Xvfb bundle can be
-selected with `REDBOLT_XVFB_ROOT`; the script fails with a diagnostic when
-that capability is not installed.
+and runs the hidden-window/visual checks. The installed `xvfb-run` command
+must be available on `PATH`; the script fails with a diagnostic when it is
+not installed.
 
 ## Completion gate
 
