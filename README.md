@@ -12,7 +12,7 @@ parent-directory/
 Run the suite from this repository with:
 
 ```bash
-../RedBolt/scripts/run_visual_tests_offscreen.sh --verbosity minimal
+./scripts/run_tests.sh --verbosity minimal
 ```
 
 Collect production line and branch coverage with the software-rendered
@@ -22,10 +22,10 @@ off-screen harness and a 95% line/branch gate:
 ./scripts/collect_coverage.sh
 ```
 
-The command uses Xvfb/llvmpipe by default so native graphics and visual tests
-run through the software renderer. Set `REDBOLT_COVERAGE_MINIMUM` to override
-the gate for local experiments. The report is written under
-`TestResults/coverage/` in Cobertura format.
+The command uses an available desktop graphics session, or falls back to
+Xvfb/llvmpipe when no desktop display is available. Set
+`REDBOLT_COVERAGE_MINIMUM` to override the gate for local experiments. The
+report is written under `TestResults/coverage/` in Cobertura format.
 
 Run the supported Linux backend matrix and merge the reports into one gated
 Cobertura report with:

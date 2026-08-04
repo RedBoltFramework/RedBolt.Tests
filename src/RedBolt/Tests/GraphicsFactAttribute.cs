@@ -21,7 +21,7 @@ internal sealed class GraphicsFactAttribute : Xunit.FactAttribute
 
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY"))
             && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
-            Skip = "Native graphics tests require a display; use run_visual_tests_offscreen.sh for llvmpipe.";
+            Skip = "Native graphics tests require a display; use run_tests.sh for a headless software-rendered run.";
     }
 
     private static bool IsEnabled(string name)
@@ -48,7 +48,7 @@ internal sealed class GraphicsTheoryAttribute : Xunit.TheoryAttribute
 
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY"))
             && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
-            Skip = "Native graphics tests require a display; use run_visual_tests_offscreen.sh for llvmpipe.";
+            Skip = "Native graphics tests require a display; use run_tests.sh for a headless software-rendered run.";
     }
 
     private static bool IsEnabled(string name)
@@ -74,7 +74,7 @@ internal sealed class OpenGLFactAttribute : Xunit.FactAttribute
 
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DISPLAY"))
             && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
-            Skip = "Native graphics tests require a display; use run_visual_tests_offscreen.sh for llvmpipe.";
+            Skip = "Native graphics tests require a display; use run_tests.sh for a headless software-rendered run.";
     }
 }
 

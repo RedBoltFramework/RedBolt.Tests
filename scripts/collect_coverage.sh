@@ -4,7 +4,6 @@ set -euo pipefail
 
 script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 tests_root="$(cd -- "$script_directory/.." && pwd)"
-redbolt_root="${REDBOLT_ROOT:-$tests_root/../RedBolt}"
 results_directory="${REDBOLT_COVERAGE_RESULTS_DIR:-$tests_root/TestResults/coverage}"
 
 mkdir -p "$results_directory"
@@ -17,9 +16,9 @@ offscreen_coverage_arguments=(
     -p:BuildProjectReferences=false
 )
 
-# Coverage is always collected through the Xvfb/llvmpipe harness. This keeps
-# native and visual tests on the same deterministic software-rendered path.
-"$redbolt_root/scripts/run_visual_tests_offscreen.sh" \
+# Coverage uses the standard graphics harness, which falls back to Xvfb/llvmpipe
+# when no desktop display is available.
+"$script_directory/run_tests.sh" \
     "${offscreen_coverage_arguments[@]}" "$@"
 
 coverage_file="$(find "$results_directory" -type f -name coverage.cobertura.xml -printf '%T@ %p\n' \
