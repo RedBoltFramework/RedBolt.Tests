@@ -19,6 +19,7 @@ public sealed class CStringTests
         Assert.Equal(expectedBytes.Length + 1, value.Bytes.Length);
         Assert.Equal(0, value.Bytes[^1]);
         Assert.Equal(expectedBytes, value.Bytes[..^1].ToArray());
+        Assert.Equal(expectedBytes, value.ContentBytes.ToArray());
         Assert.Equal("høla", value.ConvertToString());
     }
 
