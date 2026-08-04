@@ -4,6 +4,7 @@ using SystemMath = global::System.Math;
 using System.Reflection;
 
 using RedBolt;
+using RedBolt.Bindings.Diligent;
 using RedBolt.Container;
 using RedBolt.Core;
 using RedBolt.Graphics;
@@ -20,6 +21,15 @@ public sealed class DrawCommandQueueTests
     public DrawCommandQueueTests(GraphicsEngineFixture fixture)
     {
         this._fixture = fixture;
+    }
+
+    [Fact]
+    public void Vertex_buffer_offsets_use_fixed_width_unsigned_values()
+    {
+        var setVertexBuffers = typeof(IDeviceContext).GetMethod("SetVertexBuffers")
+            ?? throw new InvalidOperationException("IDeviceContext.SetVertexBuffers was not found.");
+
+        Assert.Equal(typeof(ReadOnlySpan<ulong>), setVertexBuffers.GetParameters()[3].ParameterType);
     }
 
     [GraphicsFact]

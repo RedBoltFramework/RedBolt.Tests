@@ -157,11 +157,10 @@ internal static class VisualRegressionReferences
         ArgumentException.ThrowIfNullOrEmpty(fileName);
         var root = Environment.GetEnvironmentVariable("REDBOLT_VISUAL_REFERENCE_ROOT");
         if (string.IsNullOrWhiteSpace(root))
-            root = Path.Combine(AppContext.BaseDirectory, "src", "RedBolt", "Tests",
-                "VisualRegression", "References");
+            root = Path.Combine(AppContext.BaseDirectory, "src", "RedBolt");
 
         var effectiveFileName = backend is not null ? GetBackendFileName(fileName, backend.Value) : fileName;
-        var path = Path.Combine(root, effectiveFileName);
+        var path = Path.Combine(root, GetReferenceDirectory(fileName), effectiveFileName);
         if (allowMissing || File.Exists(path))
             return path;
 
@@ -186,6 +185,17 @@ internal static class VisualRegressionReferences
         var directory = Path.GetDirectoryName(referenceFile);
         var fileName = $"{Path.GetFileNameWithoutExtension(referenceFile)}_shot.png";
         return string.IsNullOrEmpty(directory) ? fileName : Path.Combine(directory, fileName);
+    }
+
+    private static string GetReferenceDirectory(string fileName)
+    {
+        var subsystem = fileName.StartsWith("render-api/", StringComparison.Ordinal)
+            || fileName.StartsWith("surfaces/", StringComparison.Ordinal)
+            ? "RenderAPI"
+            : fileName.StartsWith("pipeline/", StringComparison.Ordinal)
+                ? "RenderPipeline"
+                : "Graphics";
+        return Path.Combine(subsystem, "References");
     }
 
     public static string GetArtifactDirectory()

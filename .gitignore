@@ -4,7 +4,7 @@ obj/
 TestResults/
 
 # Visual regression captures are generated beside their references.
-src/RedBolt/Tests/VisualRegression/References/**/*_shot.png
+src/RedBolt/**/References/**/*_shot.png
 
 # Editor and OS noise.
 .cache/

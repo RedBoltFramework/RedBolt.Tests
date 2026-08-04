@@ -1,5 +1,6 @@
 namespace RedBolt.Tests;
 
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -12,6 +13,12 @@ using RedBolt.Scene;
 [Collection(nameof(HeadlessEngineCollection))]
 public sealed class JoltMathTypeCompatibilityTests
 {
+    private const ulong FnvOffsetBasis = 0xcbf29ce484222325UL;
+    private const ulong HighBitSeed = 0x8000000000000000UL;
+
+    private delegate ulong HashBytesDelegate(IntPtr inData, uint inSize, ulong inSeed);
+    private delegate ulong HashStringDelegate(ReadOnlySpan<byte> inString, ulong inSeed);
+
     public JoltMathTypeCompatibilityTests(HeadlessEngineFixture fixture)
     {
         Physics.RegisterPhysicsLibrary(fixture.Context);
@@ -71,5 +78,43 @@ public sealed class JoltMathTypeCompatibilityTests
         var hit = new JoltRayCastResult { BodyId = uint.MaxValue, Fraction = 1.0f };
         Assert.True(world.NarrowPhaseQuery.CastRay(in ray, ref hit));
         Assert.InRange(hit.Fraction, 0.35f, 0.4f);
+    }
+
+    [Fact]
+    public void Jolt_fixed_width_hash_aliases_preserve_64_bit_seeds()
+    {
+        ReadOnlySpan<byte> emptyString = "\0"u8;
+        var input = new byte[1];
+        var inputHandle = GCHandle.Alloc(input, GCHandleType.Pinned);
+        try
+        {
+            var inputAddress = inputHandle.AddrOfPinnedObject();
+            ulong hashBytesDefault = JoltNativeBindings.HashBytes(inputAddress, 0);
+            ulong hashStringDefault = JoltNativeBindings.HashString(emptyString);
+            ulong processorTickCount = JoltNativeBindings.GetProcessorTickCount();
+            HashBytesDelegate hashBytes = JoltNativeBindings.HashBytes;
+            HashStringDelegate hashString = JoltNativeBindings.HashString;
+
+            Assert.Equal(FnvOffsetBasis, hashBytesDefault);
+            Assert.Equal(FnvOffsetBasis, hashStringDefault);
+            Assert.Equal(HighBitSeed, hashBytes(inputAddress, 0, HighBitSeed));
+            Assert.Equal(HighBitSeed, hashString(emptyString, HighBitSeed));
+            Assert.Equal(ulong.MaxValue, hashBytes(inputAddress, 0, ulong.MaxValue));
+            Assert.Equal(ulong.MaxValue, hashString(emptyString, ulong.MaxValue));
+            Assert.IsType<ulong>(processorTickCount);
+        }
+        finally
+        {
+            inputHandle.Free();
+        }
+    }
+
+    [Fact]
+    public void BVec16_fixed_width_array_uses_ulong_elements()
+    {
+        var property = typeof(BVec16).GetProperty(nameof(BVec16.MU64));
+
+        Assert.NotNull(property);
+        Assert.Equal(typeof(global::SharpCpp.NativeArray<ulong>), property.PropertyType);
     }
 }
