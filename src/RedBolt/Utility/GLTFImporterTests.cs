@@ -39,6 +39,7 @@ public sealed class GLTFImporterTests
         Assert.Equal([0u, 1u, 2u], lod.Indices);
         Assert.Equal(new Vector3f(1, 0, 0), lod.Vertices[1].GetPosition());
         Assert.Equal(new Vector3f(0, 1, 0), lod.Vertices[2].GetPosition());
+        Assert.Equal(new Vector3f(0, 0, 1), lod.Vertices[0].GetNormal());
     }
 
     [Fact]
