@@ -4,6 +4,7 @@ using System.Buffers.Binary;
 using System.Text;
 
 using RedBolt.Graphics;
+using RedBolt.IO;
 using RedBolt.Math;
 using RedBolt.Utility;
 
@@ -57,6 +58,59 @@ public sealed class GLTFImporterTests
         Assert.True(importer.LoadFileBinary(CreateEmptyGlb()), importer.LastError);
         Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
         Assert.Empty(importer.ImportedModel!.GetGeometries());
+    }
+
+    [Fact]
+    public void Importer_copies_settings_and_renames_nodes_when_loading()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_copies_settings_and_renames_nodes_when_loading));
+        var settings = new GLTFImporterSettings { NodeRenames = new Dictionary<string, string> { ["Node"] = "Renamed" } };
+        using var importer = new GLTFImporter(settings);
+        settings.NodeRenames["Node"] = "Mutated";
+        var documentPath = artifacts.Write("nodes.gltf", Encoding.UTF8.GetBytes("""
+            { "asset": { "version": "2.0" }, "nodes": [{ "name": "Node" }] }
+            """));
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        using var nodes = importer.SourceModel!.Nodes;
+        using var node = nodes[0];
+        using var name = node.Name;
+        Assert.Equal("Renamed", name.ToString());
+    }
+
+    [Fact]
+    public void Importer_settings_roundtrip_node_renames_and_engine_epsilon()
+    {
+        var source = new GLTFImporterSettings { NodeRenames = new Dictionary<string, string> { ["Before"] = "After" } };
+        using var output = new TestJSONOutputArchive();
+        using (output.OpenUnorderedBlock("settings"))
+            source.SerializeInBlock(output);
+        using var input = new TestJSONInputArchive(output.ToJsonString());
+        var result = new GLTFImporterSettings();
+        using (input.OpenUnorderedBlock("settings"))
+            result.SerializeInBlock(input);
+
+        Assert.Equal(MathDefs.Epsilon, result.KeyFrameTimeError);
+        Assert.Equal("After", result.NodeRenames["Before"]);
+    }
+
+    [Fact]
+    public void Importer_converts_processed_transforms_with_inline_scale_and_mirror()
+    {
+        using var importer = new GLTFImporter(new GLTFImporterSettings
+        {
+            MirrorX = true,
+            Scale = 2.0f,
+            Rotation = new Quaternion(45.0f, Vector3f.Up)
+        });
+        Assert.True(importer.LoadFileBinary(CreateEmptyGlb()), importer.LastError);
+        Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
+
+        var result = importer.ConvertTransform(new Transform(new Vector3f(1, 2, 3), new Quaternion(1, 2, 3, 4), Vector3f.One));
+
+        Assert.Equal(new Vector3f(-2, 4, 6), result.Position);
+        Assert.Equal(new Quaternion(1, 2, -3, -4), result.Rotation);
+        Assert.Equal(Vector3f.One, result.Scale);
     }
 
     private static byte[] CreateEmptyGlb()
