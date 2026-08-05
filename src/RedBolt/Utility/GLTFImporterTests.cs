@@ -43,6 +43,33 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_cooks_and_saves_model_resource()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_cooks_and_saves_model_resource));
+        var document = """
+            {
+              "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,$BUFFER$", "byteLength": 42 }],
+              "bufferViews": [{ "buffer": 0, "byteOffset": 0, "byteLength": 36 }, { "buffer": 0, "byteOffset": 36, "byteLength": 6 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" }, { "bufferView": 1, "componentType": 5123, "count": 3, "type": "SCALAR" }],
+              "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1 }] }]
+            }
+            """.Replace("$BUFFER$", TriangleBuffer, StringComparison.Ordinal);
+        var documentPath = artifacts.Write("triangle.gltf", Encoding.UTF8.GetBytes(document));
+        var outputPath = Path.Combine(artifacts.DirectoryPath, "output");
+        using var importer = new GLTFImporter(new GLTFImporterSettings { AssetName = "Triangle Asset" });
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
+        var saved = Assert.Single(importer.SavedResources);
+        Assert.Equal("Imported/Models/Triangle_Asset.mdl", saved.Key);
+        Assert.Equal(Path.Combine(outputPath, "Models/Triangle_Asset.mdl"), saved.Value);
+        Assert.True(importer.SaveResources(), importer.LastError);
+
+        Assert.Equal("UMD3", Encoding.ASCII.GetString(System.IO.File.ReadAllBytes(saved.Value), 0, 4));
+    }
+
+    [Fact]
     public void Importer_reads_normalized_attributes_and_tangents()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_reads_normalized_attributes_and_tangents));
