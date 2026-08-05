@@ -614,7 +614,7 @@ public sealed class GLTFImporterTests
               "images": [{ "uri": "Diffuse.png" }],
               "samplers": [{ "magFilter": 9728, "minFilter": 9728, "wrapS": 33071, "wrapT": 33648 }],
               "textures": [{ "source": 0, "sampler": 0 }],
-              "materials": [{ "pbrMetallicRoughness": { "baseColorTexture": { "index": 0, "texCoord": 1 }, "metallicRoughnessTexture": { "index": 0, "texCoord": 1 } }, "occlusionTexture": { "index": 0, "texCoord": 1, "strength": 0.25 } }],
+              "materials": [{ "pbrMetallicRoughness": { "baseColorTexture": { "index": 0, "texCoord": 1 }, "metallicRoughnessTexture": { "index": 0, "texCoord": 1 } }, "occlusionTexture": { "index": 0, "texCoord": 1, "strength": 0.25 }, "normalTexture": { "index": 0, "texCoord": 1 }, "emissiveTexture": { "index": 0, "texCoord": 1 } }],
               "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1, "material": 0 }] }]
             }
             """.Replace("$BUFFER$", TriangleBuffer, StringComparison.Ordinal);
@@ -652,6 +652,8 @@ public sealed class GLTFImporterTests
         Assert.Contains("non-standard UV for diffuse texture #0", importer.LastWarning, StringComparison.Ordinal);
         Assert.Contains("non-standard UV for metallic-roughness texture #0", importer.LastWarning, StringComparison.Ordinal);
         Assert.Contains("non-standard UV for occlusion texture #0", importer.LastWarning, StringComparison.Ordinal);
+        Assert.Contains("non-standard UV for normal texture #0", importer.LastWarning, StringComparison.Ordinal);
+        Assert.Contains("non-standard UV for emissive texture #0", importer.LastWarning, StringComparison.Ordinal);
     }
 
     [Fact]
