@@ -98,13 +98,55 @@ public sealed class GLTFImporterTests
         using var source = new MemoryBuffer(System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Prefab.prefab")));
         using var prefab = new PrefabResource();
         Assert.True(prefab.BeginLoad(source));
-        var mesh = Assert.Single(prefab.GetNodePrefab().Children);
+        var mesh = prefab.GetNodePrefab();
+        Assert.Equal("Triangle", mesh.GetNodeName());
         var staticModel = Assert.Single(mesh.Components);
         Assert.Equal(nameof(StaticModel), staticModel.TypeName);
         var model = Assert.Single(staticModel.Attributes.Where(attribute => attribute.Name == "Model")).Value.GetResourceRef();
         var materials = Assert.Single(staticModel.Attributes.Where(attribute => attribute.Name == "Material")).Value.GetResourceRefList();
         Assert.Equal("Imported/Models/Triangle.mdl", model.Name);
         Assert.Equal(["Imported/Materials/Paint.xml"], materials.Names);
+    }
+
+    [Fact]
+    public void Importer_applies_matrix_transforms_and_skips_tagged_prefab_nodes()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_applies_matrix_transforms_and_skips_tagged_prefab_nodes));
+        var document = """
+            {
+              "asset": { "version": "2.0" },
+              "nodes": [
+                { "name": "Wrapper", "children": [1, 2] },
+                { "name": "Kept", "matrix": [2, 0, 0, 0, 0, 3, 0, 0, 0, 0, 4, 0, 5, 6, 7, 1] },
+                { "name": "Skip_me", "children": [3] },
+                { "name": "SkippedChild" }
+              ],
+              "scenes": [{ "nodes": [0] }]
+            }
+            """;
+        var documentPath = artifacts.Write("hierarchy.gltf", Encoding.UTF8.GetBytes(document));
+        var outputPath = Path.Combine(artifacts.DirectoryPath, "output");
+        using var importer = new GLTFImporter(new GLTFImporterSettings
+        {
+            AssetName = "Imported",
+            CleanupRootNodes = false,
+            Scale = 2.0f,
+            SkipTags = ["Skip_"]
+        });
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
+        Assert.True(importer.SaveResources(), importer.LastError);
+
+        using var source = new MemoryBuffer(System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Prefab.prefab")));
+        using var prefab = new PrefabResource();
+        Assert.True(prefab.BeginLoad(source));
+        var wrapper = Assert.Single(prefab.GetNodePrefab().Children);
+        Assert.Equal("Wrapper", wrapper.GetNodeName());
+        var kept = Assert.Single(wrapper.Children);
+        Assert.Equal("Kept", kept.GetNodeName());
+        Assert.Equal(new Vector3f(10, 12, 14), Assert.Single(kept.Node.Attributes.Where(attribute => attribute.Name == "Position")).Value.GetVector3());
+        Assert.Equal(new Vector3f(2, 3, 4), Assert.Single(kept.Node.Attributes.Where(attribute => attribute.Name == "Scale")).Value.GetVector3());
     }
 
     [Fact]
