@@ -99,8 +99,9 @@ public sealed class GLTFImporterTests
     public void Importer_cooks_material_texture_resources()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_cooks_material_texture_resources));
-        artifacts.Write("Diffuse.png", Convert.FromBase64String(
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL8aQAAAABJRU5ErkJggg=="));
+        var diffuseBytes = Convert.FromBase64String(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL8aQAAAABJRU5ErkJggg==");
+        artifacts.Write("Diffuse.png", diffuseBytes);
         var document = """
             {
               "asset": { "version": "2.0" },
@@ -129,6 +130,13 @@ public sealed class GLTFImporterTests
         Assert.Equal([137, 80, 78, 71], System.IO.File.ReadAllBytes(textureFile)[..4]);
         Assert.Equal([137, 80, 78, 71], System.IO.File.ReadAllBytes(
             Path.Combine(outputPath, "Textures/Diffuse_Properties.png"))[..4]);
+        using var sourceBuffer = new MemoryBuffer(diffuseBytes);
+        using var sourceImage = new RedBolt.Resource.Image();
+        using var propertiesImage = new RedBolt.Resource.Image();
+        Assert.True(sourceImage.Load(sourceBuffer));
+        Assert.True(propertiesImage.LoadFile(Path.Combine(outputPath, "Textures/Diffuse_Properties.png")));
+        var sourceColor = sourceImage.GetPixelInt(0, 0);
+        Assert.Equal(((sourceColor >> 8) & 0xffffu) | ((sourceColor & 0xffu) << 24), propertiesImage.GetPixelInt(0, 0));
         var parameters = System.Xml.Linq.XDocument.Load(Path.Combine(outputPath, "Textures/Diffuse.xml"));
         Assert.Equal("clamp", parameters.Root!.Elements("address").Single(element => (string?)element.Attribute("coord") == "u").Attribute("mode")!.Value);
         Assert.Equal("mirror", parameters.Root.Elements("address").Single(element => (string?)element.Attribute("coord") == "v").Attribute("mode")!.Value);
