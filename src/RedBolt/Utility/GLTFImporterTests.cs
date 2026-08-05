@@ -110,7 +110,7 @@ public sealed class GLTFImporterTests
               "images": [{ "uri": "Diffuse.png" }],
               "samplers": [{ "magFilter": 9728, "minFilter": 9728, "wrapS": 33071, "wrapT": 33648 }],
               "textures": [{ "source": 0, "sampler": 0 }],
-              "materials": [{ "pbrMetallicRoughness": { "baseColorTexture": { "index": 0 } } }],
+              "materials": [{ "pbrMetallicRoughness": { "baseColorTexture": { "index": 0 }, "metallicRoughnessTexture": { "index": 0 } }, "occlusionTexture": { "index": 0 } }],
               "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1, "material": 0 }] }]
             }
             """.Replace("$BUFFER$", TriangleBuffer, StringComparison.Ordinal);
@@ -122,10 +122,13 @@ public sealed class GLTFImporterTests
         Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
         Assert.Contains("Imported/Textures/Diffuse.png", importer.SavedResources.Keys);
         Assert.Contains("Imported/Textures/Diffuse.xml", importer.SavedResources.Keys);
+        Assert.Contains("Imported/Textures/Diffuse_Properties.png", importer.SavedResources.Keys);
         Assert.True(importer.SaveResources(), importer.LastError);
 
         var textureFile = Path.Combine(outputPath, "Textures/Diffuse.png");
         Assert.Equal([137, 80, 78, 71], System.IO.File.ReadAllBytes(textureFile)[..4]);
+        Assert.Equal([137, 80, 78, 71], System.IO.File.ReadAllBytes(
+            Path.Combine(outputPath, "Textures/Diffuse_Properties.png"))[..4]);
         var parameters = System.Xml.Linq.XDocument.Load(Path.Combine(outputPath, "Textures/Diffuse.xml"));
         Assert.Equal("clamp", parameters.Root!.Elements("address").Single(element => (string?)element.Attribute("coord") == "u").Attribute("mode")!.Value);
         Assert.Equal("mirror", parameters.Root.Elements("address").Single(element => (string?)element.Attribute("coord") == "v").Attribute("mode")!.Value);
