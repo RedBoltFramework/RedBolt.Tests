@@ -940,6 +940,32 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_uses_hierarchy_path_for_scene_animation_tracks()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_uses_hierarchy_path_for_scene_animation_tracks));
+        var data = new List<byte>();
+        AppendSingle(data, 0); AppendSingle(data, 1);
+        AppendSingle(data, 0); AppendSingle(data, 0); AppendSingle(data, 0);
+        AppendSingle(data, 2); AppendSingle(data, 0); AppendSingle(data, 0);
+        var document = $$"""
+            {
+              "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,{{Convert.ToBase64String([.. data])}}", "byteLength": {{data.Count}} }],
+              "bufferViews": [{ "buffer": 0, "byteLength": 8 }, { "buffer": 0, "byteOffset": 8, "byteLength": 24 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 2, "type": "SCALAR" }, { "bufferView": 1, "componentType": 5126, "count": 2, "type": "VEC3" }],
+              "nodes": [{ "name": "Root", "children": [1] }, { "name": "Child" }],
+              "animations": [{ "samplers": [{ "input": 0, "output": 1 }], "channels": [{ "sampler": 0, "target": { "node": 1, "path": "translation" } }] }]
+            }
+            """;
+        var documentPath = artifacts.Write("nested-animation.gltf", Encoding.UTF8.GetBytes(document));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
+        Assert.Equal("Root/Child", Assert.Single(Assert.Single(importer.ImportedAnimations).Tracks.Values).Name);
+    }
+
+    [Fact]
     public void Importer_uses_cleaned_bone_names_for_animation_tracks()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_uses_cleaned_bone_names_for_animation_tracks));
