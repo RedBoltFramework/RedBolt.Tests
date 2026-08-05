@@ -87,6 +87,49 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_cooks_morph_weight_animation_and_controller()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_cooks_morph_weight_animation_and_controller));
+        var data = new byte[88];
+        Convert.FromBase64String(TriangleBuffer).CopyTo(data, 0);
+        BinaryPrimitives.WriteSingleLittleEndian(data.AsSpan(42), 1.0f);
+        BinaryPrimitives.WriteSingleLittleEndian(data.AsSpan(46), 2.0f);
+        BinaryPrimitives.WriteSingleLittleEndian(data.AsSpan(50), 3.0f);
+        BinaryPrimitives.WriteSingleLittleEndian(data.AsSpan(72), 0.0f);
+        BinaryPrimitives.WriteSingleLittleEndian(data.AsSpan(76), 1.0f);
+        BinaryPrimitives.WriteSingleLittleEndian(data.AsSpan(80), 0.25f);
+        BinaryPrimitives.WriteSingleLittleEndian(data.AsSpan(84), 0.75f);
+        var document = """
+            {
+              "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,$BUFFER$", "byteLength": 88 }],
+              "bufferViews": [{ "buffer": 0, "byteOffset": 0, "byteLength": 36 }, { "buffer": 0, "byteOffset": 42, "byteLength": 36 }, { "buffer": 0, "byteOffset": 72, "byteLength": 8 }, { "buffer": 0, "byteOffset": 80, "byteLength": 8 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" }, { "bufferView": 1, "componentType": 5126, "count": 3, "type": "VEC3" }, { "bufferView": 2, "componentType": 5126, "count": 2, "type": "SCALAR" }, { "bufferView": 3, "componentType": 5126, "count": 2, "type": "SCALAR" }],
+              "meshes": [{ "weights": [0.0], "primitives": [{ "attributes": { "POSITION": 0 }, "targets": [{ "POSITION": 1 }] }] }],
+              "nodes": [{ "name": "Morph", "mesh": 0 }],
+              "animations": [{ "samplers": [{ "input": 2, "output": 3, "interpolation": "LINEAR" }], "channels": [{ "sampler": 0, "target": { "node": 0, "path": "weights" } }] }],
+              "scenes": [{ "nodes": [0] }]
+            }
+            """.Replace("$BUFFER$", Convert.ToBase64String(data), StringComparison.Ordinal);
+        var documentPath = artifacts.Write("morph-animation.gltf", Encoding.UTF8.GetBytes(document));
+        var outputPath = Path.Combine(artifacts.DirectoryPath, "output");
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
+        var animation = Assert.Single(importer.ImportedAnimations);
+        var track = Assert.Single(animation.VariantTracks.Values);
+        Assert.Equal("Morph/@AnimatedModel/Morphs/0", track.Name);
+        Assert.Equal([0.25f, 0.75f], track.KeyFrames.Select(keyFrame => keyFrame.Value.GetFloat()));
+        Assert.True(importer.SaveResources(), importer.LastError);
+
+        using var source = new MemoryBuffer(System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Prefab.prefab")));
+        using var prefab = new PrefabResource();
+        Assert.True(prefab.BeginLoad(source));
+        Assert.Contains(prefab.GetNodePrefab().Components, component => component.TypeName == nameof(AnimationController));
+    }
+
+    [Fact]
     public void Importer_reads_sparse_accessors()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_reads_sparse_accessors));
