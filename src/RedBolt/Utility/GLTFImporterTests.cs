@@ -159,7 +159,7 @@ public sealed class GLTFImporterTests
               "nodes": [
                 { "name": "Root", "translation": [1, 0, 0], "children": [1, 3] },
                 { "name": "Pivot", "translation": [0, 2, 0], "children": [2] },
-                { "name": "Joint", "translation": [0, 0, 3] },
+                { "name": "Joint", "translation": [0, 0, 3], "rotation": [0, 0.5, 0, 0.8660254] },
                 { "name": "SkinnedMesh", "mesh": 0, "skin": 0 }
               ],
               "skins": [{ "inverseBindMatrices": 2, "skeleton": 0, "joints": [2] }],
@@ -168,7 +168,7 @@ public sealed class GLTFImporterTests
             """.Replace("$BUFFER$", Convert.ToBase64String(skinBuffer), StringComparison.Ordinal);
         var documentPath = artifacts.Write("skin.gltf", Encoding.UTF8.GetBytes(document));
         var outputPath = Path.Combine(artifacts.DirectoryPath, "output");
-        using var importer = new GLTFImporter(new GLTFImporterSettings { AssetName = "Skinned" });
+        using var importer = new GLTFImporter(new GLTFImporterSettings { AssetName = "Skinned", MirrorX = true });
 
         Assert.True(importer.LoadFile(documentPath), importer.LastError);
         Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
@@ -179,14 +179,16 @@ public sealed class GLTFImporterTests
         Assert.Equal(-1, bones[1].ParentIndex);
         Assert.Equal(1, bones[2].ParentIndex);
         Assert.Equal(new Vector3f(0, 0, 3), bones[0].Position);
-        Assert.Equal(new Vector3f(1, 0, 0), bones[1].Position);
+        Assert.Equal(new Vector3f(-1, 0, 0), bones[1].Position);
         Assert.Equal(new Vector3f(0, 2, 0), bones[2].Position);
+        Assert.True(bones[0].Rotation.ApproximatelyEquivalent(new Quaternion(0.8660254f, 0, -0.5f, 0), 0.0001f));
         Assert.Equal(new Vector3f(9, 8, 7), bones[0].OffsetMatrix.Translation);
 
         using var source = new MemoryBuffer(System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Prefab.prefab")));
         using var prefab = new PrefabResource();
         Assert.True(prefab.BeginLoad(source));
-        Assert.Equal(nameof(AnimatedModel), Assert.Single(prefab.GetNodePrefab().Components).TypeName);
+        var skinnedMesh = prefab.GetNodePrefab().Children.Single(node => node.GetNodeName() == "SkinnedMesh");
+        Assert.Equal(nameof(AnimatedModel), Assert.Single(skinnedMesh.Components).TypeName);
     }
 
     [Fact]
@@ -211,6 +213,7 @@ public sealed class GLTFImporterTests
         {
             AssetName = "Imported",
             CleanupRootNodes = false,
+            MirrorX = true,
             Scale = 2.0f,
             SkipTags = ["Skip_"]
         });
@@ -226,7 +229,7 @@ public sealed class GLTFImporterTests
         Assert.Equal("Wrapper", wrapper.GetNodeName());
         var kept = Assert.Single(wrapper.Children);
         Assert.Equal("Kept", kept.GetNodeName());
-        Assert.Equal(new Vector3f(10, 12, 14), Assert.Single(kept.Node.Attributes.Where(attribute => attribute.Name == "Position")).Value.GetVector3());
+        Assert.Equal(new Vector3f(-10, 12, 14), Assert.Single(kept.Node.Attributes.Where(attribute => attribute.Name == "Position")).Value.GetVector3());
         Assert.Equal(new Vector3f(2, 3, 4), Assert.Single(kept.Node.Attributes.Where(attribute => attribute.Name == "Scale")).Value.GetVector3());
     }
 
