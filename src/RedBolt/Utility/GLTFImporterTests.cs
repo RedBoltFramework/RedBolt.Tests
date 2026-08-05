@@ -7,6 +7,7 @@ using RedBolt.Core;
 using RedBolt.Graphics;
 using RedBolt.IO;
 using RedBolt.Math;
+using RedBolt.RenderPipeline;
 using RedBolt.Resource;
 using RedBolt.Scene;
 using RedBolt.Utility;
@@ -407,6 +408,43 @@ public sealed class GLTFImporterTests
         Assert.Contains("Imported/Prefab.prefab", importer.SavedResources.Keys);
         Assert.True(importer.SaveResources(), importer.LastError);
         Assert.True(System.IO.File.Exists(Path.Combine(outputPath, "Prefab.prefab")));
+    }
+
+    [Fact]
+    public void Importer_applies_preview_scene_settings()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_applies_preview_scene_settings));
+        var documentPath = artifacts.Write("scene.gltf", Encoding.UTF8.GetBytes("""
+            {
+              "asset": { "version": "2.0" },
+              "scenes": [{ "nodes": [0] }],
+              "nodes": [{ "name": "Asset" }]
+            }
+            """));
+        var outputPath = Path.Combine(artifacts.DirectoryPath, "output");
+        using var importer = new GLTFImporter(new GLTFImporterSettings
+        {
+            Preview = new GLTFImporterSettings.PreviewOptions
+            {
+                AddLights = true,
+                AddSkybox = false,
+                AddReflectionProbe = false,
+                HighRenderQuality = true
+            }
+        });
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
+        Assert.True(importer.SaveResources(), importer.LastError);
+
+        using var source = new MemoryBuffer(System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Prefab.prefab")));
+        using var prefab = new PrefabResource();
+        Assert.True(prefab.BeginLoad(source));
+        var scene = prefab.GetScenePrefab();
+        Assert.Contains(scene.Components, component => component.TypeName == nameof(Octree));
+        Assert.Contains(scene.Components, component => component.TypeName == nameof(RenderPipeline));
+        var light = Assert.Single(scene.Children.Where(node => node.GetNodeName() == "Default Light"));
+        Assert.Equal(nameof(Light), Assert.Single(light.Components).TypeName);
     }
 
     [Fact]
