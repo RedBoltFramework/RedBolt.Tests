@@ -45,6 +45,45 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_reads_morph_target_deltas_and_default_weight()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_reads_morph_target_deltas_and_default_weight));
+        var data = new byte[78];
+        Convert.FromBase64String(TriangleBuffer).CopyTo(data, 0);
+        BinaryPrimitives.WriteSingleLittleEndian(data.AsSpan(42), 1.0f);
+        BinaryPrimitives.WriteSingleLittleEndian(data.AsSpan(46), 2.0f);
+        BinaryPrimitives.WriteSingleLittleEndian(data.AsSpan(50), 3.0f);
+        var document = """
+            {
+              "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,$BUFFER$", "byteLength": 78 }],
+              "bufferViews": [{ "buffer": 0, "byteOffset": 0, "byteLength": 36 }, { "buffer": 0, "byteOffset": 42, "byteLength": 36 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" }, { "bufferView": 1, "componentType": 5126, "count": 3, "type": "VEC3" }],
+              "meshes": [{ "weights": [0.25], "primitives": [{ "attributes": { "POSITION": 0 }, "targets": [{ "POSITION": 1 }] }] }],
+              "nodes": [{ "name": "Morph", "mesh": 0, "weights": [0.5] }],
+              "scenes": [{ "nodes": [0] }]
+            }
+            """.Replace("$BUFFER$", Convert.ToBase64String(data), StringComparison.Ordinal);
+        var documentPath = artifacts.Write("morph.gltf", Encoding.UTF8.GetBytes(document));
+        var outputPath = Path.Combine(artifacts.DirectoryPath, "output");
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
+
+        var model = Assert.IsType<ModelView>(importer.ImportedModel);
+        Assert.Equal(0.25f, Assert.Single(model.GetMorphs()).InitialWeight);
+        var morph = Assert.Single(Assert.Single(Assert.Single(model.GetGeometries()).Lods).Morphs[0]);
+        Assert.Equal(0u, morph.Index);
+        Assert.Equal(new Vector3f(1, 2, 3), morph.PositionDelta);
+        Assert.True(importer.SaveResources(), importer.LastError);
+        using var source = new MemoryBuffer(System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Prefab.prefab")));
+        using var prefab = new PrefabResource();
+        Assert.True(prefab.BeginLoad(source));
+        Assert.Equal(nameof(AnimatedModel), Assert.Single(prefab.GetNodePrefab().Components).TypeName);
+    }
+
+    [Fact]
     public void Importer_reads_sparse_accessors()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_reads_sparse_accessors));
@@ -72,6 +111,26 @@ public sealed class GLTFImporterTests
         Assert.Equal(Vector3f.Zero, vertices[0].GetPosition());
         Assert.Equal(new Vector3f(1, 2, 3), vertices[1].GetPosition());
         Assert.Equal(Vector3f.Zero, vertices[2].GetPosition());
+    }
+
+    [Fact]
+    public void Importer_creates_artificial_skin_from_callback()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_creates_artificial_skin_from_callback));
+        var document = """
+            {
+              "asset": { "version": "2.0" },
+              "nodes": [{ "name": "Rig", "children": [1] }, { "name": "Joint" }],
+              "scenes": [{ "nodes": [0] }]
+            }
+            """;
+        var documentPath = artifacts.Write("artificial-skin.gltf", Encoding.UTF8.GetBytes(document));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(string.Empty, string.Empty, new ArtificialSkinCallback()), importer.LastError);
+
+        Assert.Equal(2, importer.ImportedModel!.GetBones().Count);
     }
 
     [Fact]
@@ -637,6 +696,11 @@ public sealed class GLTFImporterTests
         public RedBolt.Graphics.Animation? Animation { get; private set; }
 
         public override void OnAnimationLoaded(RedBolt.Graphics.Animation animation) => Animation = animation;
+    }
+
+    private sealed class ArtificialSkinCallback : GLTFImporterCallback
+    {
+        public override List<string> GetArtificialSkinNodes() => ["Rig"];
     }
 
     private static void AppendSingle(List<byte> bytes, float value) => bytes.AddRange(BitConverter.GetBytes(value));
