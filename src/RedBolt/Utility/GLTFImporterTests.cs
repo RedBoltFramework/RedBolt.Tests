@@ -96,6 +96,35 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_cooks_material_texture_resources()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_cooks_material_texture_resources));
+        var document = """
+            {
+              "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,$BUFFER$", "byteLength": 42 }],
+              "bufferViews": [{ "buffer": 0, "byteOffset": 0, "byteLength": 36 }, { "buffer": 0, "byteOffset": 36, "byteLength": 6 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" }, { "bufferView": 1, "componentType": 5123, "count": 3, "type": "SCALAR" }],
+              "images": [{ "name": "Diffuse", "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL8aQAAAABJRU5ErkJggg==" }],
+              "textures": [{ "source": 0 }],
+              "materials": [{ "pbrMetallicRoughness": { "baseColorTexture": { "index": 0 } } }],
+              "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1, "material": 0 }] }]
+            }
+            """.Replace("$BUFFER$", TriangleBuffer, StringComparison.Ordinal);
+        var documentPath = artifacts.Write("texture.gltf", Encoding.UTF8.GetBytes(document));
+        var outputPath = Path.Combine(artifacts.DirectoryPath, "output");
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
+        Assert.Contains("Imported/Textures/Diffuse.png", importer.SavedResources.Keys);
+        Assert.True(importer.SaveResources(), importer.LastError);
+
+        var textureFile = Path.Combine(outputPath, "Textures/Diffuse.png");
+        Assert.Equal([137, 80, 78, 71], System.IO.File.ReadAllBytes(textureFile)[..4]);
+    }
+
+    [Fact]
     public void Importer_combines_named_mesh_lods()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_combines_named_mesh_lods));
