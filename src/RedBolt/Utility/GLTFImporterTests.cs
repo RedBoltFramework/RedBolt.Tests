@@ -800,6 +800,33 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_skips_tagged_animations()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_skips_tagged_animations));
+        var data = new List<byte>();
+        AppendSingle(data, 0); AppendSingle(data, 1);
+        AppendSingle(data, 0); AppendSingle(data, 0); AppendSingle(data, 0);
+        AppendSingle(data, 2); AppendSingle(data, 0); AppendSingle(data, 0);
+        var document = $$"""
+            {
+              "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,{{Convert.ToBase64String([.. data])}}", "byteLength": {{data.Count}} }],
+              "bufferViews": [{ "buffer": 0, "byteLength": 8 }, { "buffer": 0, "byteOffset": 8, "byteLength": 24 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 2, "type": "SCALAR" }, { "bufferView": 1, "componentType": 5126, "count": 2, "type": "VEC3" }],
+              "nodes": [{ "name": "Node" }],
+              "animations": [{ "name": "Skip_Move", "samplers": [{ "input": 0, "output": 1 }], "channels": [{ "sampler": 0, "target": { "node": 0, "path": "translation" } }] }]
+            }
+            """;
+        var documentPath = artifacts.Write("skip-animation.gltf", Encoding.UTF8.GetBytes(document));
+        using var importer = new GLTFImporter(new GLTFImporterSettings { SkipTags = ["Skip_"] });
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
+        Assert.Empty(importer.ImportedAnimations);
+        Assert.DoesNotContain(importer.SavedResources.Keys, name => name.StartsWith("Animations/", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void Importer_reads_cubic_spline_bone_animation_values()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_reads_cubic_spline_bone_animation_values));
