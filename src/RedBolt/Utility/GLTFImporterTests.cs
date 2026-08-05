@@ -574,7 +574,7 @@ public sealed class GLTFImporterTests
               "bufferViews": [{ "buffer": 0, "byteOffset": 0, "byteLength": 36 }, { "buffer": 0, "byteOffset": 36, "byteLength": 6 }],
               "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" }, { "bufferView": 1, "componentType": 5123, "count": 3, "type": "SCALAR" }],
               "materials": [
-                { "name": "Paint", "alphaMode": "MASK", "extensions": { "KHR_materials_unlit": {} }, "pbrMetallicRoughness": { "baseColorFactor": [0.25, 0.5, 0.75, 1.0], "metallicFactor": 0.2, "roughnessFactor": 0.8 } },
+                { "name": "Paint", "alphaMode": "MASK", "alphaCutoff": 0.25, "extensions": { "KHR_materials_unlit": {} }, "pbrMetallicRoughness": { "baseColorFactor": [0.25, 0.5, 0.75, 1.0], "metallicFactor": 0.2, "roughnessFactor": 0.8 } },
                 { "name": "Glass", "alphaMode": "BLEND" }
               ],
               "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1, "material": 0 }] }]
@@ -595,6 +595,7 @@ public sealed class GLTFImporterTests
         Assert.Equal("Techniques/UnlitOpaque.xml", paint.Root!.Element("technique")!.Attribute("name")!.Value);
         Assert.Equal("ALPHAMASK", paint.Root.Element("shader")!.Attribute("vsdefines")!.Value.Trim());
         Assert.Equal("Techniques/LitTransparentFade.xml", glass.Root!.Element("technique")!.Attribute("name")!.Value);
+        Assert.Contains("Material 'Paint' has non-standard alpha cutoff.", importer.LastWarning, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -613,7 +614,7 @@ public sealed class GLTFImporterTests
               "images": [{ "uri": "Diffuse.png" }],
               "samplers": [{ "magFilter": 9728, "minFilter": 9728, "wrapS": 33071, "wrapT": 33648 }],
               "textures": [{ "source": 0, "sampler": 0 }],
-              "materials": [{ "pbrMetallicRoughness": { "baseColorTexture": { "index": 0 }, "metallicRoughnessTexture": { "index": 0 } }, "occlusionTexture": { "index": 0, "strength": 0.25 } }],
+              "materials": [{ "pbrMetallicRoughness": { "baseColorTexture": { "index": 0, "texCoord": 1 }, "metallicRoughnessTexture": { "index": 0, "texCoord": 1 } }, "occlusionTexture": { "index": 0, "texCoord": 1, "strength": 0.25 } }],
               "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1, "material": 0 }] }]
             }
             """.Replace("$BUFFER$", TriangleBuffer, StringComparison.Ordinal);
@@ -648,6 +649,9 @@ public sealed class GLTFImporterTests
         var material = System.Xml.Linq.XDocument.Load(Path.Combine(outputPath, "Materials/Material_0.xml"));
         Assert.Equal("0.25", material.Root!.Elements("parameter")
             .Single(element => (string?)element.Attribute("name") == "OcclusionStrength").Attribute("value")!.Value);
+        Assert.Contains("non-standard UV for diffuse texture #0", importer.LastWarning, StringComparison.Ordinal);
+        Assert.Contains("non-standard UV for metallic-roughness texture #0", importer.LastWarning, StringComparison.Ordinal);
+        Assert.Contains("non-standard UV for occlusion texture #0", importer.LastWarning, StringComparison.Ordinal);
     }
 
     [Fact]
