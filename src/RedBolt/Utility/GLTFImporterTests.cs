@@ -334,6 +334,40 @@ public sealed class GLTFImporterTests
         Assert.True(importer.LoadFile(documentPath), importer.LastError);
         Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
         Assert.Equal(["Hip", "Spine"], importer.ImportedModel!.GetBones().Select(bone => bone.Name));
+        Assert.Single(importer.SavedResources.Keys.Where(name => name.StartsWith("Models/", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public void Importer_cooks_separate_models_for_incompatible_skins()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_cooks_separate_models_for_incompatible_skins));
+        var document = """
+            {
+              "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,$BUFFER$", "byteLength": 42 }],
+              "bufferViews": [{ "buffer": 0, "byteOffset": 0, "byteLength": 36 }, { "buffer": 0, "byteOffset": 36, "byteLength": 6 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" }, { "bufferView": 1, "componentType": 5123, "count": 3, "type": "SCALAR" }],
+              "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1 }] }],
+              "nodes": [
+                { "name": "FirstRoot", "children": [1, 3] },
+                { "name": "Rig_Hip", "children": [2] },
+                { "name": "Rig_Spine" },
+                { "name": "FirstMesh", "mesh": 0, "skin": 0 },
+                { "name": "SecondRoot", "children": [5, 7] },
+                { "name": "Other_Hip", "children": [6] },
+                { "name": "Other_Spine" },
+                { "name": "SecondMesh", "mesh": 0, "skin": 1 }
+              ],
+              "skins": [{ "joints": [1, 2] }, { "joints": [5] }],
+              "scenes": [{ "nodes": [0, 4] }]
+            }
+            """.Replace("$BUFFER$", TriangleBuffer, StringComparison.Ordinal);
+        var documentPath = artifacts.Write("incompatible-skins.gltf", Encoding.UTF8.GetBytes(document));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
+        Assert.Equal(2, importer.SavedResources.Keys.Count(name => name.StartsWith("Models/", StringComparison.Ordinal)));
     }
 
     [Fact]
