@@ -557,6 +557,32 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_reads_cubic_spline_bone_animation_values()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_reads_cubic_spline_bone_animation_values));
+        var data = new List<byte>();
+        AppendSingle(data, 0); AppendSingle(data, 1);
+        foreach (var value in new[] { -1f, 0f, 0f, 0f, 0f, 0f, 2f, 0f, 0f, -1f, 0f, 0f, 3f, 0f, 0f, 1f, 0f, 0f })
+            AppendSingle(data, value);
+        var document = $$"""
+            { "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,{{Convert.ToBase64String([.. data])}}", "byteLength": {{data.Count}} }],
+              "bufferViews": [{ "buffer": 0, "byteLength": 8 }, { "buffer": 0, "byteOffset": 8, "byteLength": 72 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 2, "type": "SCALAR" }, { "bufferView": 1, "componentType": 5126, "count": 6, "type": "VEC3" }],
+              "nodes": [{ "name": "Node" }],
+              "animations": [{ "samplers": [{ "input": 0, "output": 1, "interpolation": "CUBICSPLINE" }], "channels": [{ "sampler": 0, "target": { "node": 0, "path": "translation" } }] }] }
+            """;
+        var documentPath = artifacts.Write("cubic.gltf", Encoding.UTF8.GetBytes(document));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
+        var keys = Assert.Single(Assert.Single(importer.ImportedAnimations).Tracks.Values).KeyFrames;
+        Assert.Equal(new Vector3f(0, 0, 0), keys[0].Position);
+        Assert.Equal(new Vector3f(3, 0, 0), keys[1].Position);
+    }
+
+    [Fact]
     public void Importer_settings_roundtrip_node_renames_and_engine_epsilon()
     {
         var source = new GLTFImporterSettings { NodeRenames = new Dictionary<string, string> { ["Before"] = "After" } };
