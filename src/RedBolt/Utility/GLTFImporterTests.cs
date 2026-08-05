@@ -125,6 +125,24 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_rejects_malformed_node_translation()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_rejects_malformed_node_translation));
+        var documentPath = artifacts.Write("invalid-transform.gltf", Encoding.UTF8.GetBytes("""
+            {
+              "asset": { "version": "2.0" },
+              "nodes": [{ "translation": [1, 2] }],
+              "scenes": [{ "nodes": [0] }]
+            }
+            """));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.False(importer.Process(string.Empty, string.Empty));
+        Assert.Equal("glTF node translation does not contain 3 values.", importer.LastError);
+    }
+
+    [Fact]
     public void Importer_reads_morph_target_deltas_and_default_weight()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_reads_morph_target_deltas_and_default_weight));
