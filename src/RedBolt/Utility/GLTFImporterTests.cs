@@ -42,6 +42,47 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_reads_normalized_attributes_and_tangents()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_reads_normalized_attributes_and_tangents));
+        var data = new List<byte>();
+        AppendSingle(data, 0); AppendSingle(data, 0); AppendSingle(data, 0);
+        AppendSingle(data, 2); AppendSingle(data, 3); AppendSingle(data, 4);
+        AppendSingle(data, 0); AppendSingle(data, 0); AppendSingle(data, 0);
+        data.AddRange([127, 0, 0, 0, 127, 0, 0, 0, 127]);
+        foreach (var tangent in new[] { 1f, 0f, 0f, -1f, 0f, 1f, 0f, -1f, 0f, 0f, 1f, -1f })
+            AppendSingle(data, tangent);
+        var document = $$"""
+            {
+              "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,{{Convert.ToBase64String([.. data])}}", "byteLength": {{data.Count}} }],
+              "bufferViews": [
+                { "buffer": 0, "byteOffset": 0, "byteLength": 36 },
+                { "buffer": 0, "byteOffset": 36, "byteLength": 9 },
+                { "buffer": 0, "byteOffset": 45, "byteLength": 48 }
+              ],
+              "accessors": [
+                { "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" },
+                { "bufferView": 1, "componentType": 5120, "normalized": true, "count": 3, "type": "VEC3" },
+                { "bufferView": 2, "componentType": 5126, "count": 3, "type": "VEC4" }
+              ],
+              "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0, "NORMAL": 1, "TANGENT": 2 } }] }]
+            }
+            """;
+        var documentPath = artifacts.Write("attributes.gltf", Encoding.UTF8.GetBytes(document));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
+
+        var lod = Assert.Single(Assert.Single(importer.ImportedModel!.GetGeometries()).Lods);
+        Assert.Equal(Vector3f.Zero, lod.Vertices[0].GetPosition());
+        Assert.Equal(new Vector3f(2, 3, 4), lod.Vertices[1].GetPosition());
+        Assert.Equal(new Vector3f(0, 1, 0), lod.Vertices[1].GetNormal());
+        Assert.Equal(new Vector4f(1, 0, 0, -1), lod.Vertices[0].Tangent);
+    }
+
+    [Fact]
     public void Importer_rejects_processing_without_a_primary_document()
     {
         using var importer = new GLTFImporter(new GLTFImporterSettings());
@@ -147,4 +188,6 @@ public sealed class GLTFImporterTests
         Array.Fill(result, (byte)' ', 20 + json.Length, paddedLength - json.Length);
         return result;
     }
+
+    private static void AppendSingle(List<byte> bytes, float value) => bytes.AddRange(BitConverter.GetBytes(value));
 }
