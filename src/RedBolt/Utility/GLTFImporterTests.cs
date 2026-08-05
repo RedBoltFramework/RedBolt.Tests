@@ -827,6 +827,17 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_rejects_unknown_source_extensions()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_rejects_unknown_source_extensions));
+        var documentPath = artifacts.Write("not-gltf.json", Encoding.UTF8.GetBytes("{ \"asset\": { \"version\": \"2.0\" } }"));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.False(importer.LoadFile(documentPath));
+        Assert.Contains("Unknown glTF file extension '.json'.", importer.LastError, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Importer_reads_cubic_spline_bone_animation_values()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_reads_cubic_spline_bone_animation_values));
