@@ -740,6 +740,32 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_merges_nearby_animation_key_times()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_merges_nearby_animation_key_times));
+        var data = new List<byte>();
+        foreach (var value in new[] { 0f, 1f, 0.0005f, 1.0005f, 0f, 0f, 0f, 2f, 0f, 0f, 1f, 1f, 1f, 2f, 2f, 2f })
+            AppendSingle(data, value);
+        var document = $$"""
+            {
+              "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,{{Convert.ToBase64String([.. data])}}", "byteLength": {{data.Count}} }],
+              "bufferViews": [{ "buffer": 0, "byteLength": 8 }, { "buffer": 0, "byteOffset": 8, "byteLength": 8 }, { "buffer": 0, "byteOffset": 16, "byteLength": 24 }, { "buffer": 0, "byteOffset": 40, "byteLength": 24 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 2, "type": "SCALAR" }, { "bufferView": 1, "componentType": 5126, "count": 2, "type": "SCALAR" }, { "bufferView": 2, "componentType": 5126, "count": 2, "type": "VEC3" }, { "bufferView": 3, "componentType": 5126, "count": 2, "type": "VEC3" }],
+              "nodes": [{ "name": "Node" }],
+              "animations": [{ "samplers": [{ "input": 0, "output": 2 }, { "input": 1, "output": 3 }], "channels": [{ "sampler": 0, "target": { "node": 0, "path": "translation" } }, { "sampler": 1, "target": { "node": 0, "path": "scale" } }] }]
+            }
+            """;
+        var documentPath = artifacts.Write("merged-times.gltf", Encoding.UTF8.GetBytes(document));
+        using var importer = new GLTFImporter(new GLTFImporterSettings { KeyFrameTimeError = 0.001f });
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
+        var keys = Assert.Single(Assert.Single(importer.ImportedAnimations).Tracks.Values).KeyFrames;
+        Assert.Equal([0f, 1f], keys.Select(keyFrame => keyFrame.Time));
+    }
+
+    [Fact]
     public void Importer_reads_cubic_spline_bone_animation_values()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_reads_cubic_spline_bone_animation_values));
