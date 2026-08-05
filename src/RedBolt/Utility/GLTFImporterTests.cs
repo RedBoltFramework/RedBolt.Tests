@@ -189,6 +189,19 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_warns_about_unsupported_used_extensions()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_warns_about_unsupported_used_extensions));
+        var documentPath = artifacts.Write("extensions.gltf", Encoding.UTF8.GetBytes("""
+            { "asset": { "version": "2.0" }, "extensionsUsed": ["EXT_example"] }
+            """));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.Contains("Unsupported extension used: 'EXT_example'.", importer.LastWarning, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Importer_merges_secondary_animation_with_requested_name()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_merges_secondary_animation_with_requested_name));
