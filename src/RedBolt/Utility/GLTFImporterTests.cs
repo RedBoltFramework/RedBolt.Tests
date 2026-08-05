@@ -79,6 +79,26 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_merges_secondary_animation_with_requested_name()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_merges_secondary_animation_with_requested_name));
+        var primary = artifacts.Write("primary.gltf", Encoding.UTF8.GetBytes("""
+            { "asset": { "version": "2.0" }, "nodes": [{ "name": "Node" }] }
+            """));
+        var secondary = artifacts.Write("secondary.gltf", Encoding.UTF8.GetBytes("""
+            { "asset": { "version": "2.0" }, "animations": [{ "name": "Original" }] }
+            """));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(primary), importer.LastError);
+        Assert.True(importer.MergeFile(secondary, "Merged"), importer.LastError);
+        using var animations = importer.SourceModel!.Animations;
+        using var animation = Assert.Single(animations);
+        using var name = animation.Name;
+        Assert.Equal("Merged", name.ToString());
+    }
+
+    [Fact]
     public void Importer_settings_roundtrip_node_renames_and_engine_epsilon()
     {
         var source = new GLTFImporterSettings { NodeRenames = new Dictionary<string, string> { ["Before"] = "After" } };
