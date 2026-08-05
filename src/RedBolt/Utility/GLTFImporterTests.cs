@@ -804,6 +804,21 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_loads_mesh_without_primitives()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_loads_mesh_without_primitives));
+        var documentPath = artifacts.Write("empty-mesh.gltf", Encoding.UTF8.GetBytes("""
+            { "asset": { "version": "2.0" }, "meshes": [{ "primitives": [] }] }
+            """));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
+        Assert.Empty(importer.ImportedModel!.GetGeometries());
+        Assert.Empty(importer.ImportedModel.GetMorphs());
+    }
+
+    [Fact]
     public void Importer_copies_settings_and_renames_nodes_when_loading()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_copies_settings_and_renames_nodes_when_loading));
