@@ -774,6 +774,36 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_uses_cleaned_bone_names_for_animation_tracks()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_uses_cleaned_bone_names_for_animation_tracks));
+        var data = new List<byte>();
+        data.AddRange(Convert.FromBase64String(TriangleBuffer));
+        AppendSingle(data, 0); AppendSingle(data, 1);
+        AppendSingle(data, 0); AppendSingle(data, 0); AppendSingle(data, 0);
+        AppendSingle(data, 2); AppendSingle(data, 0); AppendSingle(data, 0);
+        var document = $$"""
+            {
+              "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,{{Convert.ToBase64String([.. data])}}", "byteLength": {{data.Count}} }],
+              "bufferViews": [{ "buffer": 0, "byteLength": 36 }, { "buffer": 0, "byteOffset": 36, "byteLength": 6 }, { "buffer": 0, "byteOffset": 42, "byteLength": 8 }, { "buffer": 0, "byteOffset": 50, "byteLength": 24 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" }, { "bufferView": 1, "componentType": 5123, "count": 3, "type": "SCALAR" }, { "bufferView": 2, "componentType": 5126, "count": 2, "type": "SCALAR" }, { "bufferView": 3, "componentType": 5126, "count": 2, "type": "VEC3" }],
+              "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1 }] }],
+              "nodes": [{ "name": "Rig_Root", "children": [1, 2] }, { "name": "Rig_Joint" }, { "name": "Mesh", "mesh": 0, "skin": 0 }],
+              "skins": [{ "skeleton": 0, "joints": [1] }],
+              "animations": [{ "samplers": [{ "input": 2, "output": 3 }], "channels": [{ "sampler": 0, "target": { "node": 1, "path": "translation" } }] }],
+              "scenes": [{ "nodes": [0] }]
+            }
+            """;
+        var documentPath = artifacts.Write("bone-animation.gltf", Encoding.UTF8.GetBytes(document));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
+        Assert.Equal("Joint", Assert.Single(Assert.Single(importer.ImportedAnimations).Tracks.Values).Name);
+    }
+
+    [Fact]
     public void Importer_merges_nearby_animation_key_times()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_merges_nearby_animation_key_times));
