@@ -99,13 +99,15 @@ public sealed class GLTFImporterTests
     public void Importer_cooks_material_texture_resources()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_cooks_material_texture_resources));
+        artifacts.Write("Diffuse.png", Convert.FromBase64String(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL8aQAAAABJRU5ErkJggg=="));
         var document = """
             {
               "asset": { "version": "2.0" },
               "buffers": [{ "uri": "data:application/octet-stream;base64,$BUFFER$", "byteLength": 42 }],
               "bufferViews": [{ "buffer": 0, "byteOffset": 0, "byteLength": 36 }, { "buffer": 0, "byteOffset": 36, "byteLength": 6 }],
               "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" }, { "bufferView": 1, "componentType": 5123, "count": 3, "type": "SCALAR" }],
-              "images": [{ "name": "Diffuse", "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL8aQAAAABJRU5ErkJggg==" }],
+              "images": [{ "uri": "Diffuse.png" }],
               "textures": [{ "source": 0 }],
               "materials": [{ "pbrMetallicRoughness": { "baseColorTexture": { "index": 0 } } }],
               "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1, "material": 0 }] }]
