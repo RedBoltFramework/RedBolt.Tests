@@ -158,9 +158,11 @@ public sealed class GLTFImporterTests
               "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1 }] }],
               "nodes": [
                 { "name": "Root", "translation": [1, 0, 0], "children": [1, 3] },
-                { "name": "Pivot", "translation": [0, 2, 0], "children": [2] },
+                { "name": "Pivot", "translation": [0, 2, 0], "children": [2, 4] },
                 { "name": "Joint", "translation": [0, 0, 3], "rotation": [0, 0.5, 0, 0.8660254] },
-                { "name": "SkinnedMesh", "mesh": 0, "skin": 0 }
+                { "name": "SkinnedMesh", "mesh": 0, "skin": 0 },
+                { "name": "Attachment", "children": [5] },
+                { "name": "End" }
               ],
               "skins": [{ "inverseBindMatrices": 2, "skeleton": 0, "joints": [2] }],
               "scenes": [{ "nodes": [0] }]
@@ -168,16 +170,21 @@ public sealed class GLTFImporterTests
             """.Replace("$BUFFER$", Convert.ToBase64String(skinBuffer), StringComparison.Ordinal);
         var documentPath = artifacts.Write("skin.gltf", Encoding.UTF8.GetBytes(document));
         var outputPath = Path.Combine(artifacts.DirectoryPath, "output");
-        using var importer = new GLTFImporter(new GLTFImporterSettings { AssetName = "Skinned", MirrorX = true });
+        using var importer = new GLTFImporter(new GLTFImporterSettings
+        {
+            AssetName = "Skinned", MirrorX = true, AddEmptyNodesToSkeleton = true
+        });
 
         Assert.True(importer.LoadFile(documentPath), importer.LastError);
         Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
         Assert.True(importer.SaveResources(), importer.LastError);
         var bones = importer.ImportedModel!.GetBones();
-        Assert.Equal(["Joint", "Root", "Pivot"], bones.Select(bone => bone.Name));
+        Assert.Equal(["Joint", "Root", "Pivot", "Attachment", "End"], bones.Select(bone => bone.Name));
         Assert.Equal(2, bones[0].ParentIndex);
         Assert.Equal(-1, bones[1].ParentIndex);
         Assert.Equal(1, bones[2].ParentIndex);
+        Assert.Equal(2, bones[3].ParentIndex);
+        Assert.Equal(3, bones[4].ParentIndex);
         Assert.Equal(new Vector3f(0, 0, 3), bones[0].Position);
         Assert.Equal(new Vector3f(-1, 0, 0), bones[1].Position);
         Assert.Equal(new Vector3f(0, 2, 0), bones[2].Position);
