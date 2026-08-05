@@ -6,6 +6,8 @@ using System.Text;
 using RedBolt.Graphics;
 using RedBolt.IO;
 using RedBolt.Math;
+using RedBolt.Resource;
+using RedBolt.Scene;
 using RedBolt.Utility;
 
 public sealed class GLTFImporterTests
@@ -67,6 +69,42 @@ public sealed class GLTFImporterTests
         Assert.True(importer.SaveResources(), importer.LastError);
 
         Assert.Equal("UMD3", Encoding.ASCII.GetString(System.IO.File.ReadAllBytes(saved.Value), 0, 4));
+    }
+
+    [Fact]
+    public void Importer_cooks_static_model_prefab_component()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_cooks_static_model_prefab_component));
+        var document = """
+            {
+              "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,$BUFFER$", "byteLength": 42 }],
+              "bufferViews": [{ "buffer": 0, "byteOffset": 0, "byteLength": 36 }, { "buffer": 0, "byteOffset": 36, "byteLength": 6 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" }, { "bufferView": 1, "componentType": 5123, "count": 3, "type": "SCALAR" }],
+              "materials": [{ "name": "Paint" }],
+              "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1, "material": 0 }] }],
+              "nodes": [{ "name": "Mesh", "mesh": 0 }],
+              "scenes": [{ "nodes": [0] }]
+            }
+            """.Replace("$BUFFER$", TriangleBuffer, StringComparison.Ordinal);
+        var documentPath = artifacts.Write("scene.gltf", Encoding.UTF8.GetBytes(document));
+        var outputPath = Path.Combine(artifacts.DirectoryPath, "output");
+        using var importer = new GLTFImporter(new GLTFImporterSettings { AssetName = "Triangle" });
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
+        Assert.True(importer.SaveResources(), importer.LastError);
+
+        using var source = new MemoryBuffer(System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Prefab.prefab")));
+        using var prefab = new PrefabResource();
+        Assert.True(prefab.BeginLoad(source));
+        var mesh = Assert.Single(prefab.GetNodePrefab().Children);
+        var staticModel = Assert.Single(mesh.Components);
+        Assert.Equal(nameof(StaticModel), staticModel.TypeName);
+        var model = Assert.Single(staticModel.Attributes.Where(attribute => attribute.Name == "Model")).Value.GetResourceRef();
+        var materials = Assert.Single(staticModel.Attributes.Where(attribute => attribute.Name == "Material")).Value.GetResourceRefList();
+        Assert.Equal("Imported/Models/Triangle.mdl", model.Name);
+        Assert.Equal(["Imported/Materials/Paint.xml"], materials.Names);
     }
 
     [Fact]
