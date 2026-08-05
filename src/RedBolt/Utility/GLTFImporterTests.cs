@@ -462,7 +462,7 @@ public sealed class GLTFImporterTests
               "images": [{ "uri": "Diffuse.png" }],
               "samplers": [{ "magFilter": 9728, "minFilter": 9728, "wrapS": 33071, "wrapT": 33648 }],
               "textures": [{ "source": 0, "sampler": 0 }],
-              "materials": [{ "pbrMetallicRoughness": { "baseColorTexture": { "index": 0 }, "metallicRoughnessTexture": { "index": 0 } }, "occlusionTexture": { "index": 0 } }],
+              "materials": [{ "pbrMetallicRoughness": { "baseColorTexture": { "index": 0 }, "metallicRoughnessTexture": { "index": 0 } }, "occlusionTexture": { "index": 0, "strength": 0.25 } }],
               "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1, "material": 0 }] }]
             }
             """.Replace("$BUFFER$", TriangleBuffer, StringComparison.Ordinal);
@@ -494,6 +494,9 @@ public sealed class GLTFImporterTests
         Assert.Equal("mirror", parameters.Root.Elements("address").Single(element => (string?)element.Attribute("coord") == "v").Attribute("mode")!.Value);
         Assert.Equal("nearest", parameters.Root.Element("filter")!.Attribute("mode")!.Value);
         Assert.Equal("false", parameters.Root.Element("mipmap")!.Attribute("enable")!.Value);
+        var material = System.Xml.Linq.XDocument.Load(Path.Combine(outputPath, "Materials/Material_0.xml"));
+        Assert.Equal("0.25", material.Root!.Elements("parameter")
+            .Single(element => (string?)element.Attribute("name") == "OcclusionStrength").Attribute("value")!.Value);
     }
 
     [Fact]
