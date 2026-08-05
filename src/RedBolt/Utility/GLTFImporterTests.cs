@@ -48,6 +48,29 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_converts_line_loop_to_closed_line_strip()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_converts_line_loop_to_closed_line_strip));
+        var document = """
+            {
+              "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,$BUFFER$", "byteLength": 42 }],
+              "bufferViews": [{ "buffer": 0, "byteOffset": 0, "byteLength": 36 }, { "buffer": 0, "byteOffset": 36, "byteLength": 6 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" }, { "bufferView": 1, "componentType": 5123, "count": 3, "type": "SCALAR" }],
+              "meshes": [{ "primitives": [{ "mode": 2, "attributes": { "POSITION": 0 }, "indices": 1 }] }]
+            }
+            """.Replace("$BUFFER$", TriangleBuffer, StringComparison.Ordinal);
+        var documentPath = artifacts.Write("line-loop.gltf", Encoding.UTF8.GetBytes(document));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
+        var lod = Assert.Single(Assert.Single(importer.ImportedModel!.GetGeometries()).Lods);
+        Assert.Equal(PrimitiveType.LineStrip, lod.PrimitiveType);
+        Assert.Equal([0u, 1u, 2u, 0u], lod.Indices);
+    }
+
+    [Fact]
     public void Importer_reads_morph_target_deltas_and_default_weight()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_reads_morph_target_deltas_and_default_weight));
