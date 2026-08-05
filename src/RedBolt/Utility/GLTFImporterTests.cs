@@ -1023,11 +1023,19 @@ public sealed class GLTFImporterTests
             }
             """;
         var documentPath = artifacts.Write("bone-animation.gltf", Encoding.UTF8.GetBytes(document));
+        var outputPath = Path.Combine(artifacts.DirectoryPath, "output");
         using var importer = new GLTFImporter(new GLTFImporterSettings());
 
         Assert.True(importer.LoadFile(documentPath), importer.LastError);
-        Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
+        Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
         Assert.Equal("Joint", Assert.Single(Assert.Single(importer.ImportedAnimations).Tracks.Values).Name);
+        Assert.True(importer.SaveResources(), importer.LastError);
+        using var source = new MemoryBuffer(System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Prefab.prefab")));
+        using var prefab = new PrefabResource();
+        Assert.True(prefab.BeginLoad(source));
+        var mesh = prefab.GetNodePrefab().FindChild("Rig_Root/Mesh");
+        Assert.NotNull(mesh);
+        Assert.Contains(mesh.Components, component => component.TypeName == nameof(AnimationController));
     }
 
     [Fact]
