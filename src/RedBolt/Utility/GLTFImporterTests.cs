@@ -420,6 +420,41 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_keeps_empty_skinned_models_animating_when_invisible()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_keeps_empty_skinned_models_animating_when_invisible));
+        var document = """
+            {
+              "asset": { "version": "2.0" },
+              "meshes": [{ "primitives": [] }],
+              "nodes": [
+                { "name": "Root", "children": [1, 2] },
+                { "name": "Joint" },
+                { "name": "EmptySkinnedMesh", "mesh": 0, "skin": 0 }
+              ],
+              "skins": [{ "skeleton": 0, "joints": [1] }],
+              "scenes": [{ "nodes": [0] }]
+            }
+            """;
+        var documentPath = artifacts.Write("empty-skin.gltf", Encoding.UTF8.GetBytes(document));
+        var outputPath = Path.Combine(artifacts.DirectoryPath, "output");
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
+        Assert.True(importer.SaveResources(), importer.LastError);
+
+        using var source = new MemoryBuffer(System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Prefab.prefab")));
+        using var prefab = new PrefabResource();
+        Assert.True(prefab.BeginLoad(source));
+        var emptySkinnedMesh = prefab.GetNodePrefab().Children.Single(node => node.GetNodeName() == "EmptySkinnedMesh");
+        var animatedModel = Assert.Single(emptySkinnedMesh.Components);
+        Assert.Equal(nameof(AnimatedModel), animatedModel.TypeName);
+        Assert.Equal(0.0f, animatedModel.Attributes.Single(attribute => attribute.Name == "Animation LOD Bias").Value.GetFloat());
+        Assert.True(animatedModel.Attributes.Single(attribute => attribute.Name == "Update Invisible").Value.GetBool());
+    }
+
+    [Fact]
     public void Importer_reuses_equivalent_skins_and_cleans_bone_names()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_reuses_equivalent_skins_and_cleans_bone_names));
