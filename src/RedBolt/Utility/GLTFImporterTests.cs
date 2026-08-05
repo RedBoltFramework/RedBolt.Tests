@@ -953,8 +953,8 @@ public sealed class GLTFImporterTests
               "buffers": [{ "uri": "data:application/octet-stream;base64,{{Convert.ToBase64String([.. data])}}", "byteLength": {{data.Count}} }],
               "bufferViews": [{ "buffer": 0, "byteLength": 8 }, { "buffer": 0, "byteOffset": 8, "byteLength": 24 }],
               "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 2, "type": "SCALAR" }, { "bufferView": 1, "componentType": 5126, "count": 2, "type": "VEC3" }],
-              "nodes": [{ "name": "Root", "children": [1] }, { "name": "Child" }],
-              "animations": [{ "samplers": [{ "input": 0, "output": 1 }], "channels": [{ "sampler": 0, "target": { "node": 1, "path": "translation" } }] }]
+              "nodes": [{ "name": "Root", "children": [1, 2] }, { "name": "Child" }, { "name": "Child" }],
+              "animations": [{ "samplers": [{ "input": 0, "output": 1 }], "channels": [{ "sampler": 0, "target": { "node": 2, "path": "translation" } }] }]
             }
             """;
         var documentPath = artifacts.Write("nested-animation.gltf", Encoding.UTF8.GetBytes(document));
@@ -962,7 +962,7 @@ public sealed class GLTFImporterTests
 
         Assert.True(importer.LoadFile(documentPath), importer.LastError);
         Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
-        Assert.Equal("Root/Child", Assert.Single(Assert.Single(importer.ImportedAnimations).Tracks.Values).Name);
+        Assert.Equal("Root/#1", Assert.Single(Assert.Single(importer.ImportedAnimations).Tracks.Values).Name);
     }
 
     [Fact]
