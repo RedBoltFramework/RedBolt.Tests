@@ -83,6 +83,47 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_reads_color_uv_and_skin_attributes()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_reads_color_uv_and_skin_attributes));
+        var data = new List<byte>();
+        foreach (var value in new[] { 0f, 0f, 0f, 1f, 0f, 0f, 0f, 1f, 0f }) AppendSingle(data, value);
+        foreach (var value in new[] { 0f, 0f, 1f, 0f, 0f, 1f }) AppendSingle(data, value);
+        foreach (var value in new[] { .5f, .5f, .75f, .5f, .5f, .75f }) AppendSingle(data, value);
+        foreach (var value in new[] { 1f, 0f, 0f, 1f, 0f, 1f, 0f, 1f, 0f, 0f, 1f, 1f }) AppendSingle(data, value);
+        data.AddRange([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+        data.AddRange([255, 0, 0, 0, 0, 255, 0, 0, 0, 0, 255, 0]);
+        var document = $$"""
+            {
+              "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,{{Convert.ToBase64String([.. data])}}", "byteLength": {{data.Count}} }],
+              "bufferViews": [
+                { "buffer": 0, "byteOffset": 0, "byteLength": 36 }, { "buffer": 0, "byteOffset": 36, "byteLength": 24 },
+                { "buffer": 0, "byteOffset": 60, "byteLength": 24 }, { "buffer": 0, "byteOffset": 84, "byteLength": 48 },
+                { "buffer": 0, "byteOffset": 132, "byteLength": 12 }, { "buffer": 0, "byteOffset": 144, "byteLength": 12 }
+              ],
+              "accessors": [
+                { "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" }, { "bufferView": 1, "componentType": 5126, "count": 3, "type": "VEC2" },
+                { "bufferView": 2, "componentType": 5126, "count": 3, "type": "VEC2" }, { "bufferView": 3, "componentType": 5126, "count": 3, "type": "VEC4" },
+                { "bufferView": 4, "componentType": 5121, "count": 3, "type": "VEC4" }, { "bufferView": 5, "componentType": 5121, "normalized": true, "count": 3, "type": "VEC4" }
+              ],
+              "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0, "TEXCOORD_0": 1, "TEXCOORD_1": 2, "COLOR_0": 3, "JOINTS_0": 4, "WEIGHTS_0": 5 } }] }]
+            }
+            """;
+        var documentPath = artifacts.Write("skinned-attributes.gltf", Encoding.UTF8.GetBytes(document));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
+
+        var lod = Assert.Single(Assert.Single(importer.ImportedModel!.GetGeometries()).Lods);
+        Assert.Equal(new Vector4f(1, 0, 0, 1), lod.Vertices[0].Color[0]);
+        Assert.Equal(new Vector4f(.75f, .5f, 0, 0), lod.Vertices[1].Uv[1]);
+        Assert.Equal(new Vector4f(5, 6, 7, 8), lod.Vertices[1].BlendIndices);
+        Assert.Equal(new Vector4f(0, 1, 0, 0), lod.Vertices[1].BlendWeights);
+    }
+
+    [Fact]
     public void Importer_rejects_processing_without_a_primary_document()
     {
         using var importer = new GLTFImporter(new GLTFImporterSettings());
