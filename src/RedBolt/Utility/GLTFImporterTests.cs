@@ -156,8 +156,13 @@ public sealed class GLTFImporterTests
               "bufferViews": [{ "buffer": 0, "byteOffset": 0, "byteLength": 36 }, { "buffer": 0, "byteOffset": 36, "byteLength": 6 }, { "buffer": 0, "byteOffset": 42, "byteLength": 64 }],
               "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" }, { "bufferView": 1, "componentType": 5123, "count": 3, "type": "SCALAR" }, { "bufferView": 2, "componentType": 5126, "count": 1, "type": "MAT4" }],
               "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1 }] }],
-              "nodes": [{ "name": "Root", "children": [1] }, { "name": "SkinnedMesh", "mesh": 0, "skin": 0 }],
-              "skins": [{ "inverseBindMatrices": 2, "joints": [0] }],
+              "nodes": [
+                { "name": "Root", "translation": [1, 0, 0], "children": [1, 3] },
+                { "name": "Pivot", "translation": [0, 2, 0], "children": [2] },
+                { "name": "Joint", "translation": [0, 0, 3] },
+                { "name": "SkinnedMesh", "mesh": 0, "skin": 0 }
+              ],
+              "skins": [{ "inverseBindMatrices": 2, "skeleton": 0, "joints": [2] }],
               "scenes": [{ "nodes": [0] }]
             }
             """.Replace("$BUFFER$", Convert.ToBase64String(skinBuffer), StringComparison.Ordinal);
@@ -168,10 +173,15 @@ public sealed class GLTFImporterTests
         Assert.True(importer.LoadFile(documentPath), importer.LastError);
         Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
         Assert.True(importer.SaveResources(), importer.LastError);
-        var bone = Assert.Single(importer.ImportedModel!.GetBones());
-        Assert.Equal("Root", bone.Name);
-        Assert.Equal(-1, bone.ParentIndex);
-        Assert.Equal(new Vector3f(9, 8, 7), bone.OffsetMatrix.Translation);
+        var bones = importer.ImportedModel!.GetBones();
+        Assert.Equal(["Joint", "Root", "Pivot"], bones.Select(bone => bone.Name));
+        Assert.Equal(2, bones[0].ParentIndex);
+        Assert.Equal(-1, bones[1].ParentIndex);
+        Assert.Equal(1, bones[2].ParentIndex);
+        Assert.Equal(new Vector3f(0, 0, 3), bones[0].Position);
+        Assert.Equal(new Vector3f(1, 0, 0), bones[1].Position);
+        Assert.Equal(new Vector3f(0, 2, 0), bones[2].Position);
+        Assert.Equal(new Vector3f(9, 8, 7), bones[0].OffsetMatrix.Translation);
 
         using var source = new MemoryBuffer(System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Prefab.prefab")));
         using var prefab = new PrefabResource();
