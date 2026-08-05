@@ -70,6 +70,32 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_cooks_pbr_material_resources()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_cooks_pbr_material_resources));
+        var document = """
+            {
+              "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,$BUFFER$", "byteLength": 42 }],
+              "bufferViews": [{ "buffer": 0, "byteOffset": 0, "byteLength": 36 }, { "buffer": 0, "byteOffset": 36, "byteLength": 6 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" }, { "bufferView": 1, "componentType": 5123, "count": 3, "type": "SCALAR" }],
+              "materials": [{ "name": "Paint", "pbrMetallicRoughness": { "baseColorFactor": [0.25, 0.5, 0.75, 1.0], "metallicFactor": 0.2, "roughnessFactor": 0.8 } }],
+              "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1, "material": 0 }] }]
+            }
+            """.Replace("$BUFFER$", TriangleBuffer, StringComparison.Ordinal);
+        var documentPath = artifacts.Write("material.gltf", Encoding.UTF8.GetBytes(document));
+        var outputPath = Path.Combine(artifacts.DirectoryPath, "output");
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
+        Assert.Equal("Imported/Materials/Paint.xml", Assert.Single(importer.ImportedModel!.GetGeometries()).Material);
+        Assert.Contains("Imported/Materials/Paint.xml", importer.SavedResources.Keys);
+        Assert.True(importer.SaveResources(), importer.LastError);
+        Assert.True(System.IO.File.Exists(Path.Combine(outputPath, "Materials/Paint.xml")));
+    }
+
+    [Fact]
     public void Importer_combines_named_mesh_lods()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_combines_named_mesh_lods));
