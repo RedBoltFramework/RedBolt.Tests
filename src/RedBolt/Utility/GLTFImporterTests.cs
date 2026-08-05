@@ -45,6 +45,36 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_reads_sparse_accessors()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_reads_sparse_accessors));
+        var sparseData = new byte[49];
+        sparseData[36] = 1;
+        BinaryPrimitives.WriteSingleLittleEndian(sparseData.AsSpan(37), 1.0f);
+        BinaryPrimitives.WriteSingleLittleEndian(sparseData.AsSpan(41), 2.0f);
+        BinaryPrimitives.WriteSingleLittleEndian(sparseData.AsSpan(45), 3.0f);
+        var document = """
+            {
+              "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,$BUFFER$", "byteLength": 49 }],
+              "bufferViews": [{ "buffer": 0, "byteOffset": 0, "byteLength": 36 }, { "buffer": 0, "byteOffset": 36, "byteLength": 1 }, { "buffer": 0, "byteOffset": 37, "byteLength": 12 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3", "sparse": { "count": 1, "indices": { "bufferView": 1, "componentType": 5121 }, "values": { "bufferView": 2 } } }],
+              "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0 } }] }]
+            }
+            """.Replace("$BUFFER$", Convert.ToBase64String(sparseData), StringComparison.Ordinal);
+        var documentPath = artifacts.Write("sparse.gltf", Encoding.UTF8.GetBytes(document));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
+
+        var vertices = Assert.Single(Assert.Single(importer.ImportedModel!.GetGeometries()).Lods).Vertices;
+        Assert.Equal(Vector3f.Zero, vertices[0].GetPosition());
+        Assert.Equal(new Vector3f(1, 2, 3), vertices[1].GetPosition());
+        Assert.Equal(Vector3f.Zero, vertices[2].GetPosition());
+    }
+
+    [Fact]
     public void Importer_cooks_and_saves_model_resource()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_cooks_and_saves_model_resource));
