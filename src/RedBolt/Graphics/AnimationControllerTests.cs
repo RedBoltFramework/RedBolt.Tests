@@ -4,6 +4,7 @@ using Xunit;
 
 using RedBolt.Core;
 using RedBolt.Graphics;
+using RedBolt.Math;
 using RedBolt.Scene;
 
 public sealed class AnimationControllerTests
@@ -137,6 +138,27 @@ public sealed class AnimationControllerTests
         Assert.Empty(controller.GetAnimationStates());
         controller.Update(0.0f);
         Assert.Same(node.GetComponent<AnimatedModel>(), controller.GetAnimationStates()[0].GetModel());
+    }
+
+    [Fact]
+    public void Animation_controller_resolves_duplicate_sibling_path_tracks()
+    {
+        var host = new Scene().CreateChild("Host");
+        var root = host.CreateChild("Root");
+        root.CreateChild("Child");
+        var secondChild = root.CreateChild("Child");
+        var controller = host.CreateComponent<AnimationController>();
+        using var animation = new Animation { Name = "Move" };
+        animation.SetLength(1.0f);
+        var track = animation.CreateTrack("Root/#1");
+        track.ChannelMask = AnimationChannel.Position;
+        track.AddKeyFrame(new AnimationKeyFrame(0.0f, Vector3f.Zero));
+        track.AddKeyFrame(new AnimationKeyFrame(1.0f, new Vector3f(2.0f, 0.0f, 0.0f)));
+
+        controller.PlayNew(new AnimationParameters(animation));
+        controller.Update(0.5f);
+
+        Assert.Equal(new Vector3f(1.0f, 0.0f, 0.0f), secondChild.Position);
     }
 
     [Fact]
