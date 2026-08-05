@@ -133,8 +133,9 @@ public sealed class GLTFImporterTests
         using var sourceBuffer = new MemoryBuffer(diffuseBytes);
         using var sourceImage = new RedBolt.Resource.Image();
         using var propertiesImage = new RedBolt.Resource.Image();
+        using var propertiesFile = new RedBolt.IO.File(Path.Combine(outputPath, "Textures/Diffuse_Properties.png"), FileMode.Read);
         Assert.True(sourceImage.Load(sourceBuffer));
-        Assert.True(propertiesImage.LoadFile(Path.Combine(outputPath, "Textures/Diffuse_Properties.png")));
+        Assert.True(propertiesImage.Load(propertiesFile));
         var sourceColor = sourceImage.GetPixelInt(0, 0);
         Assert.Equal(((sourceColor >> 8) & 0xffffu) | ((sourceColor & 0xffu) << 24), propertiesImage.GetPixelInt(0, 0));
         var parameters = System.Xml.Linq.XDocument.Load(Path.Combine(outputPath, "Textures/Diffuse.xml"));
@@ -142,6 +143,30 @@ public sealed class GLTFImporterTests
         Assert.Equal("mirror", parameters.Root.Elements("address").Single(element => (string?)element.Attribute("coord") == "v").Attribute("mode")!.Value);
         Assert.Equal("nearest", parameters.Root.Element("filter")!.Attribute("mode")!.Value);
         Assert.Equal("false", parameters.Root.Element("mipmap")!.Attribute("enable")!.Value);
+    }
+
+    [Fact]
+    public void Importer_cooks_scene_prefab_hierarchy()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_cooks_scene_prefab_hierarchy));
+        var documentPath = artifacts.Write("scene.gltf", Encoding.UTF8.GetBytes("""
+            {
+              "asset": { "version": "2.0" },
+              "scenes": [{ "nodes": [0] }],
+              "nodes": [
+                { "name": "Root", "translation": [1, 2, 3], "children": [1] },
+                { "name": "Child", "scale": [2, 3, 4] }
+              ]
+            }
+            """));
+        var outputPath = Path.Combine(artifacts.DirectoryPath, "output");
+        using var importer = new GLTFImporter(new GLTFImporterSettings { AssetName = "Asset", Scale = 2.0f });
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
+        Assert.Contains("Imported/Prefab.prefab", importer.SavedResources.Keys);
+        Assert.True(importer.SaveResources(), importer.LastError);
+        Assert.True(System.IO.File.Exists(Path.Combine(outputPath, "Prefab.prefab")));
     }
 
     [Fact]
