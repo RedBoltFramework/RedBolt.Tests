@@ -71,6 +71,39 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_repairs_skinned_vertex_weights()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_repairs_skinned_vertex_weights));
+        var data = new List<byte>();
+        data.AddRange(Convert.FromBase64String(TriangleBuffer));
+        data.AddRange([0, 4, 0, 0, 0, 4, 0, 0, 0, 4, 0, 0, 0, 0]);
+        for (var vertexIndex = 0; vertexIndex < 3; ++vertexIndex)
+        {
+            AppendSingle(data, 0.25f); AppendSingle(data, 0.5f);
+            AppendSingle(data, 0); AppendSingle(data, 0);
+        }
+        var document = $$"""
+            {
+              "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,{{Convert.ToBase64String([.. data])}}", "byteLength": {{data.Count}} }],
+              "bufferViews": [{ "buffer": 0, "byteLength": 36 }, { "buffer": 0, "byteOffset": 36, "byteLength": 6 }, { "buffer": 0, "byteOffset": 42, "byteLength": 12 }, { "buffer": 0, "byteOffset": 56, "byteLength": 48 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" }, { "bufferView": 1, "componentType": 5123, "count": 3, "type": "SCALAR" }, { "bufferView": 2, "componentType": 5121, "count": 3, "type": "VEC4" }, { "bufferView": 3, "componentType": 5126, "count": 3, "type": "VEC4" }],
+              "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0, "JOINTS_0": 2, "WEIGHTS_0": 3 }, "indices": 1 }] }],
+              "nodes": [{ "name": "Root", "children": [1, 2] }, { "name": "Joint" }, { "name": "Mesh", "mesh": 0, "skin": 0 }],
+              "skins": [{ "skeleton": 0, "joints": [1] }]
+            }
+            """;
+        var documentPath = artifacts.Write("repaired-weights.gltf", Encoding.UTF8.GetBytes(document));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
+        var vertex = Assert.Single(Assert.Single(importer.ImportedModel!.GetGeometries()).Lods).Vertices[0];
+        Assert.Equal(Vector4f.Zero, vertex.BlendIndices);
+        Assert.Equal(new Vector4f(1, 0, 0, 0), vertex.BlendWeights);
+    }
+
+    [Fact]
     public void Importer_reads_morph_target_deltas_and_default_weight()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_reads_morph_target_deltas_and_default_weight));
