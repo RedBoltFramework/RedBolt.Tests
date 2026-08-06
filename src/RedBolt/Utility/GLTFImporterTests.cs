@@ -1119,6 +1119,31 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_rejects_unknown_animation_channels()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_rejects_unknown_animation_channels));
+        var data = new List<byte>();
+        AppendSingle(data, 0); AppendSingle(data, 1);
+        AppendSingle(data, 0); AppendSingle(data, 0); AppendSingle(data, 0);
+        AppendSingle(data, 1); AppendSingle(data, 0); AppendSingle(data, 0);
+        var documentPath = artifacts.Write("unknown-animation-channel.gltf", Encoding.UTF8.GetBytes($$"""
+            {
+              "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,{{Convert.ToBase64String([.. data])}}", "byteLength": {{data.Count}} }],
+              "bufferViews": [{ "buffer": 0, "byteLength": 8 }, { "buffer": 0, "byteOffset": 8, "byteLength": 24 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 2, "type": "SCALAR" }, { "bufferView": 1, "componentType": 5126, "count": 2, "type": "VEC3" }],
+              "nodes": [{}],
+              "animations": [{ "samplers": [{ "input": 0, "output": 1 }], "channels": [{ "sampler": 0, "target": { "node": 0, "path": "visibility" } }] }]
+            }
+            """));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.False(importer.Process(string.Empty, string.Empty));
+        Assert.Equal("Unknown animation channel 'visibility'.", importer.LastError);
+    }
+
+    [Fact]
     public void Importer_preserves_omitted_scene_root_slots_for_scene_animations()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_preserves_omitted_scene_root_slots_for_scene_animations));
