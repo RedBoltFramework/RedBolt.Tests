@@ -216,6 +216,30 @@ public sealed class NetworkTransportTests
         }
     }
 
+    [Fact]
+    public void NetworkMessageLogger_observes_sent_and_received_messages()
+    {
+        using var environment = new NetworkEnvironment();
+        using var connection = new TestConnection();
+        var logger = new CapturingMessageLogger(connection);
+        using var outgoing = new MemoryBuffer(new byte[] { 1, 2, 3 });
+        using var incomingData = new VectorBuffer();
+        incomingData.WriteVLE((uint)NetworkMessageId.User);
+        incomingData.Write(new byte[] { 4, 5 });
+        using var incoming = new MemoryBuffer(incomingData);
+
+        Assert.True(connection.SendMessage(NetworkMessageId.User, outgoing,
+            PacketType.ReliableOrdered, "payload"));
+        connection.Receive(incoming);
+
+        Assert.Equal((NetworkMessageId.User, 3u, PacketType.ReliableOrdered, "payload"),
+            logger.Sent);
+        Assert.Equal((NetworkMessageId.User, 3u, string.Empty), logger.Received);
+        logger.IsEnabled = false;
+        Assert.Equal(RedBolt.Logging.LogLevel.None,
+            logger.GetMessageLogLevel(NetworkMessageId.User));
+    }
+
     private static List<CapturedPacket> CapturePackets(TestConnection connection)
     {
         var packets = new List<CapturedPacket>();
@@ -303,6 +327,29 @@ public sealed class NetworkTransportTests
                 ++ServerUpdatesSent;
             else
                 ++ClientUpdatesSent;
+        }
+    }
+
+    private sealed class CapturingMessageLogger : NetworkMessageLogger
+    {
+        public CapturingMessageLogger(NetworkConnection connection)
+            : base(connection)
+        {
+        }
+
+        public (NetworkMessageId Id, uint Size, PacketType Type, string DebugInfo) Sent { get; private set; }
+        public (NetworkMessageId Id, uint Size, string DebugInfo) Received { get; private set; }
+
+        public override void LogSentMessage(NetworkMessageId messageId, MemoryBuffer data,
+            PacketType packetType, string debugInfo = "")
+        {
+            Sent = (messageId, data.Size, packetType, debugInfo);
+        }
+
+        public override void LogReceivedMessage(
+            NetworkMessageId messageId, MemoryBuffer data, string debugInfo = "")
+        {
+            Received = (messageId, data.Size, debugInfo);
         }
     }
 
