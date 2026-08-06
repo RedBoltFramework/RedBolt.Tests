@@ -1238,8 +1238,10 @@ public sealed class GLTFImporterTests
         using var source = new MemoryBuffer(System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Prefab.prefab")));
         using var prefab = new PrefabResource();
         Assert.True(prefab.BeginLoad(source));
-        var mesh = prefab.GetNodePrefab().FindChild("Rig_Root/Mesh");
+        var root = prefab.GetNodePrefab();
+        var mesh = root.FindChild("Mesh");
         Assert.NotNull(mesh);
+        Assert.DoesNotContain(root.Components, component => component.TypeName == nameof(AnimationController));
         Assert.Contains(mesh.Components, component => component.TypeName == nameof(AnimationController));
     }
 
