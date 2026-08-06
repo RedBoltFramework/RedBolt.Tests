@@ -1006,6 +1006,30 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_warns_about_ignored_merged_animation_nodes()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_warns_about_ignored_merged_animation_nodes));
+        var primary = artifacts.Write("primary.gltf", Encoding.UTF8.GetBytes("""
+            { "asset": { "version": "2.0" }, "nodes": [{ "name": "Target" }] }
+            """));
+        var secondary = artifacts.Write("secondary.gltf", Encoding.UTF8.GetBytes("""
+            {
+              "asset": { "version": "2.0" },
+              "nodes": [{ "name": "Ignored" }],
+              "animations": [{ "channels": [{ "sampler": 0, "target": { "node": 0, "path": "translation" } }] }]
+            }
+            """));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(primary), importer.LastError);
+        Assert.True(importer.MergeFile(secondary, "Merged"), importer.LastError);
+        Assert.Contains("Ignored nodes in animation: Ignored", importer.LastWarning, StringComparison.Ordinal);
+        using var animation = Assert.Single(importer.SourceModel!.Animations);
+        using var channels = animation.Channels;
+        Assert.Empty(channels);
+    }
+
+    [Fact]
     public void Importer_cooks_linear_translation_animation()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_cooks_linear_translation_animation));
