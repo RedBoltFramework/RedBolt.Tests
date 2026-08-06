@@ -758,6 +758,24 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_uses_prefab_names_for_unnamed_multiple_scenes()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_uses_prefab_names_for_unnamed_multiple_scenes));
+        var documentPath = artifacts.Write("scenes.gltf", Encoding.UTF8.GetBytes("""
+            {
+              "asset": { "version": "2.0" },
+              "scenes": [{}, {}]
+            }
+            """));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(string.Empty, "Imported/"), importer.LastError);
+        Assert.Contains("Imported/Prefabs/Prefab.prefab", importer.SavedResources.Keys);
+        Assert.Contains("Imported/Prefabs/Prefab_1.prefab", importer.SavedResources.Keys);
+    }
+
+    [Fact]
     public void Importer_applies_preview_scene_settings()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_applies_preview_scene_settings));
@@ -1083,7 +1101,8 @@ public sealed class GLTFImporterTests
         Assert.True(prefab.BeginLoad(source));
         var root = prefab.GetNodePrefab();
         Assert.Contains(root.Components, component => component.TypeName == nameof(AnimationController));
-        Assert.Equal(["Disabled Node Placeholder", "Included"], root.Children.Select(node => node.GetNodeName()));
+        Assert.Equal(["Included"], root.Children.Select(node => node.GetNodeName()));
+        Assert.Contains(prefab.GetScenePrefab().Children, node => node.GetNodeName() == "Disabled Node Placeholder");
     }
 
     [Fact]
