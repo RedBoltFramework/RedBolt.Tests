@@ -455,6 +455,50 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_warns_when_declared_skeleton_is_not_a_joint_ancestor()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_warns_when_declared_skeleton_is_not_a_joint_ancestor));
+        var documentPath = artifacts.Write("unrelated-skeleton.gltf", Encoding.UTF8.GetBytes("""
+            {
+              "asset": { "version": "2.0" },
+              "meshes": [{ "primitives": [] }],
+              "nodes": [
+                { "name": "DeclaredSkeleton" },
+                { "name": "JointRoot", "children": [2] },
+                { "name": "Joint" },
+                { "name": "SkinnedMesh", "mesh": 0, "skin": 0 }
+              ],
+              "skins": [{ "skeleton": 0, "joints": [2] }],
+              "scenes": [{ "nodes": [0, 1, 3] }]
+            }
+            """));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
+        Assert.Contains("Skeleton node #0 is not a parent of joint node #2.", importer.LastWarning, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Importer_rejects_invalid_declared_skeleton()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_rejects_invalid_declared_skeleton));
+        var documentPath = artifacts.Write("invalid-skeleton.gltf", Encoding.UTF8.GetBytes("""
+            {
+              "asset": { "version": "2.0" },
+              "meshes": [{ "primitives": [] }],
+              "nodes": [{ "name": "Joint" }, { "name": "SkinnedMesh", "mesh": 0, "skin": 0 }],
+              "skins": [{ "skeleton": 2, "joints": [0] }]
+            }
+            """));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.False(importer.Process(string.Empty, string.Empty));
+        Assert.Equal("glTF skin references an invalid skeleton node.", importer.LastError);
+    }
+
+    [Fact]
     public void Importer_reuses_equivalent_skins_and_cleans_bone_names()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_reuses_equivalent_skins_and_cleans_bone_names));
