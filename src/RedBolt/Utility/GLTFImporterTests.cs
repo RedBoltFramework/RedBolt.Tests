@@ -1082,10 +1082,11 @@ public sealed class GLTFImporterTests
         var animation = Assert.Single(importer.ImportedAnimations);
         Assert.Same(animation, callback.Animation);
         Assert.Equal("Imported/Animations/Move.ani", animation.Name);
-        var track = Assert.Single(animation.Tracks.Values);
-        Assert.Equal(RedBolt.Graphics.AnimationChannel.Position, track.ChannelMask);
+        var track = Assert.Single(animation.VariantTracks.Values);
+        Assert.Equal("Node/@/Position", track.Name);
+        Assert.Equal(KeyFrameInterpolation.Linear, track.Interpolation);
         Assert.Equal(1, animation.Length);
-        Assert.Equal(new Vector3f(2, 0, 0), track.KeyFrames[1].Position);
+        Assert.Equal(new Vector3f(2, 0, 0), track.KeyFrames[1].Value.GetVector3());
         Assert.Contains("Imported/Animations/Move.ani", importer.SavedResources.Keys);
         Assert.True(importer.SaveResources(), importer.LastError);
         Assert.Equal("UAN2", Encoding.ASCII.GetString(System.IO.File.ReadAllBytes(
@@ -1115,7 +1116,32 @@ public sealed class GLTFImporterTests
 
         Assert.True(importer.LoadFile(documentPath), importer.LastError);
         Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
-        Assert.Equal("Root/#1", Assert.Single(Assert.Single(importer.ImportedAnimations).Tracks.Values).Name);
+        Assert.Equal("Root/#1/@/Position", Assert.Single(Assert.Single(importer.ImportedAnimations).VariantTracks.Values).Name);
+    }
+
+    [Fact]
+    public void Importer_preserves_step_scene_animation_interpolation()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_preserves_step_scene_animation_interpolation));
+        var data = new List<byte>();
+        AppendSingle(data, 0); AppendSingle(data, 1);
+        AppendSingle(data, 0); AppendSingle(data, 0); AppendSingle(data, 0);
+        AppendSingle(data, 2); AppendSingle(data, 0); AppendSingle(data, 0);
+        var document = $$"""
+            { "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,{{Convert.ToBase64String([.. data])}}", "byteLength": {{data.Count}} }],
+              "bufferViews": [{ "buffer": 0, "byteLength": 8 }, { "buffer": 0, "byteOffset": 8, "byteLength": 24 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 2, "type": "SCALAR" }, { "bufferView": 1, "componentType": 5126, "count": 2, "type": "VEC3" }],
+              "nodes": [{ "name": "Node" }],
+              "animations": [{ "samplers": [{ "input": 0, "output": 1, "interpolation": "STEP" }], "channels": [{ "sampler": 0, "target": { "node": 0, "path": "translation" } }] }] }
+            """;
+        var documentPath = artifacts.Write("step.gltf", Encoding.UTF8.GetBytes(document));
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
+        var track = Assert.Single(Assert.Single(importer.ImportedAnimations).VariantTracks.Values);
+        Assert.Equal(KeyFrameInterpolation.None, track.Interpolation);
     }
 
     [Fact]
@@ -1239,8 +1265,10 @@ public sealed class GLTFImporterTests
 
         Assert.True(importer.LoadFile(documentPath), importer.LastError);
         Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
-        var keys = Assert.Single(Assert.Single(importer.ImportedAnimations).Tracks.Values).KeyFrames;
-        Assert.Equal([0f, 1f], keys.Select(keyFrame => keyFrame.Time));
+        var tracks = Assert.Single(importer.ImportedAnimations).VariantTracks.Values
+            .OrderBy(track => track.Name, StringComparer.Ordinal).ToList();
+        Assert.Equal([0f, 1f], tracks[0].KeyFrames.Select(keyFrame => keyFrame.Time));
+        Assert.Equal([0.0005f, 1.0005f], tracks[1].KeyFrames.Select(keyFrame => keyFrame.Time));
     }
 
     [Fact]
@@ -1315,9 +1343,12 @@ public sealed class GLTFImporterTests
 
         Assert.True(importer.LoadFile(documentPath), importer.LastError);
         Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
-        var keys = Assert.Single(Assert.Single(importer.ImportedAnimations).Tracks.Values).KeyFrames;
-        Assert.Equal(new Vector3f(0, 0, 0), keys[0].Position);
-        Assert.Equal(new Vector3f(3, 0, 0), keys[1].Position);
+        var track = Assert.Single(Assert.Single(importer.ImportedAnimations).VariantTracks.Values);
+        Assert.Equal(KeyFrameInterpolation.TangentSpline, track.Interpolation);
+        Assert.Equal(new Vector3f(0, 0, 0), track.KeyFrames[0].Value.GetVector3());
+        Assert.Equal(new Vector3f(3, 0, 0), track.KeyFrames[1].Value.GetVector3());
+        Assert.Equal(new Vector3f(-1, 0, 0), track.InTangents[0].GetVector3());
+        Assert.Equal(new Vector3f(1, 0, 0), track.OutTangents[1].GetVector3());
     }
 
     [Fact]
