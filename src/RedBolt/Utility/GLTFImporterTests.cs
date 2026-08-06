@@ -363,7 +363,7 @@ public sealed class GLTFImporterTests
     public void Importer_cooks_skin_and_animated_prefab_component()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_cooks_skin_and_animated_prefab_component));
-        var skinBuffer = new byte[106];
+        var skinBuffer = new byte[170];
         Convert.FromBase64String(TriangleBuffer).CopyTo(skinBuffer, 0);
         for (var index = 0; index < 4; ++index)
             BinaryPrimitives.WriteSingleLittleEndian(skinBuffer.AsSpan(42 + index * 20), 1.0f);
@@ -373,9 +373,9 @@ public sealed class GLTFImporterTests
         var document = """
             {
               "asset": { "version": "2.0" },
-              "buffers": [{ "uri": "data:application/octet-stream;base64,$BUFFER$", "byteLength": 106 }],
-              "bufferViews": [{ "buffer": 0, "byteOffset": 0, "byteLength": 36 }, { "buffer": 0, "byteOffset": 36, "byteLength": 6 }, { "buffer": 0, "byteOffset": 42, "byteLength": 64 }],
-              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" }, { "bufferView": 1, "componentType": 5123, "count": 3, "type": "SCALAR" }, { "bufferView": 2, "componentType": 5126, "count": 1, "type": "MAT4" }],
+              "buffers": [{ "uri": "data:application/octet-stream;base64,$BUFFER$", "byteLength": 170 }],
+              "bufferViews": [{ "buffer": 0, "byteOffset": 0, "byteLength": 36 }, { "buffer": 0, "byteOffset": 36, "byteLength": 6 }, { "buffer": 0, "byteOffset": 42, "byteLength": 128 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" }, { "bufferView": 1, "componentType": 5123, "count": 3, "type": "SCALAR" }, { "bufferView": 2, "componentType": 5126, "count": 2, "type": "MAT4" }],
               "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1 }] }],
               "nodes": [
                 { "name": "Root", "translation": [1, 0, 0], "children": [1, 3] },
