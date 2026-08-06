@@ -1,6 +1,8 @@
 namespace RedBolt.Tests;
 
+using RedBolt.Core;
 using RedBolt.Replica;
+using RedBolt.Scene;
 
 public sealed class TickSynchronizerTests
 {
@@ -79,6 +81,33 @@ public sealed class TickSynchronizerTests
         Assert.Equal(2u, debt.PendingFollowerTicks);
         Assert.Equal(0u, debt.Synchronize(0.0f));
         Assert.Equal(2u, debt.PendingFollowerTicks);
+    }
+
+    [Fact]
+    public void Scene_updates_are_driven_by_synchronized_server_ticks()
+    {
+        var previousContext = Context.Instance;
+        using var context = new Context();
+        Context.SetInstance(context);
+        try
+        {
+            using var scene = new Scene();
+            using var synchronizer = new SceneUpdateSynchronizer(scene,
+                new SceneUpdateSynchronizerParams(IsServer: true, NetworkFrequency: 20));
+            synchronizer.Synchronize(new NetworkFrame(1), 0.0f);
+            var update = new CoreEvents.UpdateEvent { TimeStep = 0.01f };
+
+            scene.SendEvent(ref update);
+
+            Assert.InRange(scene.ElapsedTime, 0.04999f, 0.05001f);
+            synchronizer.Update(0.01f);
+            scene.SendEvent(ref update);
+            Assert.InRange(scene.ElapsedTime, 0.04999f, 0.05001f);
+        }
+        finally
+        {
+            Context.SetInstance(previousContext);
+        }
     }
 
     private static TickSynchronizer CreateClientSynchronizer()
