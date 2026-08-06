@@ -702,6 +702,36 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_preserves_jpeg_texture_resource_extension()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_preserves_jpeg_texture_resource_extension));
+        var diffuseBytes = Convert.FromBase64String(
+            "/9j/4AAQSkZJRgABAQEAZABkAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wgARCAAqABcDAREAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAAEE/8QAGQEBAQEBAQEAAAAAAAAAAAAAAAIBAwQF/9oADAMBAAIQAxAAAAHH5fskVAqGwKioNOdQbXMgtvOo/8QAFBABAAAAAAAAAAAAAAAAAAAAQP/aAAgBAQABBQIX/8QAFREBAQAAAAAAAAAAAAAAAAAAAQD/2gAIAQMBAT8BWWWWWWWWWWWWWWWZm//EABQRAQAAAAAAAAAAAAAAAAAAAED/2gAIAQIBAT8BF//EABQQAQAAAAAAAAAAAAAAAAAAAED/2gAIAQEABj8CF//EABQQAQAAAAAAAAAAAAAAAAAAAED/2gAIAQEAAT8hF//aAAwDAQACAAMAAAAQO3ctI7T6t//EABQRAQAAAAAAAAAAAAAAAAAAAED/2gAIAQMBAT8QEqqqqqP/xAAUEQEAAAAAAAAAAAAAAAAAAABA/9oACAECAQE/EBf/xAAVEAEBAAAAAAAAAAAAAAAAAAABAP/aAAgBAQABPxAIIIIIIIIIIIIIIIiL/9k=");
+        artifacts.Write("Diffuse.jpg", diffuseBytes);
+        var document = """
+            {
+              "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,$BUFFER$", "byteLength": 42 }],
+              "bufferViews": [{ "buffer": 0, "byteOffset": 0, "byteLength": 36 }, { "buffer": 0, "byteOffset": 36, "byteLength": 6 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" }, { "bufferView": 1, "componentType": 5123, "count": 3, "type": "SCALAR" }],
+              "images": [{ "uri": "Diffuse.jpg" }],
+              "textures": [{ "source": 0 }],
+              "materials": [{ "pbrMetallicRoughness": { "baseColorTexture": { "index": 0 } } }],
+              "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1, "material": 0 }] }]
+            }
+            """.Replace("$BUFFER$", TriangleBuffer, StringComparison.Ordinal);
+        var documentPath = artifacts.Write("texture.gltf", Encoding.UTF8.GetBytes(document));
+        var outputPath = Path.Combine(artifacts.DirectoryPath, "output");
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
+        Assert.Contains("Imported/Textures/Diffuse.jpg", importer.SavedResources.Keys);
+        Assert.True(importer.SaveResources(), importer.LastError);
+        Assert.Equal([0xff, 0xd8, 0xff], System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Textures/Diffuse.jpg"))[..3]);
+    }
+
+    [Fact]
     public void Importer_ignores_occlusion_texture_with_different_uvs()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_ignores_occlusion_texture_with_different_uvs));
