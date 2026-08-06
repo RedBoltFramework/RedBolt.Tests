@@ -1052,6 +1052,41 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_preserves_omitted_scene_root_slots_for_scene_animations()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_preserves_omitted_scene_root_slots_for_scene_animations));
+        var data = new List<byte>();
+        AppendSingle(data, 0); AppendSingle(data, 1);
+        AppendSingle(data, 0); AppendSingle(data, 0); AppendSingle(data, 0);
+        AppendSingle(data, 2); AppendSingle(data, 0); AppendSingle(data, 0);
+        var document = $$"""
+            {
+              "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,{{Convert.ToBase64String([.. data])}}", "byteLength": {{data.Count}} }],
+              "bufferViews": [{ "buffer": 0, "byteLength": 8 }, { "buffer": 0, "byteOffset": 8, "byteLength": 24 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 2, "type": "SCALAR" }, { "bufferView": 1, "componentType": 5126, "count": 2, "type": "VEC3" }],
+              "nodes": [{ "name": "Omitted" }, { "name": "Included" }],
+              "scenes": [{ "nodes": [1] }],
+              "animations": [{ "samplers": [{ "input": 0, "output": 1 }], "channels": [{ "sampler": 0, "target": { "node": 1, "path": "translation" } }] }]
+            }
+            """;
+        var documentPath = artifacts.Write("omitted-root-animation.gltf", Encoding.UTF8.GetBytes(document));
+        var outputPath = Path.Combine(artifacts.DirectoryPath, "output");
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
+        Assert.True(importer.SaveResources(), importer.LastError);
+
+        using var source = new MemoryBuffer(System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Prefab.prefab")));
+        using var prefab = new PrefabResource();
+        Assert.True(prefab.BeginLoad(source));
+        var root = prefab.GetNodePrefab();
+        Assert.Contains(root.Components, component => component.TypeName == nameof(AnimationController));
+        Assert.Equal(["Disabled Node Placeholder", "Included"], root.Children.Select(node => node.GetNodeName()));
+    }
+
+    [Fact]
     public void Importer_uses_cleaned_bone_names_for_animation_tracks()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_uses_cleaned_bone_names_for_animation_tracks));
