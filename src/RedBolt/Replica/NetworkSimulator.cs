@@ -8,7 +8,7 @@ using RedBolt.Replica;
 using RedBolt.Resource;
 using RedBolt.Scene;
 
-internal readonly record struct ConnectionQuality(
+public readonly record struct ConnectionQuality(
     float MinPing, float MaxPing, float SpikePing, float DropRate, float ShuffleRate);
 
 internal sealed class ManualConnection : IDisposable
