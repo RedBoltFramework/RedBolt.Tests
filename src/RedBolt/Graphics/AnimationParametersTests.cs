@@ -29,7 +29,7 @@ public sealed class AnimationParametersTests
             .KeepOnZeroWeight();
 
         Assert.Same(animation, parameters.GetAnimation());
-        Assert.Equal(animation.AnimationNameHash, parameters.GetAnimationName());
+        Assert.Equal(animation.GetNameHash(), parameters.GetAnimationName());
         Assert.True(parameters.IsLooped);
         Assert.Equal("Root", parameters.StartBoneName);
         Assert.Equal(2, parameters.LayerIndex);
