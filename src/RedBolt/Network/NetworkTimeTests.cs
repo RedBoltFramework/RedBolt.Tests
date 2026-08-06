@@ -6,18 +6,32 @@ using RedBolt.Replica;
 public sealed class NetworkTimeTests
 {
     [Fact]
-    public void Time_normalizes_and_preserves_delta_arithmetic()
+    public void Network_time_is_updated_as_expected()
     {
-        var beforeFrame = new NetworkTime((NetworkFrame)10, -0.25f);
-        var afterFrame = new NetworkTime((NetworkFrame)10, 2.25f);
+        Assert.Equal(new NetworkTime((NetworkFrame)0, 0.0f), new NetworkTime());
+        Assert.Equal(new NetworkTime((NetworkFrame)2, 0.25f), new NetworkTime((NetworkFrame)1, 1.25f));
+        Assert.Equal(new NetworkTime((NetworkFrame)0, 0.75f), new NetworkTime((NetworkFrame)1, -0.25f));
+        Assert.Equal("#2:0.25", new NetworkTime((NetworkFrame)2, 0.25f).ToString());
 
-        Assert.Equal((NetworkFrame)9, beforeFrame.Frame);
-        Assert.Equal(0.75f, beforeFrame.Fraction);
-        Assert.Equal((NetworkFrame)12, afterFrame.Frame);
-        Assert.Equal(0.25f, afterFrame.Fraction);
-        Assert.Equal(2.5, afterFrame - beforeFrame);
-        Assert.Equal("#12:0.25", afterFrame.ToString());
-        Assert.Equal(NetworkTime.FromDouble(12.25), afterFrame);
+        Assert.Equal(new NetworkTime((NetworkFrame)2, 0.0f),
+            new NetworkTime((NetworkFrame)1, 0.25f) + 0.75);
+        Assert.Equal(new NetworkTime((NetworkFrame)0, 0.5f),
+            new NetworkTime((NetworkFrame)1, 0.25f) - 0.75);
+        Assert.Equal(new NetworkTime((NetworkFrame)34, 0.5f),
+            new NetworkTime((NetworkFrame)10, 0.75f) + 23.75);
+        Assert.Equal(new NetworkTime((NetworkFrame)(-14), 0.5f),
+            new NetworkTime((NetworkFrame)10, 0.25f) - 23.75);
+        Assert.Equal(new NetworkTime(), new NetworkTime((NetworkFrame)(-3), 0.25f) + 2.75);
+
+        Assert.Equal(-0.75, new NetworkTime((NetworkFrame)1, 0.25f)
+            - new NetworkTime((NetworkFrame)2, 0.0f));
+        Assert.Equal(0.75, new NetworkTime((NetworkFrame)1, 0.25f)
+            - new NetworkTime((NetworkFrame)0, 0.5f));
+        Assert.Equal(-23.75, new NetworkTime((NetworkFrame)10, 0.75f)
+            - new NetworkTime((NetworkFrame)34, 0.5f));
+        Assert.Equal(23.75, new NetworkTime((NetworkFrame)10, 0.25f)
+            - new NetworkTime((NetworkFrame)(-14), 0.5f));
+        Assert.Equal(-2.75, new NetworkTime((NetworkFrame)(-3), 0.25f) - new NetworkTime());
     }
 
     [Fact]
