@@ -652,6 +652,7 @@ public sealed class GLTFImporterTests
         Assert.Contains("non-standard UV for diffuse texture #0", importer.LastWarning, StringComparison.Ordinal);
         Assert.Contains("non-standard UV for metallic-roughness texture #0", importer.LastWarning, StringComparison.Ordinal);
         Assert.Contains("non-standard UV for occlusion texture #0", importer.LastWarning, StringComparison.Ordinal);
+        Assert.Contains("non-default occlusion strength for occlusion texture #0", importer.LastWarning, StringComparison.Ordinal);
         Assert.Contains("non-standard UV for normal texture #0", importer.LastWarning, StringComparison.Ordinal);
         Assert.Contains("non-standard UV for emissive texture #0", importer.LastWarning, StringComparison.Ordinal);
     }
