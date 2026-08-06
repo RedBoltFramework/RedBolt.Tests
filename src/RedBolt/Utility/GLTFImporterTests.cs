@@ -813,6 +813,31 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_warns_when_preview_resources_are_missing()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_warns_when_preview_resources_are_missing));
+        var documentPath = artifacts.Write("scene.gltf", Encoding.UTF8.GetBytes("""
+            { "asset": { "version": "2.0" }, "scenes": [{}] }
+            """));
+        using var importer = new GLTFImporter(new GLTFImporterSettings
+        {
+            Preview = new GLTFImporterSettings.PreviewOptions
+            {
+                AddLights = false,
+                SkyboxMaterial = "Materials/Missing.xml",
+                ReflectionProbeCubemap = "Textures/Missing.xml"
+            }
+        });
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(string.Empty, string.Empty), importer.LastError);
+        Assert.Contains("Cannot add default skybox with material 'Materials/Missing.xml'.", importer.LastWarning,
+            StringComparison.Ordinal);
+        Assert.Contains("Cannot add default reflection probe with material 'Textures/Missing.xml'.", importer.LastWarning,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Importer_combines_named_mesh_lods()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_combines_named_mesh_lods));
