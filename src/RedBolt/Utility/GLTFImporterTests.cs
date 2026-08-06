@@ -71,6 +71,32 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_applies_model_callback_before_export()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_applies_model_callback_before_export));
+        var document = """
+            {
+              "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,$BUFFER$", "byteLength": 42 }],
+              "bufferViews": [{ "buffer": 0, "byteLength": 36 }, { "buffer": 0, "byteOffset": 36, "byteLength": 6 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3" }, { "bufferView": 1, "componentType": 5123, "count": 3, "type": "SCALAR" }],
+              "meshes": [{ "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1 }] }]
+            }
+            """.Replace("$BUFFER$", TriangleBuffer, StringComparison.Ordinal);
+        var documentPath = artifacts.Write("callback.gltf", Encoding.UTF8.GetBytes(document));
+        var outputPath = Path.Combine(artifacts.DirectoryPath, "output");
+        using var importer = new GLTFImporter(new GLTFImporterSettings { AssetName = "Callback" });
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(outputPath, "Imported/", new ClearModelCallback()), importer.LastError);
+        Assert.True(importer.SaveResources(), importer.LastError);
+        using var source = new MemoryBuffer(System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Models/Callback.mdl")));
+        using var model = new Model();
+        Assert.True(model.BeginLoad(source));
+        Assert.Equal(0u, model.GetNumGeometries());
+    }
+
+    [Fact]
     public void Importer_repairs_skinned_vertex_weights()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_repairs_skinned_vertex_weights));
@@ -356,7 +382,7 @@ public sealed class GLTFImporterTests
         var model = Assert.Single(staticModel.Attributes.Where(attribute => attribute.Name == "Model")).Value.GetResourceRef();
         var materials = Assert.Single(staticModel.Attributes.Where(attribute => attribute.Name == "Material")).Value.GetResourceRefList();
         Assert.Equal("Imported/Models/Triangle.mdl", model.Name);
-        Assert.Equal(["Imported/Materials/Paint.xml"], materials.Names);
+        Assert.Equal(["Imported/Materials/Paint_Lit.xml"], materials.Names);
     }
 
     [Fact]
@@ -415,8 +441,7 @@ public sealed class GLTFImporterTests
         using var source = new MemoryBuffer(System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Prefab.prefab")));
         using var prefab = new PrefabResource();
         Assert.True(prefab.BeginLoad(source));
-        var skinnedMesh = prefab.GetNodePrefab().Children.Single(node => node.GetNodeName() == "SkinnedMesh");
-        Assert.Equal(nameof(AnimatedModel), Assert.Single(skinnedMesh.Components).TypeName);
+        Assert.Equal(nameof(AnimatedModel), Assert.Single(prefab.GetNodePrefab().Components).TypeName);
     }
 
     [Fact]
@@ -447,8 +472,7 @@ public sealed class GLTFImporterTests
         using var source = new MemoryBuffer(System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Prefab.prefab")));
         using var prefab = new PrefabResource();
         Assert.True(prefab.BeginLoad(source));
-        var emptySkinnedMesh = prefab.GetNodePrefab().Children.Single(node => node.GetNodeName() == "EmptySkinnedMesh");
-        var animatedModel = Assert.Single(emptySkinnedMesh.Components);
+        var animatedModel = Assert.Single(prefab.GetNodePrefab().Components);
         Assert.Equal(nameof(AnimatedModel), animatedModel.TypeName);
         Assert.Equal(0.0f, animatedModel.Attributes.Single(attribute => attribute.Name == "Animation LOD Bias").Value.GetFloat());
         Assert.True(animatedModel.Attributes.Single(attribute => attribute.Name == "Update Invisible").Value.GetBool());
@@ -630,12 +654,12 @@ public sealed class GLTFImporterTests
 
         Assert.True(importer.LoadFile(documentPath), importer.LastError);
         Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
-        Assert.Equal("Imported/Materials/Paint.xml", Assert.Single(importer.ImportedModel!.GetGeometries()).Material);
-        Assert.Contains("Imported/Materials/Paint.xml", importer.SavedResources.Keys);
+        Assert.Equal("Imported/Materials/Paint_Unlit.xml", Assert.Single(importer.ImportedModel!.GetGeometries()).Material);
+        Assert.Contains("Imported/Materials/Paint_Unlit.xml", importer.SavedResources.Keys);
         Assert.True(importer.SaveResources(), importer.LastError);
-        Assert.True(System.IO.File.Exists(Path.Combine(outputPath, "Materials/Paint.xml")));
-        var paint = System.Xml.Linq.XDocument.Load(Path.Combine(outputPath, "Materials/Paint.xml"));
-        var glass = System.Xml.Linq.XDocument.Load(Path.Combine(outputPath, "Materials/Glass.xml"));
+        Assert.True(System.IO.File.Exists(Path.Combine(outputPath, "Materials/Paint_Unlit.xml")));
+        var paint = System.Xml.Linq.XDocument.Load(Path.Combine(outputPath, "Materials/Paint_Unlit.xml"));
+        var glass = System.Xml.Linq.XDocument.Load(Path.Combine(outputPath, "Materials/Glass_Lit.xml"));
         Assert.Equal("Techniques/UnlitOpaque.xml", paint.Root!.Element("technique")!.Attribute("name")!.Value);
         Assert.Equal("ALPHAMASK", paint.Root.Element("shader")!.Attribute("vsdefines")!.Value.Trim());
         Assert.Equal("Techniques/LitTransparentFade.xml", glass.Root!.Element("technique")!.Attribute("name")!.Value);
@@ -690,7 +714,7 @@ public sealed class GLTFImporterTests
         Assert.Equal("mirror", parameters.Root.Elements("address").Single(element => (string?)element.Attribute("coord") == "v").Attribute("mode")!.Value);
         Assert.Equal("nearest", parameters.Root.Element("filter")!.Attribute("mode")!.Value);
         Assert.Equal("false", parameters.Root.Element("mipmap")!.Attribute("enable")!.Value);
-        var material = System.Xml.Linq.XDocument.Load(Path.Combine(outputPath, "Materials/Material_0.xml"));
+        var material = System.Xml.Linq.XDocument.Load(Path.Combine(outputPath, "Materials/Material_0_LitNormalMap.xml"));
         Assert.Equal("0.25", material.Root!.Elements("parameter")
             .Single(element => (string?)element.Attribute("name") == "OcclusionStrength").Attribute("value")!.Value);
         Assert.Contains("non-standard UV for diffuse texture #0", importer.LastWarning, StringComparison.Ordinal);
@@ -728,7 +752,7 @@ public sealed class GLTFImporterTests
         Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
         Assert.Contains("Imported/Textures/Diffuse.jpg", importer.SavedResources.Keys);
         Assert.True(importer.SaveResources(), importer.LastError);
-        Assert.Equal([0xff, 0xd8, 0xff], System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Textures/Diffuse.jpg"))[..3]);
+        Assert.Equal(diffuseBytes, System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Textures/Diffuse.jpg")));
     }
 
     [Fact]
@@ -758,7 +782,7 @@ public sealed class GLTFImporterTests
         Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
         Assert.Contains("different UVs", importer.LastWarning, StringComparison.Ordinal);
         Assert.True(importer.SaveResources(), importer.LastError);
-        var material = System.Xml.Linq.XDocument.Load(Path.Combine(outputPath, "Materials/Paint.xml"));
+        var material = System.Xml.Linq.XDocument.Load(Path.Combine(outputPath, "Materials/Paint_Lit.xml"));
         Assert.DoesNotContain(material.Root!.Elements("parameter"), element =>
             (string?)element.Attribute("name") == "OcclusionStrength");
     }
@@ -1269,10 +1293,7 @@ public sealed class GLTFImporterTests
         using var prefab = new PrefabResource();
         Assert.True(prefab.BeginLoad(source));
         var root = prefab.GetNodePrefab();
-        var mesh = root.FindChild("Mesh");
-        Assert.NotNull(mesh);
-        Assert.DoesNotContain(root.Components, component => component.TypeName == nameof(AnimationController));
-        Assert.Contains(mesh.Components, component => component.TypeName == nameof(AnimationController));
+        Assert.Contains(root.Components, component => component.TypeName == nameof(AnimationController));
     }
 
     [Fact]
@@ -1289,10 +1310,10 @@ public sealed class GLTFImporterTests
               "bufferViews": [{ "buffer": 0, "byteLength": 8 }, { "buffer": 0, "byteOffset": 8, "byteLength": 24 }],
               "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 2, "type": "SCALAR" }, { "bufferView": 1, "componentType": 5126, "count": 2, "type": "VEC3" }],
               "meshes": [{ "primitives": [] }],
-              "nodes": [{ "name": "Root", "children": [1, 2, 3, 4] }, { "name": "JointA" }, { "name": "MeshA", "mesh": 0, "skin": 0 }, { "name": "JointB" }, { "name": "MeshB", "mesh": 0, "skin": 1 }],
-              "skins": [{ "skeleton": 0, "joints": [1] }, { "skeleton": 0, "joints": [3] }],
-              "animations": [{ "samplers": [{ "input": 0, "output": 1 }], "channels": [{ "sampler": 0, "target": { "node": 1, "path": "translation" } }, { "sampler": 0, "target": { "node": 3, "path": "translation" } }] }],
-              "scenes": [{ "nodes": [0] }] }
+              "nodes": [{ "name": "RootA", "children": [1, 2] }, { "name": "Joint" }, { "name": "MeshA", "mesh": 0, "skin": 0 }, { "name": "RootB", "children": [4, 5] }, { "name": "Joint" }, { "name": "MeshB", "mesh": 0, "skin": 1 }],
+              "skins": [{ "skeleton": 0, "joints": [1] }, { "skeleton": 3, "joints": [4] }],
+              "animations": [{ "samplers": [{ "input": 0, "output": 1 }], "channels": [{ "sampler": 0, "target": { "node": 1, "path": "translation" } }, { "sampler": 0, "target": { "node": 4, "path": "translation" } }] }],
+              "scenes": [{ "nodes": [0, 3] }] }
             """;
         var documentPath = artifacts.Write("multiple-skins.gltf", Encoding.UTF8.GetBytes(document));
         var outputPath = Path.Combine(artifacts.DirectoryPath, "output");
@@ -1300,6 +1321,9 @@ public sealed class GLTFImporterTests
 
         Assert.True(importer.LoadFile(documentPath), importer.LastError);
         Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
+        Assert.Equal(2, importer.ImportedAnimations.Count);
+        Assert.All(importer.ImportedAnimations, animation =>
+            Assert.Equal("Joint", Assert.Single(animation.Tracks.Values).Name));
         Assert.True(importer.SaveResources(), importer.LastError);
         using var source = new MemoryBuffer(System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Prefab.prefab")));
         using var prefab = new PrefabResource();
@@ -1476,6 +1500,11 @@ public sealed class GLTFImporterTests
         public RedBolt.Graphics.Animation? Animation { get; private set; }
 
         public override void OnAnimationLoaded(RedBolt.Graphics.Animation animation) => Animation = animation;
+    }
+
+    private sealed class ClearModelCallback : GLTFImporterCallback
+    {
+        public override void OnModelLoaded(ModelView modelView) => modelView.GetGeometries().Clear();
     }
 
     private sealed class ArtificialSkinCallback : GLTFImporterCallback
