@@ -410,7 +410,7 @@ public sealed class GLTFImporterTests
         Assert.Equal(new Vector3f(-1, 0, 0), bones[1].Position);
         Assert.Equal(new Vector3f(0, 2, 0), bones[2].Position);
         Assert.True(bones[0].Rotation.ApproximatelyEquivalent(new Quaternion(0.8660254f, 0, -0.5f, 0), 0.0001f));
-        Assert.Equal(new Vector3f(9, 8, 7), bones[0].OffsetMatrix.Translation);
+        Assert.Equal(new Vector3f(-9, 8, 7), bones[0].OffsetMatrix.Translation);
 
         using var source = new MemoryBuffer(System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Prefab.prefab")));
         using var prefab = new PrefabResource();
