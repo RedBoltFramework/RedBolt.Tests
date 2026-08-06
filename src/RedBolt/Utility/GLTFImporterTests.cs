@@ -1246,6 +1246,44 @@ public sealed class GLTFImporterTests
     }
 
     [Fact]
+    public void Importer_attaches_animation_controllers_to_multiple_skinned_models()
+    {
+        using var artifacts = new TestArtifactScope(nameof(Importer_attaches_animation_controllers_to_multiple_skinned_models));
+        var data = new List<byte>();
+        AppendSingle(data, 0); AppendSingle(data, 1);
+        AppendSingle(data, 0); AppendSingle(data, 0); AppendSingle(data, 0);
+        AppendSingle(data, 2); AppendSingle(data, 0); AppendSingle(data, 0);
+        var document = $$"""
+            { "asset": { "version": "2.0" },
+              "buffers": [{ "uri": "data:application/octet-stream;base64,{{Convert.ToBase64String([.. data])}}", "byteLength": {{data.Count}} }],
+              "bufferViews": [{ "buffer": 0, "byteLength": 8 }, { "buffer": 0, "byteOffset": 8, "byteLength": 24 }],
+              "accessors": [{ "bufferView": 0, "componentType": 5126, "count": 2, "type": "SCALAR" }, { "bufferView": 1, "componentType": 5126, "count": 2, "type": "VEC3" }],
+              "meshes": [{ "primitives": [] }],
+              "nodes": [{ "name": "Root", "children": [1, 2, 3, 4] }, { "name": "JointA" }, { "name": "MeshA", "mesh": 0, "skin": 0 }, { "name": "JointB" }, { "name": "MeshB", "mesh": 0, "skin": 1 }],
+              "skins": [{ "skeleton": 0, "joints": [1] }, { "skeleton": 0, "joints": [3] }],
+              "animations": [{ "samplers": [{ "input": 0, "output": 1 }], "channels": [{ "sampler": 0, "target": { "node": 1, "path": "translation" } }, { "sampler": 0, "target": { "node": 3, "path": "translation" } }] }],
+              "scenes": [{ "nodes": [0] }] }
+            """;
+        var documentPath = artifacts.Write("multiple-skins.gltf", Encoding.UTF8.GetBytes(document));
+        var outputPath = Path.Combine(artifacts.DirectoryPath, "output");
+        using var importer = new GLTFImporter(new GLTFImporterSettings());
+
+        Assert.True(importer.LoadFile(documentPath), importer.LastError);
+        Assert.True(importer.Process(outputPath, "Imported/"), importer.LastError);
+        Assert.True(importer.SaveResources(), importer.LastError);
+        using var source = new MemoryBuffer(System.IO.File.ReadAllBytes(Path.Combine(outputPath, "Prefab.prefab")));
+        using var prefab = new PrefabResource();
+        Assert.True(prefab.BeginLoad(source));
+        var root = prefab.GetNodePrefab();
+        foreach (var name in new[] { "MeshA", "MeshB" })
+        {
+            var mesh = root.FindChild(name);
+            Assert.NotNull(mesh);
+            Assert.Contains(mesh.Components, component => component.TypeName == nameof(AnimationController));
+        }
+    }
+
+    [Fact]
     public void Importer_merges_nearby_animation_key_times()
     {
         using var artifacts = new TestArtifactScope(nameof(Importer_merges_nearby_animation_key_times));
