@@ -3,6 +3,7 @@ namespace RedBolt.Tests;
 using RedBolt.Bindings.DearImGui;
 using RedBolt.Container;
 using RedBolt.Core;
+using RedBolt.Graphics;
 using RedBolt.Scene;
 using RedBolt.SystemUI;
 
@@ -94,5 +95,26 @@ public sealed class ResourceFileDescriptorTests
         payload.Resources.Add(new ResourceFileDescriptor { LocalName = "Scene.json" });
 
         Assert.Equal("2 items", payload.GetDisplayString());
+    }
+
+    [Fact]
+    public void Node_component_payload_formats_summary_and_keeps_weak_references()
+    {
+        using var payload = new NodeComponentDragDropPayload();
+        var node = new Node();
+        var component = node.CreateComponent<Camera>();
+
+        payload.Nodes.Add(new WeakReference<Node>(node));
+        payload.Components.Add(new WeakReference<Component>(component));
+
+        Assert.Equal("???", payload.GetDisplayString());
+        Assert.True(payload.Nodes[0].TryGetTarget(out var storedNode));
+        Assert.Same(node, storedNode);
+        Assert.True(payload.Components[0].TryGetTarget(out var storedComponent));
+        Assert.Same(component, storedComponent);
+
+        payload.DisplayString = "1 node, 1 component";
+
+        Assert.Equal("1 node, 1 component", payload.GetDisplayString());
     }
 }
