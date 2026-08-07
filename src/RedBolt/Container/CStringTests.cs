@@ -56,6 +56,9 @@ public sealed class CStringTests
         value.Set("høla");
         Assert.Equal("høla", value.ConvertToString());
 
+        value.Set("  trimmed".AsSpan(2));
+        Assert.Equal("trimmed", value.ConvertToString());
+
         value.Set("abc"u8);
         value.Resize(5);
         Assert.Equal(new byte[] { (byte)'a', (byte)'b', (byte)'c', 0, 0 }, value.ContentBytes.ToArray());
