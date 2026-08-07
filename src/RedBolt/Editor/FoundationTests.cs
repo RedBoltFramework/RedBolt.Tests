@@ -7,13 +7,17 @@ using System.Reflection;
 
 using RedBolt.Audio;
 using RedBolt.Bindings.DearImGui;
+using RedBolt.Container;
 using RedBolt.Core;
 using RedBolt.Editor.Core;
 using RedBolt.Editor.Foundation;
 using RedBolt.Editor.Foundation.Shared;
 using RedBolt.Editor.Project;
-using Archive = RedBolt.IO.Archive;
 using RedBolt.Math;
+using RedBolt.Resource;
+using RedBolt.SystemUI;
+
+using Archive = RedBolt.IO.Archive;
 
 [Collection(nameof(HeadlessEngineCollection))]
 public sealed class FoundationTests
@@ -351,6 +355,137 @@ public sealed class FoundationTests
     }
 
     [NativeBindingFact]
+    public void Inspector_with_preview_claims_resources_reuses_selection_and_tracks_edit_boundaries()
+    {
+        WithProject((project, dataPath) =>
+        {
+            File.WriteAllBytes(Path.Combine(dataPath, "B.raw"), [1, 2, 3, 4]);
+            File.WriteAllBytes(Path.Combine(dataPath, "A.raw"), [5, 6, 7, 8]);
+            File.WriteAllText(Path.Combine(dataPath, "Other.txt"), "other");
+            project.AddAnalyzeFileCallback(static (descriptor, context) =>
+            {
+                if (descriptor.HasExtension(".raw"))
+                    descriptor.AddObjectType<Sound>();
+            });
+
+            var inspector = new TestInspectorWithPreview(project);
+            var activationCount = 0;
+            inspector.OnActivated += () => ++activationCount;
+            var processPendingRequests = typeof(Project).GetMethod(
+                "ProcessPendingRequests", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+            using (var otherRequest = new InspectResourceRequest(["Other.txt"]))
+            {
+                project.ProcessRequest(otherRequest);
+                processPendingRequests.Invoke(project, null);
+            }
+            Assert.Equal(0, activationCount);
+
+            using (var soundRequest = new InspectResourceRequest(["B.raw"]))
+            {
+                project.ProcessRequest(soundRequest);
+                processPendingRequests.Invoke(project, null);
+            }
+            Assert.Equal(1, activationCount);
+            Assert.Equal(["B.raw"], inspector.ResourceNames);
+            Assert.Equal(1, inspector.MakeInspectorCount);
+            Assert.Equal(1, inspector.MakePreviewCount);
+            var firstWidget = Assert.IsType<TestResourceInspectorWidget>(inspector.Inspector);
+            var firstPreview = Assert.IsType<TestPreviewWidget>(inspector.Preview);
+
+            using (var sameSoundRequest = new InspectResourceRequest(["B.raw"]))
+            {
+                project.ProcessRequest(sameSoundRequest);
+                processPendingRequests.Invoke(project, null);
+            }
+            Assert.Equal(2, activationCount);
+            Assert.Equal(1, inspector.MakeInspectorCount);
+            Assert.Same(firstWidget, inspector.Inspector);
+
+            var higherPriorityProcessed = false;
+            using (var claimedRequest = new InspectResourceRequest(["B.raw"]))
+            {
+                claimedRequest.QueueProcessCallback(() => higherPriorityProcessed = true, int.MinValue + 2);
+                project.ProcessRequest(claimedRequest);
+                processPendingRequests.Invoke(project, null);
+            }
+            Assert.True(higherPriorityProcessed);
+            Assert.Equal(2, activationCount);
+
+            var beginEdit = typeof(InspectorWithPreview).GetMethod(
+                "BeginEdit", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var endEdit = typeof(InspectorWithPreview).GetMethod(
+                "EndEdit", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            beginEdit.Invoke(inspector, null);
+            var pendingAction = inspector.PendingAction;
+            Assert.NotNull(pendingAction);
+            beginEdit.Invoke(inspector, null);
+            Assert.Same(pendingAction, inspector.PendingAction);
+            endEdit.Invoke(inspector, null);
+            var delayedFileSaves = GetPrivateField(project, "_delayedFileSaves");
+            Assert.Equal(1, GetProperty<int>(delayedFileSaves!, "Count"));
+
+            InspectorSource source = inspector;
+            Assert.Null(source.GetOwnerTab());
+            Assert.False(source.IsUndoSupported());
+            source.RenderContextMenuItems();
+            source.RenderMenu();
+            source.ApplyHotkeys(project.HotkeyManager);
+
+            foreach (var windowHeight in new[] { 900.0f, 420.0f })
+            {
+                var imguiContext = ImGui.CreateContext();
+                var frameStarted = false;
+                var windowStarted = false;
+                try
+                {
+                    ImGui.SetCurrentContext(imguiContext);
+                    var io = ImGui.GetIO();
+                    io.DisplaySize = new Vector2f(640.0f, 1000.0f);
+                    io.DeltaTime = 1.0f / 60.0f;
+                    io.BackendFlags |= ImGuiBackendFlags.ImGuiBackendFlagsRendererHasTextures;
+                    ImGui.NewFrame();
+                    frameStarted = true;
+                    ImGui.SetNextWindowSize(new Vector2f(360.0f, windowHeight));
+                    var open = true;
+                    ImGui.Begin("Inspector with preview"u8, ref open);
+                    windowStarted = true;
+
+                    inspector.RenderContent();
+                }
+                finally
+                {
+                    if (windowStarted)
+                        ImGui.End();
+                    if (frameStarted)
+                        ImGui.EndFrame();
+                    ImGui.DestroyContext(imguiContext);
+                }
+            }
+            Assert.Equal(2, firstWidget.RenderCount);
+            Assert.Equal(2, firstPreview.RenderCount);
+            using (var soundsRequest = new InspectResourceRequest(["B.raw", "A.raw"]))
+            {
+                project.ProcessRequest(soundsRequest);
+                processPendingRequests.Invoke(project, null);
+            }
+            Assert.Equal(3, activationCount);
+            Assert.Equal(["A.raw", "B.raw"], inspector.ResourceNames);
+            Assert.Equal(2, inspector.MakeInspectorCount);
+            Assert.Equal(1, inspector.MakePreviewCount);
+            Assert.True(firstWidget.IsDisposed);
+            Assert.True(firstPreview.IsDisposed);
+            Assert.Null(inspector.Preview);
+            inspector.Dispose();
+            Assert.True(inspector.InspectorDisposed);
+            using var requestAfterDispose = new InspectResourceRequest(["A.raw"]);
+            project.ProcessRequest(requestAfterDispose);
+            processPendingRequests.Invoke(project, null);
+            Assert.Equal(3, activationCount);
+        });
+    }
+
+    [NativeBindingFact]
     public void Settings_tab_selects_the_first_populated_group_and_forwards_page_behavior()
     {
         WithProject((project, _) =>
@@ -567,6 +702,98 @@ public sealed class FoundationTests
         public bool IsDisposed { get; private set; }
 
         private readonly EditorTab _owner;
+    }
+
+    private sealed class TestInspectorWithPreview : InspectorWithPreview
+    {
+        public TestInspectorWithPreview(Project project)
+            : base(project)
+        {
+        }
+
+        public IReadOnlyList<string> ResourceNames =>
+            (IReadOnlyList<string>)typeof(InspectorWithPreview)
+                .GetField("_resourceNames", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(this)!;
+
+        public ResourceInspectorWidget? Inspector =>
+            (ResourceInspectorWidget?)typeof(InspectorWithPreview)
+                .GetField("_inspector", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(this);
+
+        public BaseWidget? Preview =>
+            (BaseWidget?)typeof(InspectorWithPreview)
+                .GetField("_preview", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(this);
+
+        public ModifyResourceAction? PendingAction =>
+            (ModifyResourceAction?)typeof(InspectorWithPreview)
+                .GetField("_pendingAction", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(this);
+
+        public int MakeInspectorCount { get; private set; }
+
+        public int MakePreviewCount { get; private set; }
+
+        public bool InspectorDisposed => _lastInspector?.IsDisposed ?? false;
+
+        protected override StringHash GetResourceType() => typeof(Sound).GetTypeId();
+
+        protected override ResourceInspectorWidget? MakeInspectorWidget(IReadOnlyList<Resource> resources)
+        {
+            ++MakeInspectorCount;
+            _lastInspector = new TestResourceInspectorWidget(resources);
+            return _lastInspector;
+        }
+
+        protected override BaseWidget? MakePreviewWidget(Resource resource)
+        {
+            ++MakePreviewCount;
+            return new TestPreviewWidget();
+        }
+
+        private TestResourceInspectorWidget? _lastInspector;
+    }
+
+    private sealed class TestResourceInspectorWidget : ResourceInspectorWidget
+    {
+        public TestResourceInspectorWidget(IReadOnlyList<Resource> resources)
+            : base(resources, Array.Empty<PropertyDesc>())
+        {
+        }
+
+        public override void RenderContent()
+        {
+            ++RenderCount;
+        }
+
+        public override void Dispose()
+        {
+            IsDisposed = true;
+            base.Dispose();
+        }
+
+        public int RenderCount { get; private set; }
+
+        public bool IsDisposed { get; private set; }
+    }
+
+    private sealed class TestPreviewWidget : BaseWidget
+    {
+        public override void RenderContent()
+        {
+            ++RenderCount;
+        }
+
+        public override void Dispose()
+        {
+            IsDisposed = true;
+            base.Dispose();
+        }
+
+        public int RenderCount { get; private set; }
+
+        public bool IsDisposed { get; private set; }
     }
 
     private sealed class TestSettingsTab : SettingsTab
