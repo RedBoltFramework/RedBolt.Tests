@@ -49,6 +49,9 @@ public sealed class ImGuiInternalBindingsTests
             Assert.False(ImGui.DragInt("Int"u8, ref intValue));
             Assert.Equal(5, intValue);
 
+            Assert.False(ImGui.DragInt(""u8, ref intValue));
+            Assert.Equal(5, intValue);
+
             Span<int> intVectorValue = [6, 7, 8];
             Assert.False(ImGui.DragInt3("Int Vector"u8, intVectorValue));
             Assert.Equal([6, 7, 8], intVectorValue.ToArray());
