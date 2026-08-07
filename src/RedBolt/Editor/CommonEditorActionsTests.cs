@@ -750,6 +750,117 @@ public sealed class CommonEditorActionsTests
         Assert.False(action.CanUndoRedo());
     }
 
+    [Fact]
+    public void Change_node_subtree_action_redoes_and_undoes_node_snapshot()
+    {
+        using var scene = new Scene();
+        var parent = scene.CreateChild("Parent", 100);
+        var node = parent.CreateChild("Old", 101);
+        var child = node.CreateChild("Old Child", 102);
+        var oldData = new PackedNodeData(node);
+        node.SetName("New");
+        child.SetName("New Child");
+        var action = new ChangeNodeSubtreeAction(scene, oldData, node);
+        node.SetName("After");
+
+        action.Undo();
+        var restored = Assert.IsType<Node>(scene.GetNode(101));
+        Assert.Equal("Old", restored.Name);
+        Assert.Equal("Old Child", Assert.IsType<Node>(scene.GetNode(102)).Name);
+
+        action.Redo();
+        restored = Assert.IsType<Node>(scene.GetNode(101));
+        Assert.Equal("New", restored.Name);
+        Assert.Equal("New Child", Assert.IsType<Node>(scene.GetNode(102)).Name);
+    }
+
+    [Fact]
+    public void Change_node_subtree_action_redoes_removal_and_undoes_it()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Node", 100);
+        node.CreateChild("Child", 101);
+        var oldData = new PackedNodeData(node);
+        var action = new ChangeNodeSubtreeAction(scene, oldData, (Node?)null);
+
+        action.Redo();
+        Assert.Null(scene.GetNode(100));
+        Assert.Null(scene.GetNode(101));
+
+        action.Undo();
+        Assert.Equal("Node", Assert.IsType<Node>(scene.GetNode(100)).Name);
+        Assert.Equal("Child", Assert.IsType<Node>(scene.GetNode(101)).Name);
+    }
+
+    [Fact]
+    public void Change_node_subtree_action_accepts_packed_new_snapshot()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Old", 100);
+        var oldData = new PackedNodeData(node);
+        node.SetName("New");
+        var newData = new PackedNodeData(node);
+        var action = new ChangeNodeSubtreeAction(scene, oldData, newData);
+        node.SetName("After");
+
+        action.Undo();
+        Assert.Equal("Old", Assert.IsType<Node>(scene.GetNode(100)).Name);
+        action.Redo();
+        Assert.Equal("New", Assert.IsType<Node>(scene.GetNode(100)).Name);
+    }
+
+    [Fact]
+    public void Change_node_subtree_action_merges_latest_snapshot_for_same_node()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Old", 100);
+        var oldData = new PackedNodeData(node);
+        node.SetName("First");
+        var action = new ChangeNodeSubtreeAction(scene, oldData, node);
+        node.SetName("Second");
+        var other = new ChangeNodeSubtreeAction(scene, oldData, node);
+
+        Assert.True(action.MergeWith(other));
+        node.SetName("Third");
+        var latest = new ChangeNodeSubtreeAction(scene, oldData, node);
+        Assert.True(other.MergeWith(latest));
+        action.Redo();
+        Assert.Equal("Second", Assert.IsType<Node>(scene.GetNode(100)).Name);
+        action.Undo();
+        Assert.Equal("Old", Assert.IsType<Node>(scene.GetNode(100)).Name);
+    }
+
+    [Fact]
+    public void Change_node_subtree_action_rejects_other_type_scene_or_new_node()
+    {
+        using var scene = new Scene();
+        using var otherScene = new Scene();
+        var node = scene.CreateChild("Node", 100);
+        var sibling = scene.CreateChild("Sibling", 101);
+        var externalNode = otherScene.CreateChild("Node", 100);
+        var action = new ChangeNodeSubtreeAction(scene, new PackedNodeData(node), node);
+
+        Assert.False(action.MergeWith(new EmptyEditorAction()));
+        Assert.False(action.MergeWith(
+            new ChangeNodeSubtreeAction(scene, new PackedNodeData(sibling), sibling)));
+        Assert.False(action.MergeWith(
+            new ChangeNodeSubtreeAction(otherScene, new PackedNodeData(externalNode), externalNode)));
+    }
+
+    [Fact]
+    public void Change_node_subtree_action_only_requires_live_scene()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Node");
+        var oldData = new PackedNodeData(node);
+
+        Assert.False(new ChangeNodeSubtreeAction(null, oldData, node).CanUndoRedo());
+
+        var action = new ChangeNodeSubtreeAction(scene, oldData, node);
+        node.Remove();
+        Assert.True(action.CanUndoRedo());
+    }
+
     private sealed class RecordingEditorAction : EditorAction
     {
         private readonly string _name;
