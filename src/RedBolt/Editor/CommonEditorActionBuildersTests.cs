@@ -4,6 +4,7 @@ using RedBolt.Core;
 using RedBolt.Editor.Core;
 using RedBolt.Graphics;
 using RedBolt.Scene;
+using RedBolt.Utility;
 
 [Collection(nameof(HeadlessEngineCollection))]
 public sealed class CommonEditorActionBuildersTests
@@ -283,5 +284,44 @@ public sealed class CommonEditorActionBuildersTests
         {
             reflection.SetScopeHint(oldScopeHint);
         }
+    }
+
+    [Fact]
+    public void Change_attribute_buffer_clone_is_independent()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Node", 100);
+        var camera = node.CreateComponent<Camera>(200);
+        camera.Fov = 70.0f;
+        using var buffer = new ChangeAttributeBuffer();
+        using (var oldValue = new Variant(10))
+            buffer.OldValues.Add(oldValue);
+        using (var newValue = new Variant(20))
+            buffer.NewValues.Add(newValue);
+        buffer.OldComponents.Add(new PackedComponentData(camera));
+        buffer.NewComponents.Add(new PackedComponentData(camera));
+        buffer.OldNodes.Add(new PackedNodeData(node));
+        buffer.NewNodes.Add(new PackedNodeData(node));
+        buffer.OldScene = PackedSceneData.FromScene(scene);
+        buffer.NewScene = PackedSceneData.FromScene(scene);
+        using var clone = buffer.Clone();
+
+        using (var changedValue = new Variant(30))
+            buffer.OldValues[0] = changedValue;
+        buffer.OldComponents.Clear();
+        buffer.NewComponents.Clear();
+        buffer.OldNodes.Clear();
+        buffer.NewNodes.Clear();
+        buffer.OldScene.SceneData.Clear();
+        buffer.NewScene.SceneData.Clear();
+
+        Assert.Equal(10, clone.OldValues[0].GetInt());
+        Assert.Equal(20, clone.NewValues[0].GetInt());
+        Assert.Single(clone.OldComponents);
+        Assert.Single(clone.NewComponents);
+        Assert.Single(clone.OldNodes);
+        Assert.Single(clone.NewNodes);
+        Assert.True(clone.OldScene.HasSceneData);
+        Assert.True(clone.NewScene.HasSceneData);
     }
 }
