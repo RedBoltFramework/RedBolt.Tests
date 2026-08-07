@@ -79,4 +79,20 @@ public sealed class ResourceFileDescriptorTests
         Assert.NotSame(descriptor.TypeNames, clone.TypeNames);
         Assert.NotSame(descriptor.Types, clone.Types);
     }
+
+    [Fact]
+    public void Resource_payload_formats_single_and_multiple_resources()
+    {
+        using var payload = new ResourceDragDropPayload();
+
+        Assert.Equal("0 items", payload.GetDisplayString());
+
+        payload.Resources.Add(new ResourceFileDescriptor { LocalName = "Scene.xml" });
+
+        Assert.Equal("Scene.xml", payload.GetDisplayString());
+
+        payload.Resources.Add(new ResourceFileDescriptor { LocalName = "Scene.json" });
+
+        Assert.Equal("2 items", payload.GetDisplayString());
+    }
 }
