@@ -9,6 +9,8 @@ public sealed class ColorScopeGuardTests
     [NativeBindingFact]
     public void Color_scope_guard_pushes_and_pops_all_color_forms()
     {
+        Assert.True(typeof(ColorScopeGuard).IsValueType);
+
         var context = ImGui.CreateContext();
         try
         {

@@ -11,6 +11,8 @@ public sealed class IdScopeGuardTests
     [NativeBindingFact]
     public void Id_scope_guard_pushes_and_pops_each_supported_id_type()
     {
+        Assert.True(typeof(IdScopeGuard).IsValueType);
+
         var context = ImGui.CreateContext();
         var frameStarted = false;
         var windowStarted = false;
