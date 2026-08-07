@@ -2,6 +2,7 @@ namespace RedBolt.Tests;
 
 using System.Collections.Generic;
 
+using RedBolt.Core;
 using RedBolt.Editor.Core;
 using RedBolt.Graphics;
 using RedBolt.Math;
@@ -244,6 +245,90 @@ public sealed class CommonEditorActionsTests
         node.Remove();
         Assert.Throws<UndoException>(() => action.Undo());
         Assert.Throws<UndoException>(() => action.Redo());
+    }
+
+    [Fact]
+    public void Change_node_attributes_action_undoes_and_redoes_values_for_all_nodes()
+    {
+        using var scene = new Scene();
+        var first = scene.CreateChild("New First");
+        var second = scene.CreateChild("New Second");
+        using var oldValues = new VariantVector { new("Old First"), new("Old Second") };
+        using var newValues = new VariantVector { new("New First"), new("New Second") };
+        var action = new ChangeNodeAttributesAction(
+            scene, "Name", new[] { first, second }, oldValues, newValues);
+        oldValues.Clear();
+        newValues.Clear();
+
+        action.Undo();
+        Assert.Equal("Old First", first.Name);
+        Assert.Equal("Old Second", second.Name);
+
+        action.Redo();
+        Assert.Equal("New First", first.Name);
+        Assert.Equal("New Second", second.Name);
+    }
+
+    [Fact]
+    public void Change_node_attributes_action_requires_every_node_to_exist()
+    {
+        using var scene = new Scene();
+        var first = scene.CreateChild("First");
+        var second = scene.CreateChild("Second");
+        using var oldValues = new VariantVector { new("Old First"), new("Old Second") };
+        using var newValues = new VariantVector { new("New First"), new("New Second") };
+        var action = new ChangeNodeAttributesAction(
+            scene, "Name", new[] { first, second }, oldValues, newValues);
+
+        Assert.True(action.CanUndoRedo());
+        second.Remove();
+        Assert.False(action.CanUndoRedo());
+
+        action.Undo();
+        Assert.Equal("Old First", first.Name);
+    }
+
+    [Fact]
+    public void Change_node_attributes_action_merges_latest_values_for_same_nodes()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Newest");
+        using var oldValues = new VariantVector { new("Old") };
+        using var intermediateValues = new VariantVector { new("Intermediate") };
+        using var newestValues = new VariantVector { new("Newest") };
+        var action = new ChangeNodeAttributesAction(
+            scene, "Name", new[] { node }, oldValues, intermediateValues);
+        var other = new ChangeNodeAttributesAction(
+            scene, "Name", new[] { node }, intermediateValues, newestValues);
+
+        Assert.True(action.MergeWith(other));
+        newestValues.Clear();
+        action.Undo();
+        Assert.Equal("Old", node.Name);
+        action.Redo();
+        Assert.Equal("Newest", node.Name);
+    }
+
+    [Fact]
+    public void Change_node_attributes_action_rejects_other_type_scene_or_node_order()
+    {
+        using var scene = new Scene();
+        using var otherScene = new Scene();
+        var first = scene.CreateChild("First");
+        var second = scene.CreateChild("Second");
+        var otherNode = otherScene.CreateChild("Other");
+        using var values = new VariantVector { new("Value"), new("Value") };
+        using var oneValue = new VariantVector { new("Value") };
+        var action = new ChangeNodeAttributesAction(
+            scene, "Name", new[] { first, second }, values, values);
+        var reordered = new ChangeNodeAttributesAction(
+            scene, "Name", new[] { second, first }, values, values);
+        var differentScene = new ChangeNodeAttributesAction(
+            otherScene, "Name", new[] { otherNode }, oneValue, oneValue);
+
+        Assert.False(action.MergeWith(new EmptyEditorAction()));
+        Assert.False(action.MergeWith(reordered));
+        Assert.False(action.MergeWith(differentScene));
     }
 
     private sealed class RecordingEditorAction : EditorAction
