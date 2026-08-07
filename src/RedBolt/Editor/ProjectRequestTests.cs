@@ -32,7 +32,23 @@ public sealed class ProjectRequestTests
         WithRequest(static request => request.InvokeProcessCallback());
     }
 
-    private static void WithRequest(Action<ProjectRequest> test)
+    [Fact]
+    public void Base_inspect_request_inherits_project_request_processing()
+    {
+        WithRequest(request =>
+        {
+            var invoked = false;
+            request.QueueProcessCallback(() => invoked = true);
+
+            request.InvokeProcessCallback();
+
+            Assert.True(invoked);
+            Assert.IsType<BaseInspectRequest>(request);
+        }, static () => new BaseInspectRequest());
+    }
+
+    private static void WithRequest(
+        Action<ProjectRequest> test, Func<ProjectRequest>? createRequest = null)
     {
         var previousContext = Context.Instance;
         using var context = new Context();
@@ -40,7 +56,7 @@ public sealed class ProjectRequestTests
 
         try
         {
-            using var request = new ProjectRequest();
+            using var request = createRequest?.Invoke() ?? new ProjectRequest();
             test(request);
         }
         finally
