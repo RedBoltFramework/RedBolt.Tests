@@ -8,6 +8,17 @@ using RedBolt.SystemUI;
 
 public sealed class WidgetLayoutTests
 {
+    [Fact]
+    public void Fit_content_preserves_aspect_ratio()
+    {
+        Assert.Equal(Vector2f.Zero, Widgets.FitContent(Vector2f.Zero, Vector2f.One));
+        Assert.Equal(Vector2f.Zero, Widgets.FitContent(Vector2f.One, Vector2f.Zero));
+        Assert.Equal(new Vector2f(100.0f, 100.0f),
+            Widgets.FitContent(new Vector2f(200.0f, 100.0f), new Vector2f(100.0f, 100.0f)));
+        Assert.Equal(new Vector2f(100.0f, 50.0f),
+            Widgets.FitContent(new Vector2f(100.0f, 200.0f), new Vector2f(200.0f, 100.0f)));
+    }
+
     [NativeBindingFact]
     public void Item_label_and_toolbar_preserve_native_layout_and_scopes()
     {
