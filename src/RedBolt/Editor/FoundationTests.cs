@@ -13,6 +13,7 @@ using RedBolt.Editor.Core;
 using RedBolt.Editor.Foundation;
 using RedBolt.Editor.Foundation.Shared;
 using RedBolt.Editor.Project;
+using RedBolt.Graphics;
 using RedBolt.Math;
 using RedBolt.Resource;
 using RedBolt.SystemUI;
@@ -482,6 +483,66 @@ public sealed class FoundationTests
             project.ProcessRequest(requestAfterDispose);
             processPendingRequests.Invoke(project, null);
             Assert.Equal(3, activationCount);
+        });
+    }
+
+    [Fact]
+    public void Animation_inspector_claims_animations_and_creates_the_read_only_widget()
+    {
+        WithProject((project, dataPath) =>
+        {
+            using (var animation = new Animation())
+            using (var destination = new RedBolt.IO.VectorBuffer())
+            {
+                animation.SetAnimationName("Test");
+                animation.SetLength(2.5f);
+                Assert.True(animation.Save(destination));
+                File.WriteAllBytes(Path.Combine(dataPath, "Test.ani"), destination.GetBuffer());
+            }
+            File.WriteAllText(Path.Combine(dataPath, "Other.txt"), "other");
+            project.AddAnalyzeFileCallback(static (descriptor, context) =>
+            {
+                if (descriptor.HasExtension(".ani"))
+                    descriptor.AddObjectType<Animation>();
+            });
+
+            var inspector = new AnimationInspector(project);
+            var activationCount = 0;
+            inspector.OnActivated += () => ++activationCount;
+            var processPendingRequests = typeof(Project).GetMethod(
+                "ProcessPendingRequests", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+            using (var otherRequest = new InspectResourceRequest(["Other.txt"]))
+            {
+                project.ProcessRequest(otherRequest);
+                processPendingRequests.Invoke(project, null);
+            }
+            Assert.Equal(0, activationCount);
+
+            using (var animationRequest = new InspectResourceRequest(["Test.ani"]))
+            {
+                project.ProcessRequest(animationRequest);
+                processPendingRequests.Invoke(project, null);
+            }
+            Assert.Equal(1, activationCount);
+            var widget = Assert.IsType<AnimationInspectorWidget>(
+                typeof(InspectorWithPreview)
+                    .GetField("_inspector", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .GetValue(inspector));
+            var resource = Assert.IsType<Animation>(Assert.Single(widget.GetResources()));
+            Assert.Equal("Test.ani", resource.GetName());
+            Assert.Equal(2.5f, resource.Length);
+            Assert.False(widget.CanSave());
+            Assert.Null(typeof(InspectorWithPreview)
+                .GetField("_preview", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(inspector));
+
+            inspector.Dispose();
+            Assert.Empty(widget.GetResources());
+            using var requestAfterDispose = new InspectResourceRequest(["Test.ani"]);
+            project.ProcessRequest(requestAfterDispose);
+            processPendingRequests.Invoke(project, null);
+            Assert.Equal(1, activationCount);
         });
     }
 
