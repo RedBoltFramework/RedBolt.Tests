@@ -1,5 +1,8 @@
 namespace RedBolt.Tests;
 
+using System.IO;
+
+using RedBolt.Container;
 using RedBolt.Core;
 using RedBolt.Engine;
 using RedBolt.IO;
@@ -138,5 +141,200 @@ public sealed class AssetTransformerTests
 
         Assert.Equal(clone.Class, roundTrip.Class);
         Assert.Equal(clone.DependsOn, roundTrip.DependsOn);
+    }
+
+    [Fact]
+    public void Transformer_filters_executes_and_stops_in_order()
+    {
+        var previousContext = Context.Instance;
+        using var context = new Context();
+        Context.SetInstance(context);
+
+        try
+        {
+            context.RegisterAssembly(typeof(AssetTransformer).Assembly);
+            using var transformer = new AssetTransformer();
+            using var reflectedTransformer = Assert.IsType<AssetTransformer>(
+                context.CreateObject(new StringHash(nameof(AssetTransformer))));
+            Assert.False(transformer.IsApplicable(new AssetTransformerInput()));
+            Assert.False(transformer.Execute(
+                new AssetTransformerInput(), new AssetTransformerOutput(), [transformer]));
+            Assert.True(transformer.IsSingleInstanced());
+            Assert.False(transformer.IsExecutedOnOutput());
+            Assert.False(transformer.IsPostTransform());
+
+            var flavor = new ApplicationFlavorPattern("platform=desktop,linux");
+            transformer.SetFlavor(flavor);
+            flavor.Components["platform"].Add("changed");
+            Assert.DoesNotContain("changed", transformer.GetFlavor().Components["platform"]);
+
+            using var notApplicable = new TrackingTransformerA();
+            using var applicable = new TrackingTransformerB { Applicable = true };
+            Assert.True(AssetTransformer.IsApplicable(
+                new AssetTransformerInput(), [notApplicable, applicable]));
+            Assert.Equal(1, notApplicable.ApplicableCalls);
+            Assert.Equal(1, applicable.ApplicableCalls);
+
+            using var skipped = new TrackingTransformerA { Applicable = true };
+            using var applied = new TrackingTransformerB
+            {
+                Applicable = true,
+                ExecuteOnOutput = true,
+            };
+            using var failed = new TrackingTransformerC
+            {
+                Applicable = true,
+                ExecuteOnOutput = true,
+                ExecuteResult = false,
+            };
+            var output = new AssetTransformerOutput();
+
+            Assert.False(AssetTransformer.ExecuteTransformers(
+                new AssetTransformerInput(), output, [skipped, applied, failed], true));
+            Assert.Equal(0, skipped.ApplicableCalls);
+            Assert.Equal(0, skipped.ExecuteCalls);
+            Assert.Equal(1, applied.ExecuteCalls);
+            Assert.Equal(1, failed.ExecuteCalls);
+            Assert.Contains(nameof(TrackingTransformerB), output.AppliedTransformers);
+            Assert.DoesNotContain(nameof(TrackingTransformerC), output.AppliedTransformers);
+        }
+        finally
+        {
+            Context.SetInstance(previousContext);
+        }
+    }
+
+    [Fact]
+    public void Transformer_executes_copies_outputs_and_removes_temporary_directory()
+    {
+        var previousContext = Context.Instance;
+        using var context = new Context();
+        Context.SetInstance(context);
+        var rootPath = Path.Combine(Path.GetTempPath(), $"RedBolt.AssetTransformer.{Guid.NewGuid():N}");
+
+        try
+        {
+            var temporaryPath = Path.Combine(rootPath, "temporary");
+            var outputPath = Path.Combine(rootPath, "cache") + Path.DirectorySeparatorChar;
+            Directory.CreateDirectory(Path.Combine(outputPath, "Models"));
+            System.IO.File.WriteAllText(Path.Combine(outputPath, "Models", "Box.mdl"), "old");
+            var input = new AssetTransformerInput
+            {
+                TempPath = temporaryPath,
+            };
+            var output = new AssetTransformerOutput();
+            using var transformer = new FileWritingTransformer();
+
+            Assert.True(AssetTransformer.ExecuteTransformersAndStore(
+                input, outputPath, output, [transformer]));
+
+            Assert.Equal("model", System.IO.File.ReadAllText(Path.Combine(outputPath, "Models", "Box.mdl")));
+            Assert.False(System.IO.File.Exists(Path.Combine(outputPath, ".hidden")));
+            Assert.Equal(["Models/Box.mdl"], output.OutputResourceNames);
+            Assert.Contains(nameof(FileWritingTransformer), output.AppliedTransformers);
+            Assert.False(Directory.Exists(temporaryPath));
+        }
+        finally
+        {
+            if (Directory.Exists(rootPath))
+                Directory.Delete(rootPath, true);
+            Context.SetInstance(previousContext);
+        }
+    }
+
+    [Fact]
+    public void Transformer_adds_dependencies_relative_to_original_data_folder()
+    {
+        var previousContext = Context.Instance;
+        using var context = new Context();
+        Context.SetInstance(context);
+        var rootPath = Path.Combine(Path.GetTempPath(), $"RedBolt.AssetDependency.{Guid.NewGuid():N}");
+
+        try
+        {
+            var dataPath = Path.Combine(rootPath, "Data");
+            var inputFileName = Path.Combine(dataPath, "Models", "Box.glb");
+            var dependencyFileName = Path.Combine(dataPath, "Textures", "Box.png");
+            Directory.CreateDirectory(Path.GetDirectoryName(dependencyFileName)!);
+            System.IO.File.WriteAllText(dependencyFileName, "texture");
+            var expectedTime = DateTimeOffset.UtcNow.AddMinutes(-1).UtcDateTime;
+            System.IO.File.SetLastWriteTimeUtc(dependencyFileName, expectedTime);
+
+            var input = new AssetTransformerInput
+            {
+                OriginalResourceName = Path.Combine("Models", "Box.glb"),
+                OriginalInputFileName = inputFileName,
+            };
+            var output = new AssetTransformerOutput();
+            using var transformer = new ExposedDependencyTransformer();
+
+            transformer.Add(input, output, dependencyFileName);
+            transformer.Add(input, output, Path.Combine(rootPath, "Outside.png"));
+
+            var actualTime = new DateTimeOffset(System.IO.File.GetLastWriteTimeUtc(dependencyFileName))
+                .ToUnixTimeSeconds();
+            Assert.Equal(unchecked((uint)actualTime),
+                output.DependencyModificationTimes[Path.Combine("Textures", "Box.png")]);
+            Assert.Single(output.DependencyModificationTimes);
+        }
+        finally
+        {
+            if (Directory.Exists(rootPath))
+                Directory.Delete(rootPath, true);
+            Context.SetInstance(previousContext);
+        }
+    }
+
+    private class TrackingTransformer : AssetTransformer
+    {
+        public bool Applicable;
+        public bool ExecuteOnOutput;
+        public bool ExecuteResult = true;
+        public int ApplicableCalls;
+        public int ExecuteCalls;
+
+        public override bool IsApplicable(AssetTransformerInput input)
+        {
+            ++ApplicableCalls;
+            return Applicable;
+        }
+
+        public override bool Execute(AssetTransformerInput input, AssetTransformerOutput output,
+            IReadOnlyList<AssetTransformer> transformers)
+        {
+            ++ExecuteCalls;
+            return ExecuteResult;
+        }
+
+        public override bool IsExecutedOnOutput() => ExecuteOnOutput;
+    }
+
+    private sealed class TrackingTransformerA : TrackingTransformer;
+
+    private sealed class TrackingTransformerB : TrackingTransformer;
+
+    private sealed class TrackingTransformerC : TrackingTransformer;
+
+    private sealed class FileWritingTransformer : AssetTransformer
+    {
+        public override bool IsApplicable(AssetTransformerInput input) => true;
+
+        public override bool Execute(AssetTransformerInput input, AssetTransformerOutput output,
+            IReadOnlyList<AssetTransformer> transformers)
+        {
+            var modelPath = Path.Combine(input.TempPath, "Models", "Box.mdl");
+            Directory.CreateDirectory(Path.GetDirectoryName(modelPath)!);
+            System.IO.File.WriteAllText(modelPath, "model");
+            System.IO.File.WriteAllText(Path.Combine(input.TempPath, ".hidden"), "hidden");
+            return true;
+        }
+    }
+
+    private sealed class ExposedDependencyTransformer : AssetTransformer
+    {
+        public void Add(AssetTransformerInput input, AssetTransformerOutput output, string fileName)
+        {
+            AddDependency(input, output, fileName);
+        }
     }
 }
