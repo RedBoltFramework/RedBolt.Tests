@@ -37,6 +37,40 @@ public sealed class ResourceFactoryTests
         }
     }
 
+    [Fact]
+    public void Simple_factory_commits_final_file_and_resource_names()
+    {
+        var previousContext = Context.Instance;
+        using var context = new Context();
+        Context.SetInstance(context);
+
+        try
+        {
+            string? committedFileName = null;
+            string? committedResourceName = null;
+            using var factory = new SimpleResourceFactory(
+                0,
+                "Folder",
+                "New Folder",
+                (fileName, resourceName) =>
+                {
+                    committedFileName = fileName;
+                    committedResourceName = resourceName;
+                });
+
+            factory.Open(" /tmp/project/Data\\ ", " Data\\ ");
+            factory.CommitAndClose();
+
+            Assert.Equal("New Folder", factory.DefaultFileName);
+            Assert.Equal("/tmp/project/Data/New Folder", committedFileName);
+            Assert.Equal("Data/New Folder", committedResourceName);
+        }
+        finally
+        {
+            Context.SetInstance(previousContext);
+        }
+    }
+
     [NativeBindingFact]
     public void Base_factory_opens_renders_and_exposes_final_paths()
     {
