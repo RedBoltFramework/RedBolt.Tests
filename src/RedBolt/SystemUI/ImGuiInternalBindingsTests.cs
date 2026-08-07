@@ -33,6 +33,25 @@ public sealed class ImGuiInternalBindingsTests
                 "Button"u8,
                 new Vector2f(24.0f, 24.0f),
                 (ImGuiButtonFlags)ImGuiButtonFlagsPrivate.ImGuiButtonFlagsPressedOnClick));
+
+            var floatValue = 2.5f;
+            Assert.False(ImGui.DragFloat("Float"u8, ref floatValue));
+            Assert.Equal(2.5f, floatValue);
+
+            Span<float> vectorValue = [1.0f, 2.0f, 3.0f, 4.0f];
+            Assert.False(ImGui.DragFloat4("Vector"u8, vectorValue));
+            Assert.Equal([1.0f, 2.0f, 3.0f, 4.0f], vectorValue.ToArray());
+
+            Assert.False(ImGui.ColorEdit4("Color"u8, vectorValue));
+            Assert.Equal([1.0f, 2.0f, 3.0f, 4.0f], vectorValue.ToArray());
+
+            var intValue = 5;
+            Assert.False(ImGui.DragInt("Int"u8, ref intValue));
+            Assert.Equal(5, intValue);
+
+            Span<int> intVectorValue = [6, 7, 8];
+            Assert.False(ImGui.DragInt3("Int Vector"u8, intVectorValue));
+            Assert.Equal([6, 7, 8], intVectorValue.ToArray());
         }
         finally
         {
