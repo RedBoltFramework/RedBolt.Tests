@@ -457,4 +457,145 @@ public sealed class CommonEditorActionBuildersTests
             reflection.SetScopeHint(oldScopeHint);
         }
     }
+
+    [Fact]
+    public void Change_component_attributes_builder_undoes_and_redoes_attribute_scope_change()
+    {
+        var attribute = Context.Instance.GetAttribute<Camera>("FOV");
+        var oldScopeHint = attribute.ScopeHint;
+        attribute.ScopeHint = AttributeScopeHint.Attribute;
+        try
+        {
+            using var scene = new Scene();
+            var node = scene.CreateChild("Old", 100);
+            var camera = node.CreateComponent<Camera>(200);
+            camera.Fov = 60.0f;
+            using var buffer = new ChangeAttributeBuffer();
+            IEnumerable<Component> components = new HashSet<Component> { camera };
+            var builder = new ChangeComponentAttributesActionBuilder(buffer, scene, components, attribute);
+            camera.Fov = 70.0f;
+            node.SetName("New");
+            var action = builder.Build();
+
+            Assert.NotNull(action);
+            action.Undo();
+            Assert.Equal(60.0f, Assert.IsType<Camera>(scene.GetComponent(200)).Fov);
+            Assert.Equal("New", Assert.IsType<Node>(scene.GetNode(100)).Name);
+            action.Redo();
+            Assert.Equal(70.0f, Assert.IsType<Camera>(scene.GetComponent(200)).Fov);
+            Assert.Equal("New", Assert.IsType<Node>(scene.GetNode(100)).Name);
+        }
+        finally
+        {
+            attribute.ScopeHint = oldScopeHint;
+        }
+    }
+
+    [Fact]
+    public void Change_component_attributes_builder_undoes_and_redoes_serializable_scope_change()
+    {
+        var attribute = Context.Instance.GetAttribute<Camera>("FOV");
+        var oldScopeHint = attribute.ScopeHint;
+        attribute.ScopeHint = AttributeScopeHint.Serializable;
+        try
+        {
+            using var scene = new Scene();
+            var camera = scene.CreateChild("Node", 100).CreateComponent<Camera>(200);
+            camera.Fov = 60.0f;
+            camera.NearClip = 0.2f;
+            using var buffer = new ChangeAttributeBuffer();
+            var builder = new ChangeComponentAttributesActionBuilder(buffer, scene, new[] { camera }, attribute);
+            camera.Fov = 70.0f;
+            camera.NearClip = 0.3f;
+            var action = builder.Build();
+
+            Assert.NotNull(action);
+            action.Undo();
+            var oldCamera = Assert.IsType<Camera>(scene.GetComponent(200));
+            Assert.Equal(60.0f, oldCamera.Fov);
+            Assert.Equal(0.2f, oldCamera.NearClip);
+            action.Redo();
+            var newCamera = Assert.IsType<Camera>(scene.GetComponent(200));
+            Assert.Equal(70.0f, newCamera.Fov);
+            Assert.Equal(0.3f, newCamera.NearClip);
+        }
+        finally
+        {
+            attribute.ScopeHint = oldScopeHint;
+        }
+    }
+
+    [Fact]
+    public void Change_component_attributes_builder_undoes_and_redoes_node_scope_change()
+    {
+        var attribute = Context.Instance.GetAttribute<Camera>("FOV");
+        var oldScopeHint = attribute.ScopeHint;
+        attribute.ScopeHint = AttributeScopeHint.Node;
+        try
+        {
+            using var scene = new Scene();
+            var node = scene.CreateChild("Old Parent", 100);
+            var camera = node.CreateComponent<Camera>(200);
+            camera.Fov = 60.0f;
+            var child = node.CreateChild("Old Child", 101);
+            var childCamera = child.CreateComponent<Camera>(201);
+            childCamera.Fov = 61.0f;
+            using var buffer = new ChangeAttributeBuffer();
+            var builder = new ChangeComponentAttributesActionBuilder(
+                buffer, scene, new[] { camera, childCamera }, attribute);
+            node.SetName("New Parent");
+            camera.Fov = 70.0f;
+            child.SetName("New Child");
+            childCamera.Fov = 71.0f;
+            var action = builder.Build();
+
+            Assert.NotNull(action);
+            action.Undo();
+            Assert.Equal("Old Parent", Assert.IsType<Node>(scene.GetNode(100)).Name);
+            Assert.Equal(60.0f, Assert.IsType<Camera>(scene.GetComponent(200)).Fov);
+            Assert.Equal("Old Child", Assert.IsType<Node>(scene.GetNode(101)).Name);
+            Assert.Equal(61.0f, Assert.IsType<Camera>(scene.GetComponent(201)).Fov);
+            action.Redo();
+            Assert.Equal("New Parent", Assert.IsType<Node>(scene.GetNode(100)).Name);
+            Assert.Equal(70.0f, Assert.IsType<Camera>(scene.GetComponent(200)).Fov);
+            Assert.Equal("New Child", Assert.IsType<Node>(scene.GetNode(101)).Name);
+            Assert.Equal(71.0f, Assert.IsType<Camera>(scene.GetComponent(201)).Fov);
+        }
+        finally
+        {
+            attribute.ScopeHint = oldScopeHint;
+        }
+    }
+
+    [Fact]
+    public void Change_component_attributes_builder_undoes_and_redoes_scene_scope_change()
+    {
+        var attribute = Context.Instance.GetAttribute<Camera>("FOV");
+        var oldScopeHint = attribute.ScopeHint;
+        attribute.ScopeHint = AttributeScopeHint.Scene;
+        try
+        {
+            using var scene = new Scene();
+            var camera = scene.CreateChild("Node", 100).CreateComponent<Camera>(200);
+            camera.Fov = 60.0f;
+            var existing = scene.CreateChild("Old", 101);
+            using var buffer = new ChangeAttributeBuffer();
+            var builder = new ChangeComponentAttributesActionBuilder(buffer, scene, new[] { camera }, attribute);
+            camera.Fov = 70.0f;
+            existing.SetName("New");
+            var action = builder.Build();
+
+            Assert.NotNull(action);
+            action.Undo();
+            Assert.Equal(60.0f, Assert.IsType<Camera>(scene.GetComponent(200)).Fov);
+            Assert.Equal("Old", Assert.IsType<Node>(scene.GetNode(101)).Name);
+            action.Redo();
+            Assert.Equal(70.0f, Assert.IsType<Camera>(scene.GetComponent(200)).Fov);
+            Assert.Equal("New", Assert.IsType<Node>(scene.GetNode(101)).Name);
+        }
+        finally
+        {
+            attribute.ScopeHint = oldScopeHint;
+        }
+    }
 }
