@@ -3,6 +3,7 @@ namespace RedBolt.Tests;
 using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 using RedBolt.Bindings.DearImGui;
 using RedBolt.Core;
@@ -136,6 +137,49 @@ public sealed class FoundationTests
 
             tab.Dispose();
             Assert.True(source.IsDisposed);
+        });
+    }
+
+    [Fact]
+    public void Empty_inspector_activates_only_as_the_lowest_priority_inspect_request_sink()
+    {
+        WithProject((project, _) =>
+        {
+            var inspector = new EmptyInspector(project);
+            var activationCount = 0;
+            inspector.OnActivated += () => ++activationCount;
+            var processPendingRequests = typeof(Project).GetMethod(
+                "ProcessPendingRequests", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+            using (var inspectRequest = new BaseInspectRequest())
+            {
+                project.ProcessRequest(inspectRequest);
+                processPendingRequests.Invoke(project, null);
+            }
+            Assert.Equal(1, activationCount);
+
+            var higherPriorityProcessed = false;
+            using (var claimedRequest = new BaseInspectRequest())
+            {
+                claimedRequest.QueueProcessCallback(() => higherPriorityProcessed = true);
+                project.ProcessRequest(claimedRequest);
+                processPendingRequests.Invoke(project, null);
+            }
+            Assert.True(higherPriorityProcessed);
+            Assert.Equal(1, activationCount);
+
+            using (var otherRequest = new ProjectRequest())
+            {
+                project.ProcessRequest(otherRequest);
+                processPendingRequests.Invoke(project, null);
+            }
+            Assert.Equal(1, activationCount);
+
+            inspector.Dispose();
+            using var requestAfterDispose = new BaseInspectRequest();
+            project.ProcessRequest(requestAfterDispose);
+            processPendingRequests.Invoke(project, null);
+            Assert.Equal(1, activationCount);
         });
     }
 
