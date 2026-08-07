@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
+using RedBolt.Audio;
 using RedBolt.Bindings.DearImGui;
 using RedBolt.Core;
 using RedBolt.Editor.Core;
@@ -242,6 +243,106 @@ public sealed class FoundationTests
 
             inspector.Dispose();
             using var requestAfterDispose = new InspectResourceRequest(["Resource.txt"]);
+            project.ProcessRequest(requestAfterDispose);
+            processPendingRequests.Invoke(project, null);
+            Assert.Equal(2, activationCount);
+        });
+    }
+
+    [NativeBindingFact]
+    public void Sound_inspector_claims_sound_resources_reuses_the_selection_and_renders_playback()
+    {
+        WithProject((project, dataPath) =>
+        {
+            File.WriteAllBytes(Path.Combine(dataPath, "B.raw"), [1, 2, 3, 4]);
+            File.WriteAllBytes(Path.Combine(dataPath, "A.raw"), [5, 6, 7, 8]);
+            File.WriteAllText(Path.Combine(dataPath, "Other.txt"), "other");
+            project.AddAnalyzeFileCallback(static (descriptor, context) =>
+            {
+                if (descriptor.HasExtension(".raw"))
+                    descriptor.AddObjectType<Sound>();
+            });
+
+            var inspector = new SoundInspector(project);
+            var activationCount = 0;
+            inspector.OnActivated += () => ++activationCount;
+            var processPendingRequests = typeof(Project).GetMethod(
+                "ProcessPendingRequests", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+            using (var otherRequest = new InspectResourceRequest(["Other.txt"]))
+            {
+                project.ProcessRequest(otherRequest);
+                processPendingRequests.Invoke(project, null);
+            }
+            Assert.Equal(0, activationCount);
+
+            using (var soundsRequest = new InspectResourceRequest(["B.raw", "A.raw"]))
+            {
+                project.ProcessRequest(soundsRequest);
+                processPendingRequests.Invoke(project, null);
+            }
+            Assert.Equal(1, activationCount);
+
+            var resourceNames = Assert.IsType<List<string>>(GetPrivateField(inspector, "_resourceNames"));
+            Assert.Equal(["A.raw", "B.raw"], resourceNames);
+            var sounds = Assert.IsType<List<Sound>>(GetPrivateField(inspector, "_sounds"));
+            Assert.Equal(["A.raw", "B.raw"], sounds.Select(static sound => sound.GetName()));
+            var firstSound = sounds[0];
+
+            using (var sameSoundsRequest = new InspectResourceRequest(["A.raw", "B.raw"]))
+            {
+                project.ProcessRequest(sameSoundsRequest);
+                processPendingRequests.Invoke(project, null);
+            }
+            Assert.Equal(2, activationCount);
+            Assert.Same(firstSound, sounds[0]);
+
+            var higherPriorityProcessed = false;
+            using (var claimedRequest = new InspectResourceRequest(["A.raw"]))
+            {
+                claimedRequest.QueueProcessCallback(() => higherPriorityProcessed = true, 1);
+                project.ProcessRequest(claimedRequest);
+                processPendingRequests.Invoke(project, null);
+            }
+            Assert.True(higherPriorityProcessed);
+            Assert.Equal(2, activationCount);
+
+            var soundSource = Assert.IsType<SoundSource>(GetPrivateField(inspector, "_soundSource"));
+            soundSource.Play(firstSound);
+            Assert.True(soundSource.IsPlaying());
+
+            var imguiContext = ImGui.CreateContext();
+            var frameStarted = false;
+            var windowStarted = false;
+            try
+            {
+                ImGui.SetCurrentContext(imguiContext);
+                var io = ImGui.GetIO();
+                io.DisplaySize = new Vector2f(640.0f, 480.0f);
+                io.DeltaTime = 1.0f / 60.0f;
+                io.BackendFlags |= ImGuiBackendFlags.ImGuiBackendFlagsRendererHasTextures;
+                ImGui.NewFrame();
+                frameStarted = true;
+                var open = true;
+                ImGui.Begin("Sound inspector test"u8, ref open);
+                windowStarted = true;
+
+                var sliderValue = 0.5f;
+                Assert.False(ImGui.SliderFloat("Binding direction"u8, ref sliderValue, 0.0f, 1.0f));
+                Assert.Equal(0.5f, sliderValue);
+                inspector.RenderContent();
+            }
+            finally
+            {
+                if (windowStarted)
+                    ImGui.End();
+                if (frameStarted)
+                    ImGui.EndFrame();
+                ImGui.DestroyContext(imguiContext);
+            }
+
+            inspector.Dispose();
+            using var requestAfterDispose = new InspectResourceRequest(["A.raw"]);
             project.ProcessRequest(requestAfterDispose);
             processPendingRequests.Invoke(project, null);
             Assert.Equal(2, activationCount);
