@@ -578,6 +578,88 @@ public sealed class CommonEditorActionsTests
         Assert.Contains("node with id 100", exception.Message);
     }
 
+    [Fact]
+    public void Reparent_node_action_redoes_and_restores_parent_and_index()
+    {
+        using var scene = new Scene();
+        var oldParent = scene.CreateChild("Old Parent", 100);
+        var before = oldParent.CreateChild("Before", 101);
+        var node = oldParent.CreateChild("Node", 102);
+        var after = oldParent.CreateChild("After", 103);
+        var newParent = scene.CreateChild("New Parent", 104);
+        var action = new ReparentNodeAction(node, newParent);
+
+        action.Redo();
+        Assert.Same(newParent, node.Parent);
+
+        action.Undo();
+        Assert.Same(oldParent, node.Parent);
+        Assert.Same(before, oldParent.Children[0]);
+        Assert.Same(node, oldParent.Children[1]);
+        Assert.Same(after, oldParent.Children[2]);
+    }
+
+    [Fact]
+    public void Reparent_node_action_merges_latest_parent_for_same_node()
+    {
+        using var scene = new Scene();
+        var oldParent = scene.CreateChild("Old Parent", 100);
+        var newParent = scene.CreateChild("New Parent", 101);
+        var latestParent = scene.CreateChild("Latest Parent", 102);
+        var node = oldParent.CreateChild("Node", 103);
+        var action = new ReparentNodeAction(node, newParent);
+        node.SetParent(newParent);
+        var other = new ReparentNodeAction(node, latestParent);
+
+        Assert.True(action.MergeWith(other));
+        action.Undo();
+        Assert.Same(oldParent, node.Parent);
+        action.Redo();
+        Assert.Same(latestParent, node.Parent);
+    }
+
+    [Fact]
+    public void Reparent_node_action_rejects_other_type_scene_or_node()
+    {
+        using var scene = new Scene();
+        using var otherScene = new Scene();
+        var oldParent = scene.CreateChild("Old Parent");
+        var newParent = scene.CreateChild("New Parent");
+        var node = oldParent.CreateChild("Node");
+        var sibling = oldParent.CreateChild("Sibling");
+        var externalParent = otherScene.CreateChild("Old Parent");
+        var externalNewParent = otherScene.CreateChild("New Parent");
+        var externalNode = externalParent.CreateChild("Node");
+        var action = new ReparentNodeAction(node, newParent);
+
+        Assert.False(action.MergeWith(new EmptyEditorAction()));
+        Assert.False(action.MergeWith(new ReparentNodeAction(sibling, newParent)));
+        Assert.False(action.MergeWith(new ReparentNodeAction(externalNode, externalNewParent)));
+    }
+
+    [Fact]
+    public void Reparent_node_action_reports_missing_node_or_parent()
+    {
+        using var scene = new Scene();
+        var oldParent = scene.CreateChild("Old Parent", 100);
+        var newParent = scene.CreateChild("New Parent", 101);
+        var node = oldParent.CreateChild("Node", 102);
+        var action = new ReparentNodeAction(node, newParent);
+
+        Assert.True(action.CanUndoRedo());
+        node.Remove();
+        Assert.False(action.CanUndoRedo());
+        var exception = Assert.Throws<UndoException>(() => action.Redo());
+        Assert.Contains("node with id 102", exception.Message);
+
+        node = oldParent.CreateChild("Node", 102);
+        action = new ReparentNodeAction(node, newParent);
+        newParent.Remove();
+        Assert.False(action.CanUndoRedo());
+        exception = Assert.Throws<UndoException>(() => action.Redo());
+        Assert.Contains("parent node with id 101", exception.Message);
+    }
+
     private sealed class RecordingEditorAction : EditorAction
     {
         private readonly string _name;
