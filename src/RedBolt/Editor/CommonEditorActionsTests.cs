@@ -420,6 +420,84 @@ public sealed class CommonEditorActionsTests
         Assert.False(action.MergeWith(differentScene));
     }
 
+    [Fact]
+    public void Reorder_node_action_redoes_and_undoes_child_order()
+    {
+        using var scene = new Scene();
+        var first = scene.CreateChild("First");
+        var second = scene.CreateChild("Second");
+        var third = scene.CreateChild("Third");
+        var action = new ReorderNodeAction(third, oldIndex: 2, newIndex: 0);
+
+        action.Redo();
+        Assert.Same(third, scene.GetChild(0));
+        Assert.Same(first, scene.GetChild(1));
+        Assert.Same(second, scene.GetChild(2));
+
+        action.Undo();
+        Assert.Same(first, scene.GetChild(0));
+        Assert.Same(second, scene.GetChild(1));
+        Assert.Same(third, scene.GetChild(2));
+    }
+
+    [Fact]
+    public void Reorder_node_action_merges_latest_index_for_same_node_and_parent()
+    {
+        using var scene = new Scene();
+        var first = scene.CreateChild("First");
+        scene.CreateChild("Second");
+        var third = scene.CreateChild("Third");
+        var action = new ReorderNodeAction(third, oldIndex: 2, newIndex: 1);
+        var other = new ReorderNodeAction(third, oldIndex: 1, newIndex: 0);
+
+        Assert.True(action.MergeWith(other));
+        action.Redo();
+        Assert.Same(third, scene.GetChild(0));
+        action.Undo();
+        Assert.Same(first, scene.GetChild(0));
+        Assert.Same(third, scene.GetChild(2));
+    }
+
+    [Fact]
+    public void Reorder_node_action_rejects_other_type_scene_node_or_parent()
+    {
+        using var scene = new Scene();
+        using var otherScene = new Scene();
+        var parent = scene.CreateChild("Parent");
+        var node = parent.CreateChild("Node");
+        var sibling = parent.CreateChild("Sibling");
+        var otherParent = scene.CreateChild("Other Parent");
+        var otherParentNode = otherParent.CreateChild("Node");
+        var externalNode = otherScene.CreateChild("Node");
+        var action = new ReorderNodeAction(node, 0, 1);
+
+        Assert.False(action.MergeWith(new EmptyEditorAction()));
+        Assert.False(action.MergeWith(new ReorderNodeAction(sibling, 1, 0)));
+        Assert.False(action.MergeWith(new ReorderNodeAction(otherParentNode, 0, 0)));
+        Assert.False(action.MergeWith(new ReorderNodeAction(externalNode, 0, 0)));
+    }
+
+    [Fact]
+    public void Reorder_node_action_reports_missing_parent_or_node()
+    {
+        using var scene = new Scene();
+        var parent = scene.CreateChild("Parent", 100);
+        var node = parent.CreateChild("Node", 101);
+        var action = new ReorderNodeAction(node, 0, 0);
+
+        Assert.True(action.CanUndoRedo());
+        node.Remove();
+        Assert.False(action.CanUndoRedo());
+        var exception = Assert.Throws<UndoException>(() => action.Redo());
+        Assert.Contains("node with id 101", exception.Message);
+
+        node = parent.CreateChild("Node", 101);
+        action = new ReorderNodeAction(node, 0, 0);
+        parent.Remove();
+        exception = Assert.Throws<UndoException>(() => action.Redo());
+        Assert.Contains("parent node with id 100", exception.Message);
+    }
+
     private sealed class RecordingEditorAction : EditorAction
     {
         private readonly string _name;
