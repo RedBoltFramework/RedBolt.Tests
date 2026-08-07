@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using RedBolt.Editor.Core;
 using RedBolt.Graphics;
+using RedBolt.Math;
 using RedBolt.Scene;
 
 [Collection(nameof(HeadlessEngineCollection))]
@@ -166,6 +167,83 @@ public sealed class CommonEditorActionsTests
         Assert.False(action.CanUndoRedo());
         action.Redo();
         action.Undo();
+    }
+
+    [Fact]
+    public void Change_node_transform_action_undoes_and_redoes_transform()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Node");
+        var oldTransform = node.GetTransform();
+        node.SetPosition(new Vector3f(1.0f, 2.0f, 3.0f));
+        var action = new ChangeNodeTransformAction(node, oldTransform);
+        node.SetPosition(new Vector3f(9.0f, 9.0f, 9.0f));
+
+        action.Undo();
+        Assert.Equal(Vector3f.Zero, node.Position);
+
+        action.Redo();
+        Assert.Equal(new Vector3f(1.0f, 2.0f, 3.0f), node.Position);
+    }
+
+    [Fact]
+    public void Change_node_transform_action_merges_latest_transform_for_same_node()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Node");
+        var oldTransform = node.GetTransform();
+        node.SetPosition(new Vector3f(1.0f, 0.0f, 0.0f));
+        var action = new ChangeNodeTransformAction(node, oldTransform);
+        var intermediateTransform = node.GetTransform();
+        node.SetPosition(new Vector3f(2.0f, 0.0f, 0.0f));
+        var other = new ChangeNodeTransformAction(node, intermediateTransform);
+
+        Assert.True(action.MergeWith(other));
+        action.Undo();
+        Assert.Equal(Vector3f.Zero, node.Position);
+        action.Redo();
+        Assert.Equal(new Vector3f(2.0f, 0.0f, 0.0f), node.Position);
+    }
+
+    [Fact]
+    public void Change_node_transform_action_merges_additional_nodes_in_same_scene()
+    {
+        using var scene = new Scene();
+        var first = scene.CreateChild("First");
+        var second = scene.CreateChild("Second");
+        var firstOld = first.GetTransform();
+        var secondOld = second.GetTransform();
+        first.SetPosition(new Vector3f(1.0f, 0.0f, 0.0f));
+        second.SetPosition(new Vector3f(2.0f, 0.0f, 0.0f));
+        var action = new ChangeNodeTransformAction(first, firstOld);
+        var other = new ChangeNodeTransformAction(second, secondOld);
+
+        Assert.True(action.MergeWith(other));
+        action.Undo();
+        Assert.Equal(Vector3f.Zero, first.Position);
+        Assert.Equal(Vector3f.Zero, second.Position);
+        action.Redo();
+        Assert.Equal(new Vector3f(1.0f, 0.0f, 0.0f), first.Position);
+        Assert.Equal(new Vector3f(2.0f, 0.0f, 0.0f), second.Position);
+    }
+
+    [Fact]
+    public void Change_node_transform_action_rejects_other_type_or_scene_and_detects_missing_node()
+    {
+        using var scene = new Scene();
+        using var otherScene = new Scene();
+        var node = scene.CreateChild("Node");
+        var action = new ChangeNodeTransformAction(node, node.GetTransform());
+        var otherNode = otherScene.CreateChild("Other");
+        var other = new ChangeNodeTransformAction(otherNode, otherNode.GetTransform());
+
+        Assert.False(action.MergeWith(new EmptyEditorAction()));
+        Assert.False(action.MergeWith(other));
+        Assert.True(action.CanUndoRedo());
+
+        node.Remove();
+        Assert.Throws<UndoException>(() => action.Undo());
+        Assert.Throws<UndoException>(() => action.Redo());
     }
 
     private sealed class RecordingEditorAction : EditorAction
