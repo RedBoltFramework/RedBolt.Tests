@@ -12,6 +12,7 @@ using RedBolt.Editor.Core;
 using RedBolt.Editor.Foundation;
 using RedBolt.Editor.Foundation.Shared;
 using RedBolt.Editor.Project;
+using Archive = RedBolt.IO.Archive;
 using RedBolt.Math;
 
 [Collection(nameof(HeadlessEngineCollection))]
@@ -349,6 +350,94 @@ public sealed class FoundationTests
         });
     }
 
+    [NativeBindingFact]
+    public void Settings_tab_selects_the_first_populated_group_and_forwards_page_behavior()
+    {
+        WithProject((project, _) =>
+        {
+            var generalPage = new TestSettingsPage("A.Rendering:General");
+            var advancedPage = new TestSettingsPage("A.Rendering:Advanced");
+            var toolsPage = new TestSettingsPage("ZTools:General");
+            project.SettingsManager.AddPage(generalPage);
+            project.SettingsManager.AddPage(advancedPage);
+            project.SettingsManager.AddPage(toolsPage);
+            var firstGroup = project.SettingsManager.PageTree.Children["A"];
+            var renderingGroup = firstGroup.Children["Rendering"];
+            Assert.Equal(2, renderingGroup.Pages.Count);
+
+            using var tab = new TestSettingsTab();
+            Assert.Equal("Settings", tab.Title);
+            Assert.Equal(EditorTabFlag.None, tab.Flags);
+            Assert.Equal(EditorTabPlacement.DockRight, tab.Placement);
+            Assert.False(tab.MarkedUnsaved);
+
+            tab.ApplyHotkeys(project.HotkeyManager);
+            Assert.Equal(0, generalPage.ApplyHotkeysCount);
+            var renderSettingsSubtree = typeof(SettingsTab).GetMethod(
+                "RenderSettingsSubtree", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var renderCurrentGroup = typeof(SettingsTab).GetMethod(
+                "RenderCurrentGroup", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+            var imguiContext = ImGui.CreateContext();
+            var frameStarted = false;
+            var windowStarted = false;
+            try
+            {
+                ImGui.SetCurrentContext(imguiContext);
+                var io = ImGui.GetIO();
+                io.DisplaySize = new Vector2f(1024.0f, 768.0f);
+                io.DeltaTime = 1.0f / 60.0f;
+                io.BackendFlags |= ImGuiBackendFlags.ImGuiBackendFlagsRendererHasTextures;
+                for (var frame = 0; frame < 2; ++frame)
+                {
+                    ImGui.NewFrame();
+                    frameStarted = true;
+                    ImGui.SetNextWindowPos(new Vector2f(0.0f, 0.0f));
+                    ImGui.SetNextWindowSize(new Vector2f(600.0f, 600.0f));
+                    var open = true;
+                    Assert.True(ImGui.Begin("Settings tab test"u8, ref open));
+                    windowStarted = true;
+
+                    tab.RenderContent();
+                    if (frame == 1)
+                    {
+                        renderSettingsSubtree.Invoke(tab, [renderingGroup, "Rendering"]);
+                        renderCurrentGroup.Invoke(tab, null);
+                    }
+
+                    ImGui.End();
+                    windowStarted = false;
+                    ImGui.EndFrame();
+                    frameStarted = false;
+                }
+            }
+            finally
+            {
+                if (windowStarted)
+                    ImGui.End();
+                if (frameStarted)
+                    ImGui.EndFrame();
+                ImGui.DestroyContext(imguiContext);
+            }
+
+            tab.ApplyHotkeys(project.HotkeyManager);
+            Assert.Equal(1, generalPage.ApplyHotkeysCount);
+            Assert.Equal(1, advancedPage.ApplyHotkeysCount);
+            Assert.Equal(0, toolsPage.ApplyHotkeysCount);
+
+            Assert.True(generalPage.RenderSettingsCount >= 1);
+            Assert.True(advancedPage.RenderSettingsCount >= 1);
+            Assert.Equal(0, toolsPage.RenderSettingsCount);
+
+            project.MarkUnsaved();
+            Assert.True(tab.MarkedUnsaved);
+
+            generalPage.Dispose();
+            advancedPage.Dispose();
+            toolsPage.Dispose();
+        });
+    }
+
     private void WithProject(Action<Project, string> test)
     {
         var projectPath = Path.Combine(Path.GetTempPath(), "RedBoltFoundation-" + Guid.NewGuid().ToString("N"));
@@ -478,5 +567,49 @@ public sealed class FoundationTests
         public bool IsDisposed { get; private set; }
 
         private readonly EditorTab _owner;
+    }
+
+    private sealed class TestSettingsTab : SettingsTab
+    {
+        public bool MarkedUnsaved => IsMarkedUnsaved();
+    }
+
+    private sealed class TestSettingsPage : SettingsPage
+    {
+        public TestSettingsPage(string uniqueName)
+        {
+            UniqueName = uniqueName;
+        }
+
+        public override string UniqueName { get; }
+
+        public override bool IsSerializable => false;
+
+        public override bool CanResetToDefault => true;
+
+        public override void SerializeInBlock(Archive archive)
+        {
+        }
+
+        public override void RenderSettings()
+        {
+            ++RenderSettingsCount;
+        }
+
+        public override void ResetToDefaults()
+        {
+            ++ResetToDefaultsCount;
+        }
+
+        public override void ApplyHotkeys(HotkeyManager? hotkeyManager)
+        {
+            ++ApplyHotkeysCount;
+        }
+
+        public int RenderSettingsCount { get; private set; }
+
+        public int ResetToDefaultsCount { get; private set; }
+
+        public int ApplyHotkeysCount { get; private set; }
     }
 }
