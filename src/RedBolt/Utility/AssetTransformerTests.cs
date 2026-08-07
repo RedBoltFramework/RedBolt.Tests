@@ -2,6 +2,7 @@ namespace RedBolt.Tests;
 
 using RedBolt.Core;
 using RedBolt.Engine;
+using RedBolt.IO;
 using RedBolt.Utility;
 
 public sealed class AssetTransformerTests
@@ -107,5 +108,35 @@ public sealed class AssetTransformerTests
         {
             Context.SetInstance(previousContext);
         }
+    }
+
+    [Fact]
+    public void Dependency_clone_and_archive_round_trip_preserve_values()
+    {
+        var source = new AssetTransformerDependency
+        {
+            Class = "TextureTransformer",
+            DependsOn = "ImageTransformer",
+        };
+        var clone = source.Clone();
+
+        source.Class = "Changed";
+        source.DependsOn = "Changed";
+
+        Assert.NotSame(source, clone);
+        Assert.Equal("TextureTransformer", clone.Class);
+        Assert.Equal("ImageTransformer", clone.DependsOn);
+
+        using var output = new Base64OutputArchive();
+        using (output.OpenUnorderedBlock("dependency"))
+            clone.SerializeInBlock(output);
+
+        using var input = new Base64InputArchive(output.GetBase64());
+        var roundTrip = new AssetTransformerDependency();
+        using (input.OpenUnorderedBlock("dependency"))
+            roundTrip.SerializeInBlock(input);
+
+        Assert.Equal(clone.Class, roundTrip.Class);
+        Assert.Equal(clone.DependsOn, roundTrip.DependsOn);
     }
 }
