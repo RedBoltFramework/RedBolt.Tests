@@ -861,6 +861,94 @@ public sealed class CommonEditorActionsTests
         Assert.True(action.CanUndoRedo());
     }
 
+    [Fact]
+    public void Change_scene_action_redoes_and_undoes_captured_scene()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Old", 100);
+        var oldData = PackedSceneData.FromScene(scene);
+        node.SetName("New");
+        scene.CreateChild("Added", 101);
+        var action = new ChangeSceneAction(scene, oldData);
+        node.SetName("After");
+        scene.GetNode(101)!.Remove();
+
+        action.Undo();
+        Assert.Equal("Old", Assert.IsType<Node>(scene.GetNode(100)).Name);
+        Assert.Null(scene.GetNode(101));
+
+        action.Redo();
+        Assert.Equal("New", Assert.IsType<Node>(scene.GetNode(100)).Name);
+        Assert.Equal("Added", Assert.IsType<Node>(scene.GetNode(101)).Name);
+    }
+
+    [Fact]
+    public void Change_scene_action_accepts_packed_new_snapshot()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Old", 100);
+        var oldData = PackedSceneData.FromScene(scene);
+        node.SetName("New");
+        var newData = PackedSceneData.FromScene(scene);
+        var action = new ChangeSceneAction(scene, oldData, newData);
+        node.SetName("After");
+
+        action.Undo();
+        Assert.Equal("Old", Assert.IsType<Node>(scene.GetNode(100)).Name);
+        action.Redo();
+        Assert.Equal("New", Assert.IsType<Node>(scene.GetNode(100)).Name);
+    }
+
+    [Fact]
+    public void Change_scene_action_merges_latest_snapshot_in_same_scene()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Old", 100);
+        var oldData = PackedSceneData.FromScene(scene);
+        node.SetName("First");
+        var action = new ChangeSceneAction(scene, oldData, PackedSceneData.FromScene(scene));
+        node.SetName("Second");
+        var other = new ChangeSceneAction(scene, oldData, PackedSceneData.FromScene(scene));
+
+        Assert.True(action.MergeWith(other));
+        node.SetName("Third");
+        var latest = new ChangeSceneAction(scene, oldData, PackedSceneData.FromScene(scene));
+        Assert.True(other.MergeWith(latest));
+        action.Redo();
+        Assert.Equal("Second", Assert.IsType<Node>(scene.GetNode(100)).Name);
+        action.Undo();
+        Assert.Equal("Old", Assert.IsType<Node>(scene.GetNode(100)).Name);
+    }
+
+    [Fact]
+    public void Change_scene_action_rejects_other_type_or_scene()
+    {
+        using var scene = new Scene();
+        using var otherScene = new Scene();
+        scene.CreateChild("Node");
+        otherScene.CreateChild("Node");
+        var data = PackedSceneData.FromScene(scene);
+        var otherData = PackedSceneData.FromScene(otherScene);
+        var action = new ChangeSceneAction(scene, data, data);
+
+        Assert.False(action.MergeWith(new EmptyEditorAction()));
+        Assert.False(action.MergeWith(new ChangeSceneAction(otherScene, otherData, otherData)));
+    }
+
+    [Fact]
+    public void Change_scene_action_only_requires_live_scene()
+    {
+        using var scene = new Scene();
+        scene.CreateChild("Node");
+        var data = PackedSceneData.FromScene(scene);
+
+        Assert.False(new ChangeSceneAction(null, data, data).CanUndoRedo());
+
+        var action = new ChangeSceneAction(scene, data, data);
+        scene.RemoveAllChildren();
+        Assert.True(action.CanUndoRedo());
+    }
+
     private sealed class RecordingEditorAction : EditorAction
     {
         private readonly string _name;
