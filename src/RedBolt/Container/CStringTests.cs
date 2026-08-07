@@ -49,6 +49,24 @@ public sealed class CStringTests
     }
 
     [Fact]
+    public void Set_and_resize_match_mutable_utf8_string_behavior()
+    {
+        using var value = new CString("seed");
+
+        value.Set("høla");
+        Assert.Equal("høla", value.ConvertToString());
+
+        value.Set("abc"u8);
+        value.Resize(5);
+        Assert.Equal(new byte[] { (byte)'a', (byte)'b', (byte)'c', 0, 0 }, value.ContentBytes.ToArray());
+        Assert.True(value.Capacity >= value.ByteLength + 1);
+
+        value.Resize(2);
+        Assert.Equal("ab", value.ConvertToString());
+        Assert.Equal((byte)0, value.Bytes[^1]);
+    }
+
+    [Fact]
     public void Implicit_conversion_from_string()
     {
         CString value = "hello";
