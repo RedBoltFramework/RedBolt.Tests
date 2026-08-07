@@ -7,6 +7,7 @@ using RedBolt.Editor.Core;
 using RedBolt.Graphics;
 using RedBolt.Math;
 using RedBolt.Scene;
+using RedBolt.Utility;
 
 [Collection(nameof(HeadlessEngineCollection))]
 public sealed class CommonEditorActionsTests
@@ -658,6 +659,95 @@ public sealed class CommonEditorActionsTests
         Assert.False(action.CanUndoRedo());
         exception = Assert.Throws<UndoException>(() => action.Redo());
         Assert.Contains("parent node with id 101", exception.Message);
+    }
+
+    [Fact]
+    public void Change_component_action_redoes_and_undoes_component_snapshot()
+    {
+        using var scene = new Scene();
+        var camera = scene.CreateChild("Node", 100).CreateComponent<Camera>(200);
+        camera.Fov = 30.0f;
+        var oldData = new PackedComponentData(camera);
+        camera.Fov = 70.0f;
+        var action = new ChangeComponentAction(scene, oldData, camera);
+        camera.Fov = 90.0f;
+
+        action.Undo();
+        Assert.Equal(30.0f, camera.Fov);
+        action.Redo();
+        Assert.Equal(70.0f, camera.Fov);
+    }
+
+    [Fact]
+    public void Change_component_action_accepts_packed_new_snapshot()
+    {
+        using var scene = new Scene();
+        var camera = scene.CreateChild("Node", 100).CreateComponent<Camera>(200);
+        camera.Fov = 25.0f;
+        var oldData = new PackedComponentData(camera);
+        camera.Fov = 65.0f;
+        var newData = new PackedComponentData(camera);
+        var action = new ChangeComponentAction(scene, oldData, newData);
+        camera.Fov = 90.0f;
+
+        action.Undo();
+        Assert.Equal(25.0f, camera.Fov);
+        action.Redo();
+        Assert.Equal(65.0f, camera.Fov);
+    }
+
+    [Fact]
+    public void Change_component_action_merges_latest_snapshot_in_same_scene()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Node");
+        var first = node.CreateComponent<Camera>();
+        first.Fov = 20.0f;
+        var firstOldData = new PackedComponentData(first);
+        first.Fov = 50.0f;
+        var action = new ChangeComponentAction(scene, firstOldData, first);
+        var second = node.CreateComponent<Camera>();
+        second.Fov = 75.0f;
+        var other = new ChangeComponentAction(scene, new PackedComponentData(second), second);
+
+        Assert.True(action.MergeWith(other));
+        second.Fov = 90.0f;
+        var latest = new ChangeComponentAction(scene, new PackedComponentData(second), second);
+        Assert.True(other.MergeWith(latest));
+        action.Redo();
+        Assert.Equal(75.0f, first.Fov);
+        action.Undo();
+        Assert.Equal(20.0f, first.Fov);
+    }
+
+    [Fact]
+    public void Change_component_action_rejects_other_type_or_scene()
+    {
+        using var scene = new Scene();
+        using var otherScene = new Scene();
+        var camera = scene.CreateChild("Node").CreateComponent<Camera>();
+        var otherCamera = otherScene.CreateChild("Node").CreateComponent<Camera>();
+        var action = new ChangeComponentAction(scene, new PackedComponentData(camera), camera);
+        var other = new ChangeComponentAction(
+            otherScene, new PackedComponentData(otherCamera), otherCamera);
+
+        Assert.False(action.MergeWith(new EmptyEditorAction()));
+        Assert.False(action.MergeWith(other));
+    }
+
+    [Fact]
+    public void Change_component_action_requires_scene_and_original_component()
+    {
+        using var scene = new Scene();
+        var camera = scene.CreateChild("Node").CreateComponent<Camera>();
+        var data = new PackedComponentData(camera);
+
+        Assert.False(new ChangeComponentAction(null, data, camera).CanUndoRedo());
+
+        var action = new ChangeComponentAction(scene, data, camera);
+        Assert.True(action.CanUndoRedo());
+        camera.Remove();
+        Assert.False(action.CanUndoRedo());
     }
 
     private sealed class RecordingEditorAction : EditorAction
