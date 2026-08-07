@@ -1,11 +1,52 @@
 namespace RedBolt.Tests;
 
+using RedBolt.Bindings.DearImGui;
 using RedBolt.Container;
+using RedBolt.Core;
 using RedBolt.Scene;
 using RedBolt.SystemUI;
 
+[Collection(nameof(GraphicsLifecycleCollection))]
 public sealed class ResourceFileDescriptorTests
 {
+    [Fact]
+    public void Drag_drop_payload_is_stored_as_the_global_strong_reference()
+    {
+        var previousContext = Context.Instance;
+        using var context = new Context();
+        Context.SetInstance(context);
+        using var payload = new DragDropPayload();
+
+        try
+        {
+            DragDropPayload.Set(payload);
+            using var stored = context.GetGlobalVar(new StringHash("SystemUI_DragDropPayload")).Clone();
+
+            Assert.Same(payload, stored.GetCustom<DragDropPayload>());
+            Assert.Equal("Drop me", payload.GetDisplayString());
+        }
+        finally
+        {
+            Context.SetInstance(previousContext);
+        }
+    }
+
+    [NativeBindingFact]
+    public void Drag_drop_payload_get_returns_null_without_an_active_native_payload()
+    {
+        var imguiContext = ImGui.CreateContext();
+        try
+        {
+            ImGui.SetCurrentContext(imguiContext);
+
+            Assert.Null(DragDropPayload.Get());
+        }
+        finally
+        {
+            ImGui.DestroyContext(imguiContext);
+        }
+    }
+
     [Fact]
     public void Object_types_extensions_and_value_clone_match_descriptor_behavior()
     {
