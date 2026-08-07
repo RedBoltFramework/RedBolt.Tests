@@ -36,6 +36,7 @@
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Particles/RedBolt.Particles.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Platform/Linux/RedBolt.Platform.Linux.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/RmlUI/RedBolt.RmlUI.csproj" />
+    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Utility/RedBolt.Utility.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Generator/Reflection/RedBolt.Generator.Reflection.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false"
