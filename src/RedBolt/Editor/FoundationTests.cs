@@ -4,11 +4,13 @@ using System;
 using System.IO;
 using System.Linq;
 
+using RedBolt.Bindings.DearImGui;
 using RedBolt.Core;
 using RedBolt.Editor.Core;
 using RedBolt.Editor.Foundation;
 using RedBolt.Editor.Foundation.Shared;
 using RedBolt.Editor.Project;
+using RedBolt.Math;
 
 [Collection(nameof(HeadlessEngineCollection))]
 public sealed class FoundationTests
@@ -77,6 +79,63 @@ public sealed class FoundationTests
 
             Assert.Null(tab.GetOwnerTab());
             Assert.Equal(1, source.RenderContentCount);
+        });
+    }
+
+    [NativeBindingFact]
+    public void Inspector_tab_connects_registered_addons_on_activation_and_forwards_behavior()
+    {
+        WithProject((project, _) =>
+        {
+            var tab = new InspectorTab();
+            var source = tab.RegisterAddon(new TestActiveInspectorSource(tab));
+
+            Assert.False(tab.IsUndoSupported());
+            Assert.Null(tab.GetOwnerTab());
+
+            source.Activate();
+            tab.RenderContent();
+            tab.RenderContextMenuItems();
+            tab.RenderMenu();
+
+            var imguiContext = ImGui.CreateContext();
+            var frameStarted = false;
+            try
+            {
+                ImGui.SetCurrentContext(imguiContext);
+                var io = ImGui.GetIO();
+                io.DisplaySize = new Vector2f(640.0f, 480.0f);
+                io.DeltaTime = 1.0f / 60.0f;
+                io.BackendFlags |= ImGuiBackendFlags.ImGuiBackendFlagsRendererHasTextures;
+                ImGui.NewFrame();
+                frameStarted = true;
+
+                tab.ApplyHotkeys(project.HotkeyManager);
+            }
+            finally
+            {
+                if (frameStarted)
+                    ImGui.EndFrame();
+                ImGui.DestroyContext(imguiContext);
+            }
+
+            Assert.True(tab.IsUndoSupported());
+            Assert.Same(tab, tab.GetOwnerTab());
+            Assert.Equal(1, source.RenderContentCount);
+            Assert.Equal(1, source.RenderContextMenuItemsCount);
+            Assert.Equal(1, source.RenderMenuCount);
+            Assert.Equal(1, source.ApplyHotkeysCount);
+            Assert.Same(project.HotkeyManager, source.HotkeyManager);
+
+            tab.ConnectToSource(null, null);
+            tab.RenderContent();
+
+            Assert.False(tab.IsUndoSupported());
+            Assert.Null(tab.GetOwnerTab());
+            Assert.Equal(1, source.RenderContentCount);
+
+            tab.Dispose();
+            Assert.True(source.IsDisposed);
         });
     }
 
@@ -151,5 +210,53 @@ public sealed class FoundationTests
         public event Action? OnActivated;
 
         public void Activate() => OnActivated?.Invoke();
+    }
+
+    private sealed class TestActiveInspectorSource : RedObject, InspectorSource
+    {
+        public TestActiveInspectorSource(EditorTab owner)
+        {
+            _owner = owner;
+        }
+
+        public event Action? OnActivated;
+
+        public EditorTab? GetOwnerTab() => _owner;
+
+        public bool IsUndoSupported() => true;
+
+        public void RenderContent() => ++RenderContentCount;
+
+        public void RenderContextMenuItems() => ++RenderContextMenuItemsCount;
+
+        public void RenderMenu() => ++RenderMenuCount;
+
+        public void ApplyHotkeys(HotkeyManager? hotkeyManager)
+        {
+            ++ApplyHotkeysCount;
+            HotkeyManager = hotkeyManager;
+        }
+
+        public void Activate() => OnActivated?.Invoke();
+
+        public override void Dispose()
+        {
+            IsDisposed = true;
+            base.Dispose();
+        }
+
+        public int RenderContentCount { get; private set; }
+
+        public int RenderContextMenuItemsCount { get; private set; }
+
+        public int RenderMenuCount { get; private set; }
+
+        public int ApplyHotkeysCount { get; private set; }
+
+        public HotkeyManager? HotkeyManager { get; private set; }
+
+        public bool IsDisposed { get; private set; }
+
+        private readonly EditorTab _owner;
     }
 }
