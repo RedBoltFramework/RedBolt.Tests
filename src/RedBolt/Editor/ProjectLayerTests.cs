@@ -5,10 +5,17 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
+using RedBolt.Container;
+using RedBolt.Core;
+using RedBolt.Editor.Assets;
 using RedBolt.Editor.Core;
 using RedBolt.Editor.Project;
+using RedBolt.Engine;
+using RedBolt.Graphics;
+using RedBolt.Math;
 using RedBolt.Resource;
 using RedBolt.SystemUI;
+using RedBolt.Utility;
 
 using File = global::System.IO.File;
 
@@ -135,6 +142,123 @@ public sealed class ProjectLayerTests
         });
     }
 
+    [Fact]
+    public void Model_importer_reflects_native_defaults_and_accepts_only_supported_source_extensions()
+    {
+        _fixture.Context.RegisterAssembly(typeof(ModelImporter).Assembly);
+        WithProject((_, _) =>
+        {
+            using var importer = Assert.IsType<ModelImporter>(
+                _fixture.Context.CreateObject(new StringHash(nameof(ModelImporter))));
+
+            Assert.Equal(
+            [
+                "Mirror X",
+                "Scale",
+                "Rotation",
+                "Fade Transparency",
+                "Cleanup Bone Names",
+                "Cleanup Root Nodes",
+                "Combine LODs",
+                "Skip Tags",
+                "Keep Names On Merge",
+                "Add Empty Nodes To Skeleton",
+                "Repair Looping",
+                "Artificial Skin Nodes",
+                "Blender: Apply Modifiers",
+                "Blender: Deforming Bones Only",
+                "LightMap UV: Generate",
+                "LightMap UV: Texels per Unit",
+                "LightMap UV: Channel",
+            ], importer.GetAttributes().Select(static attribute => attribute.Name));
+
+            Assert.Equal(1.0f, importer.GetAttributes()[1].DefaultValue.GetFloat());
+            Assert.Equal(["[skip]"], importer.GetAttributes()[7].DefaultValue.GetStringVector());
+            Assert.True(importer.GetAttributes()[12].DefaultValue.GetBool());
+            Assert.True(importer.GetAttributes()[13].DefaultValue.GetBool());
+            Assert.Equal(10.0f, importer.GetAttributes()[15].DefaultValue.GetFloat());
+            Assert.Equal(1u, importer.GetAttributes()[16].DefaultValue.GetUInt());
+
+            importer.GetAttributes()[1].Accessor!.SetObject(importer, 2.5f);
+            Assert.Equal(2.5f, importer.GetAttributes()[1].Accessor!.GetObject(importer));
+
+            Assert.True(importer.IsApplicable(new AssetTransformerInput { ResourceName = "Models/Box.gltf" }));
+            Assert.True(importer.IsApplicable(new AssetTransformerInput { ResourceName = "Models/Box.GLB" }));
+            Assert.False(importer.IsApplicable(new AssetTransformerInput { ResourceName = "Models/Box.gltf_" }));
+            Assert.False(importer.IsApplicable(new AssetTransformerInput { ResourceName = "Models/Box.prefab" }));
+            Assert.False(importer.IsApplicable(new AssetTransformerInput { ResourceName = "Models/Box.fbx" }));
+            Assert.False(importer.IsApplicable(new AssetTransformerInput { ResourceName = "Models/Box.blend" }));
+        });
+    }
+
+    [Fact]
+    public void Model_importer_executes_a_native_gltf_and_saves_the_generated_prefab()
+    {
+        _fixture.Context.RegisterAssembly(typeof(ModelImporter).Assembly);
+        WithProject((project, dataPath) =>
+        {
+            var modelsPath = Path.Combine(dataPath, "Models");
+            Directory.CreateDirectory(modelsPath);
+            var sourceFileName = Path.Combine(modelsPath, "Empty.gltf");
+            File.WriteAllText(sourceFileName,
+                "{\"asset\":{\"version\":\"2.0\"},\"scene\":0,\"scenes\":[{\"nodes\":[]}],\"nodes\":[]}");
+            var parametersPath = sourceFileName + ".d";
+            Directory.CreateDirectory(parametersPath);
+            File.WriteAllText(Path.Combine(parametersPath, "ModelImporter.json"),
+                "{\"params\":{\"scale\":2.0}}");
+
+            var resourceName = "Models/Empty.gltf";
+            var tempPath = project.GetRandomTemporaryPath();
+            var outputResourceName = resourceName + ".d";
+            var outputFileName = tempPath + outputResourceName;
+            Directory.CreateDirectory(tempPath);
+            var input = new AssetTransformerInput(false, new ApplicationFlavor(),
+                resourceName, sourceFileName, 0)
+            {
+                TempPath = tempPath,
+                OutputFileName = outputFileName,
+                OutputResourceName = outputResourceName,
+            };
+            var output = new AssetTransformerOutput();
+            using var importer = new ModelImporter();
+
+            Assert.True(importer.Execute(input, output, [importer]), string.Join(
+                Environment.NewLine, _fixture.LogSink.Messages.Select(static message => message.Message)));
+            Assert.True(File.Exists(Path.Combine(outputFileName, "Prefab.prefab")));
+            Assert.Contains("Models/Empty.gltf.d/ModelImporter.json", output.DependencyModificationTimes.Keys);
+        });
+    }
+
+    [Fact]
+    public void Model_importer_resets_root_motion_and_preserves_the_original_track()
+    {
+        using var animation = new Animation();
+        animation.SetName("Walk.ani");
+        var rootTrack = animation.CreateTrack("Root");
+        rootTrack.ChannelMask = AnimationChannel.Position;
+        rootTrack.KeyFrames.Add(new AnimationKeyFrame(0.0f, Vector3f.Zero));
+        rootTrack.KeyFrames.Add(new AnimationKeyFrame(1.0f, new Vector3f(2.0f, 0.0f, 0.0f)));
+
+        using var parentTracks = new StringVariantMap();
+        using (var parent = new Variant(string.Empty))
+            parentTracks.Add("Root", parent);
+        using (var metadata = new Variant(parentTracks))
+            animation.AddMetadata(AnimationMetadata.ParentTracks, metadata);
+
+        using var importer = new ModelImporterProbe();
+        importer.ResetRootMotion(animation);
+
+        var originalTrack = animation.GetTrack("Root_Original");
+        Assert.NotNull(originalTrack);
+        Assert.Equal(Vector3f.Zero, originalTrack!.KeyFrames[0].Position);
+        Assert.Equal(new Vector3f(2.0f, 0.0f, 0.0f), originalTrack.KeyFrames[1].Position);
+        Assert.All(rootTrack.KeyFrames, static frame => Assert.Equal(Vector3f.Zero, frame.Position));
+        Assert.Equal("Root", animation.GetMetadata(AnimationMetadata.RootTrack).GetString());
+        Assert.Equal("Root_Original", animation.GetMetadata(AnimationMetadata.OriginalRootTrack).GetString());
+        Assert.Equal(new Vector3f(2.0f, 0.0f, 0.0f),
+            animation.GetMetadata(AnimationMetadata.RootLinearVelocity).GetVector3());
+    }
+
     private void WithProject(Action<Project, string> test)
     {
         var projectPath = Path.Combine(Path.GetTempPath(), "RedBoltProjectLayer-" + Guid.NewGuid().ToString("N"));
@@ -213,5 +337,14 @@ public sealed class ProjectLayerTests
         public override void Redo() => ++RedoCount;
 
         public override void Undo() => ++UndoCount;
+    }
+
+    private sealed class ModelImporterProbe : ModelImporter
+    {
+        public void ResetRootMotion(Animation animation)
+        {
+            var info = new ResetRootMotionInfo();
+            ResetRootMotion(animation, info);
+        }
     }
 }
