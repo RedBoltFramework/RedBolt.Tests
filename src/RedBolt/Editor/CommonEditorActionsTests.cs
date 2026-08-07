@@ -3,7 +3,9 @@ namespace RedBolt.Tests;
 using System.Collections.Generic;
 
 using RedBolt.Editor.Core;
+using RedBolt.Scene;
 
+[Collection(nameof(HeadlessEngineCollection))]
 public sealed class CommonEditorActionsTests
 {
     [Fact]
@@ -50,6 +52,61 @@ public sealed class CommonEditorActionsTests
 
         Assert.True(action.CanRedo());
         Assert.False(action.CanUndo());
+    }
+
+    [Fact]
+    public void Create_node_action_undoes_creation_and_redoes_it_exactly()
+    {
+        using var scene = new Scene();
+        var parent = scene.CreateChild("Parent", 100);
+        var node = parent.CreateChild("Node", 101);
+        var action = new CreateRemoveNodeAction(node, removed: false);
+
+        action.Undo();
+        Assert.Null(scene.GetNode(101));
+
+        action.Redo();
+        var restored = scene.GetNode(101);
+        Assert.NotNull(restored);
+        Assert.Equal("Node", restored.Name);
+        Assert.Same(parent, restored.Parent);
+    }
+
+    [Fact]
+    public void Remove_node_action_redoes_removal_and_undoes_it_exactly()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Node", 100);
+        var action = new CreateRemoveNodeAction(node, removed: true);
+
+        action.Redo();
+        Assert.Null(scene.GetNode(100));
+
+        action.Undo();
+        Assert.Equal("Node", scene.GetNode(100)!.Name);
+    }
+
+    [Fact]
+    public void Create_remove_node_action_detects_desynchronized_state()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Node", 100);
+        var action = new CreateRemoveNodeAction(node, removed: false);
+
+        Assert.Throws<UndoException>(() => action.Redo());
+        action.Undo();
+        Assert.Throws<UndoException>(() => action.Undo());
+    }
+
+    [Fact]
+    public void Create_remove_node_action_is_disabled_without_scene()
+    {
+        using var node = new Node();
+        var action = new CreateRemoveNodeAction(node, removed: false);
+
+        Assert.False(action.CanUndoRedo());
+        action.Redo();
+        action.Undo();
     }
 
     private sealed class RecordingEditorAction : EditorAction
