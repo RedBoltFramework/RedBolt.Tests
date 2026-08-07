@@ -33,6 +33,25 @@ public sealed class FoundationTests
     }
 
     [Fact]
+    public void Inspector_source_defaults_are_no_ops_and_activation_is_signaled()
+    {
+        var activated = false;
+        var concreteSource = new TestInspectorSource();
+        InspectorSource source = concreteSource;
+        source.OnActivated += () => activated = true;
+
+        Assert.Null(source.GetOwnerTab());
+        Assert.False(source.IsUndoSupported());
+        source.RenderContent();
+        source.RenderContextMenuItems();
+        source.RenderMenu();
+        source.ApplyHotkeys(null);
+        concreteSource.Activate();
+
+        Assert.True(activated);
+    }
+
+    [Fact]
     public void Hierarchy_browser_tab_forwards_to_the_connected_source()
     {
         WithProject((project, _) =>
@@ -125,5 +144,12 @@ public sealed class FoundationTests
         public HotkeyManager? HotkeyManager { get; private set; }
 
         private readonly EditorTab? _owner;
+    }
+
+    private sealed class TestInspectorSource : InspectorSource
+    {
+        public event Action? OnActivated;
+
+        public void Activate() => OnActivated?.Invoke();
     }
 }
