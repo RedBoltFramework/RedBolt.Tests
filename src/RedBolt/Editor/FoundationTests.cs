@@ -183,6 +183,71 @@ public sealed class FoundationTests
         });
     }
 
+    [Fact]
+    public void Placeholder_resource_inspector_tracks_non_empty_resource_selections_at_fallback_priority()
+    {
+        WithProject((project, dataPath) =>
+        {
+            File.WriteAllText(Path.Combine(dataPath, "Resource.txt"), "resource");
+            Directory.CreateDirectory(Path.Combine(dataPath, "Folder"));
+
+            var inspector = new PlaceholderResourceInspector(project);
+            var activationCount = 0;
+            inspector.OnActivated += () => ++activationCount;
+            var processPendingRequests = typeof(Project).GetMethod(
+                "ProcessPendingRequests", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+            using (var emptyRequest = new InspectResourceRequest([]))
+            {
+                project.ProcessRequest(emptyRequest);
+                processPendingRequests.Invoke(project, null);
+            }
+            Assert.Equal(0, activationCount);
+
+            using (var singleRequest = new InspectResourceRequest(["Resource.txt"]))
+            {
+                project.ProcessRequest(singleRequest);
+                processPendingRequests.Invoke(project, null);
+            }
+            Assert.Equal(1, activationCount);
+
+            var singleResource = GetPrivateField(inspector, "_singleResource");
+            Assert.NotNull(singleResource);
+            Assert.Equal("File", GetProperty<string>(singleResource, "ResourceType"));
+            Assert.Equal("Resource.txt", GetProperty<string>(singleResource, "ResourceName"));
+            Assert.Null(GetPrivateField(inspector, "_multipleResources"));
+
+            var higherPriorityProcessed = false;
+            using (var claimedRequest = new InspectResourceRequest(["Folder"]))
+            {
+                claimedRequest.QueueProcessCallback(() => higherPriorityProcessed = true, int.MinValue + 2);
+                project.ProcessRequest(claimedRequest);
+                processPendingRequests.Invoke(project, null);
+            }
+            Assert.True(higherPriorityProcessed);
+            Assert.Equal(1, activationCount);
+
+            using (var multipleRequest = new InspectResourceRequest(["Resource.txt", "Folder"]))
+            {
+                project.ProcessRequest(multipleRequest);
+                processPendingRequests.Invoke(project, null);
+            }
+            Assert.Equal(2, activationCount);
+            Assert.Null(GetPrivateField(inspector, "_singleResource"));
+
+            var multipleResources = GetPrivateField(inspector, "_multipleResources");
+            Assert.NotNull(multipleResources);
+            Assert.Equal(1u, GetProperty<uint>(multipleResources, "NumFiles"));
+            Assert.Equal(1u, GetProperty<uint>(multipleResources, "NumFolders"));
+
+            inspector.Dispose();
+            using var requestAfterDispose = new InspectResourceRequest(["Resource.txt"]);
+            project.ProcessRequest(requestAfterDispose);
+            processPendingRequests.Invoke(project, null);
+            Assert.Equal(2, activationCount);
+        });
+    }
+
     private void WithProject(Action<Project, string> test)
     {
         var projectPath = Path.Combine(Path.GetTempPath(), "RedBoltFoundation-" + Guid.NewGuid().ToString("N"));
@@ -213,6 +278,16 @@ public sealed class FoundationTests
                 _fixture.Resources.AddManualResource(resource);
             Directory.Delete(projectPath, true);
         }
+    }
+
+    private static object? GetPrivateField(object instance, string name)
+    {
+        return instance.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(instance);
+    }
+
+    private static T GetProperty<T>(object instance, string name)
+    {
+        return (T)instance.GetType().GetProperty(name)!.GetValue(instance)!;
     }
 
     private sealed class TestHierarchyBrowserSource : RedObject, HierarchyBrowserSource
