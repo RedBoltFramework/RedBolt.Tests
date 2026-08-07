@@ -2,6 +2,8 @@ namespace RedBolt.Tests;
 
 using RedBolt.Core;
 using RedBolt.Editor.Project;
+using RedBolt.Graphics;
+using RedBolt.Scene;
 
 public sealed class ProjectRequestTests
 {
@@ -47,8 +49,60 @@ public sealed class ProjectRequestTests
         }, static () => new BaseInspectRequest());
     }
 
+    [Fact]
+    public void Node_component_request_filters_nulls_orders_selection_and_returns_common_scene()
+    {
+        WithContext(() =>
+        {
+            using var scene = new Scene();
+            var firstNode = scene.CreateChild("First", 100);
+            var secondNode = scene.CreateChild("Second", 200);
+            var firstComponent = firstNode.CreateComponent<Camera>(300);
+            var secondComponent = secondNode.CreateComponent<Camera>(400);
+            using var request = new InspectNodeComponentRequest(
+                new Node?[] { secondNode, null, firstNode },
+                new Component?[] { secondComponent, null, firstComponent });
+
+            Assert.Equal([100u, 200u], request.Nodes.Select(GetTarget).Select(static node => node.Id));
+            Assert.Equal([300u, 400u], request.Components.Select(GetTarget).Select(static component => component.Id));
+            Assert.Same(scene, request.CommonScene);
+            Assert.False(request.IsEmpty);
+            Assert.True(request.HasNodes);
+            Assert.True(request.HasComponents);
+        });
+    }
+
+    [Fact]
+    public void Node_component_request_rejects_missing_or_different_scenes()
+    {
+        WithContext(() =>
+        {
+            using var firstScene = new Scene();
+            using var secondScene = new Scene();
+            var firstNode = firstScene.CreateChild("First");
+            var secondNode = secondScene.CreateChild("Second");
+            using var mixedRequest = new InspectNodeComponentRequest(
+                new[] { firstNode, secondNode }, Array.Empty<Component>());
+            using var detachedNode = new Node();
+            using var detachedRequest = new InspectNodeComponentRequest(
+                new[] { detachedNode }, Array.Empty<Component>());
+
+            Assert.Null(mixedRequest.CommonScene);
+            Assert.Null(detachedRequest.CommonScene);
+        });
+    }
+
     private static void WithRequest(
         Action<ProjectRequest> test, Func<ProjectRequest>? createRequest = null)
+    {
+        WithContext(() =>
+        {
+            using var request = createRequest?.Invoke() ?? new ProjectRequest();
+            test(request);
+        });
+    }
+
+    private static void WithContext(Action test)
     {
         var previousContext = Context.Instance;
         using var context = new Context();
@@ -56,12 +110,18 @@ public sealed class ProjectRequestTests
 
         try
         {
-            using var request = createRequest?.Invoke() ?? new ProjectRequest();
-            test(request);
+            test();
         }
         finally
         {
             Context.SetInstance(previousContext);
         }
+    }
+
+    private static T GetTarget<T>(WeakReference<T> reference)
+        where T : class
+    {
+        Assert.True(reference.TryGetTarget(out var target));
+        return target;
     }
 }
