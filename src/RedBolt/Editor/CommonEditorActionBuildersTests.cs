@@ -192,4 +192,96 @@ public sealed class CommonEditorActionBuildersTests
             reflection.SetScopeHint(oldScopeHint);
         }
     }
+
+    [Theory]
+    [InlineData(AttributeScopeHint.Attribute)]
+    [InlineData(AttributeScopeHint.Serializable)]
+    public void Remove_component_builder_undoes_and_redoes_local_scope_removal(
+        AttributeScopeHint scopeHint)
+    {
+        var reflection = Context.Instance.GetReflection<Camera>();
+        var oldScopeHint = reflection.ScopeHint;
+        reflection.SetScopeHint(scopeHint);
+        try
+        {
+            using var scene = new Scene();
+            var camera = scene.CreateChild("Node", 100).CreateComponent<Camera>(200);
+            camera.Fov = 70.0f;
+            var builder = new RemoveComponentActionBuilder(camera);
+            camera.Remove();
+            var action = builder.Build();
+
+            Assert.NotNull(action);
+            action.Undo();
+            Assert.Equal(70.0f, Assert.IsType<Camera>(scene.GetComponent(200)).Fov);
+            action.Redo();
+            Assert.Null(scene.GetComponent(200));
+        }
+        finally
+        {
+            reflection.SetScopeHint(oldScopeHint);
+        }
+    }
+
+    [Fact]
+    public void Remove_component_builder_undoes_and_redoes_node_scope_removal()
+    {
+        var reflection = Context.Instance.GetReflection<Camera>();
+        var oldScopeHint = reflection.ScopeHint;
+        reflection.SetScopeHint(AttributeScopeHint.Node);
+        try
+        {
+            using var scene = new Scene();
+            var node = scene.CreateChild("Old", 100);
+            var camera = node.CreateComponent<Camera>(200);
+            camera.Fov = 70.0f;
+            var builder = new RemoveComponentActionBuilder(camera);
+            node.SetName("New");
+            camera.Remove();
+            var action = builder.Build();
+
+            Assert.NotNull(action);
+            action.Undo();
+            Assert.Equal("Old", Assert.IsType<Node>(scene.GetNode(100)).Name);
+            Assert.Equal(70.0f, Assert.IsType<Camera>(scene.GetComponent(200)).Fov);
+            action.Redo();
+            Assert.Equal("New", Assert.IsType<Node>(scene.GetNode(100)).Name);
+            Assert.Null(scene.GetComponent(200));
+        }
+        finally
+        {
+            reflection.SetScopeHint(oldScopeHint);
+        }
+    }
+
+    [Fact]
+    public void Remove_component_builder_undoes_and_redoes_scene_scope_removal()
+    {
+        var reflection = Context.Instance.GetReflection<Camera>();
+        var oldScopeHint = reflection.ScopeHint;
+        reflection.SetScopeHint(AttributeScopeHint.Scene);
+        try
+        {
+            using var scene = new Scene();
+            var existing = scene.CreateChild("Existing", 100);
+            var camera = scene.CreateChild("Node", 101).CreateComponent<Camera>(200);
+            camera.Fov = 70.0f;
+            var builder = new RemoveComponentActionBuilder(camera);
+            existing.SetName("Changed");
+            camera.Remove();
+            var action = builder.Build();
+
+            Assert.NotNull(action);
+            action.Undo();
+            Assert.Equal("Existing", Assert.IsType<Node>(scene.GetNode(100)).Name);
+            Assert.Equal(70.0f, Assert.IsType<Camera>(scene.GetComponent(200)).Fov);
+            action.Redo();
+            Assert.Equal("Changed", Assert.IsType<Node>(scene.GetNode(100)).Name);
+            Assert.Null(scene.GetComponent(200));
+        }
+        finally
+        {
+            reflection.SetScopeHint(oldScopeHint);
+        }
+    }
 }
