@@ -3,6 +3,7 @@ namespace RedBolt.Tests;
 using System.Collections.Generic;
 
 using RedBolt.Editor.Core;
+using RedBolt.Graphics;
 using RedBolt.Scene;
 
 [Collection(nameof(HeadlessEngineCollection))]
@@ -103,6 +104,64 @@ public sealed class CommonEditorActionsTests
     {
         using var node = new Node();
         var action = new CreateRemoveNodeAction(node, removed: false);
+
+        Assert.False(action.CanUndoRedo());
+        action.Redo();
+        action.Undo();
+    }
+
+    [Fact]
+    public void Create_component_action_undoes_creation_and_redoes_it_exactly()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Node", 100);
+        var camera = node.CreateComponent<Camera>(200);
+        camera.Fov = 67.5f;
+        var action = new CreateRemoveComponentAction(camera, removed: false);
+
+        action.Undo();
+        Assert.Null(scene.GetComponent(200));
+
+        action.Redo();
+        var restored = Assert.IsType<Camera>(scene.GetComponent(200));
+        Assert.Equal(67.5f, restored.Fov);
+        Assert.Same(node, restored.Node);
+    }
+
+    [Fact]
+    public void Remove_component_action_redoes_removal_and_undoes_it_exactly()
+    {
+        using var scene = new Scene();
+        var camera = scene.CreateChild("Node").CreateComponent<Camera>(200);
+        camera.Fov = 67.5f;
+        var action = new CreateRemoveComponentAction(camera, removed: true);
+
+        action.Redo();
+        Assert.Null(scene.GetComponent(200));
+
+        action.Undo();
+        Assert.Equal(67.5f, Assert.IsType<Camera>(scene.GetComponent(200)).Fov);
+    }
+
+    [Fact]
+    public void Create_remove_component_action_detects_desynchronized_state()
+    {
+        using var scene = new Scene();
+        var camera = scene.CreateChild("Node").CreateComponent<Camera>(200);
+        var action = new CreateRemoveComponentAction(camera, removed: false);
+
+        Assert.Throws<UndoException>(() => action.Redo());
+        action.Undo();
+        Assert.Throws<UndoException>(() => action.Undo());
+    }
+
+    [Fact]
+    public void Create_remove_component_action_is_disabled_without_scene()
+    {
+        using var node = new Node();
+        var camera = new Camera();
+        node.AddComponent(camera);
+        var action = new CreateRemoveComponentAction(camera, removed: false);
 
         Assert.False(action.CanUndoRedo());
         action.Redo();
