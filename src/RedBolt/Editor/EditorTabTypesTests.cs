@@ -2,7 +2,9 @@ namespace RedBolt.Tests;
 
 using RedBolt.Bindings.DearImGui;
 using RedBolt.Editor.Project;
+using RedBolt.Math;
 
+[Collection(nameof(GraphicsLifecycleCollection))]
 public sealed class EditorTabTypesTests
 {
     [Fact]
@@ -27,6 +29,54 @@ public sealed class EditorTabTypesTests
         Assert.True(implementation.WasWritten);
         Assert.Equal("Value=42", implementation.Line);
         Assert.Equal("Test", configurable.IniEntry);
+    }
+
+    [NativeBindingFact]
+    public void Separator_helper_adds_only_once_until_reset()
+    {
+        var context = ImGui.CreateContext();
+        var frameStarted = false;
+        var windowStarted = false;
+
+        try
+        {
+            ImGui.SetCurrentContext(context);
+            var io = ImGui.GetIO();
+            io.DisplaySize = new Vector2f(640, 480);
+            io.DeltaTime = 1.0f / 60.0f;
+            io.BackendFlags |= ImGuiBackendFlags.ImGuiBackendFlagsRendererHasTextures;
+
+            ImGui.NewFrame();
+            frameStarted = true;
+
+            var open = true;
+            ImGui.Begin("Separator helper test"u8, ref open);
+            windowStarted = true;
+
+            var helper = new SeparatorHelper();
+            using var drawList = ImGui.GetWindowDrawList();
+            var before = drawList.VtxBufferSize;
+
+            helper.Add();
+            var afterFirst = drawList.VtxBufferSize;
+            helper.Add();
+            var afterSecond = drawList.VtxBufferSize;
+            helper.Reset();
+            helper.Add();
+            var afterReset = drawList.VtxBufferSize;
+
+            Assert.True(afterFirst > before);
+            Assert.Equal(afterFirst, afterSecond);
+            Assert.True(afterReset > afterSecond);
+        }
+        finally
+        {
+            if (windowStarted)
+                ImGui.End();
+            if (frameStarted)
+                ImGui.EndFrame();
+            ImGui.DestroyContext(context);
+        }
     }
 
     private sealed class TestEditorConfigurable : EditorConfigurable
