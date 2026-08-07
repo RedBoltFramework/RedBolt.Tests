@@ -92,6 +92,23 @@ public sealed class ProjectRequestTests
         });
     }
 
+    [Fact]
+    public void Create_resource_request_retains_factory_and_inherits_processing()
+    {
+        WithContext(() =>
+        {
+            using var factory = new TestResourceFactory();
+            using var request = new CreateResourceRequest(factory);
+            var invoked = false;
+            request.QueueProcessCallback(() => invoked = true);
+
+            request.InvokeProcessCallback();
+
+            Assert.Same(factory, request.Factory);
+            Assert.True(invoked);
+        });
+    }
+
     private static void WithRequest(
         Action<ProjectRequest> test, Func<ProjectRequest>? createRequest = null)
     {
@@ -123,5 +140,20 @@ public sealed class ProjectRequestTests
     {
         Assert.True(reference.TryGetTarget(out var target));
         return target;
+    }
+
+    private sealed class TestResourceFactory() : ResourceFactory(0, "Test")
+    {
+        public override void Open(string baseFilePath, string baseResourcePath)
+        {
+        }
+
+        public override void Render(FileNameChecker checker, ref bool canCommit, ref bool shouldCommit)
+        {
+        }
+
+        public override void CommitAndClose()
+        {
+        }
     }
 }
