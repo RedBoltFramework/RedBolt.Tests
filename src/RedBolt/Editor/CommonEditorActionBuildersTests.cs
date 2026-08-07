@@ -2,6 +2,7 @@ namespace RedBolt.Tests;
 
 using RedBolt.Core;
 using RedBolt.Editor.Core;
+using RedBolt.Graphics;
 using RedBolt.Scene;
 
 [Collection(nameof(HeadlessEngineCollection))]
@@ -52,5 +53,52 @@ public sealed class CommonEditorActionBuildersTests
         var node = scene.CreateChild("Node");
 
         Assert.Null(builder.Build(node));
+    }
+
+    [Fact]
+    public void Remove_node_builder_undoes_and_redoes_local_scope_removal()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Node", 100);
+        var builder = new RemoveNodeActionBuilder(node);
+        node.Remove();
+        var action = builder.Build();
+
+        Assert.NotNull(action);
+        action.Undo();
+        Assert.Equal("Node", Assert.IsType<Node>(scene.GetNode(100)).Name);
+        action.Redo();
+        Assert.Null(scene.GetNode(100));
+    }
+
+    [Fact]
+    public void Remove_node_builder_undoes_and_redoes_scene_scope_removal()
+    {
+        var reflection = Context.Instance.GetReflection<Camera>();
+        var oldScopeHint = reflection.ScopeHint;
+        reflection.SetScopeHint(AttributeScopeHint.Scene);
+        try
+        {
+            using var scene = new Scene();
+            var existing = scene.CreateChild("Existing", 100);
+            var node = scene.CreateChild("Node", 101);
+            node.CreateComponent<Camera>(200);
+            var builder = new RemoveNodeActionBuilder(node);
+            existing.SetName("Changed");
+            node.Remove();
+            var action = builder.Build();
+
+            Assert.NotNull(action);
+            action.Undo();
+            Assert.Equal("Existing", Assert.IsType<Node>(scene.GetNode(100)).Name);
+            Assert.Equal("Node", Assert.IsType<Node>(scene.GetNode(101)).Name);
+            action.Redo();
+            Assert.Equal("Changed", Assert.IsType<Node>(scene.GetNode(100)).Name);
+            Assert.Null(scene.GetNode(101));
+        }
+        finally
+        {
+            reflection.SetScopeHint(oldScopeHint);
+        }
     }
 }
