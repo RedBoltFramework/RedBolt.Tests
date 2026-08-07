@@ -68,15 +68,16 @@ public sealed class SettingsManagerTests
     {
         var page = new SimpleSettingsPage<TestSettings>();
 
+        Assert.Equal(5, page.Values.Value);
         Assert.Equal("Editor.Test", page.UniqueName);
         Assert.True(page.IsSerializable);
         Assert.True(page.CanResetToDefault);
 
         page.RenderSettings();
-        Assert.Equal(1, page.Values.Value);
+        Assert.Equal(6, page.Values.Value);
 
         page.ResetToDefaults();
-        Assert.Equal(0, page.Values.Value);
+        Assert.Equal(5, page.Values.Value);
     }
 
     private static void WithManager(Action<SettingsManager> test)
@@ -126,6 +127,11 @@ public sealed class SettingsManagerTests
 
     private struct TestSettings : ISimpleSettingsPageValues
     {
+        public TestSettings()
+        {
+            Value = 5;
+        }
+
         public string UniqueName => "Editor.Test";
 
         public int Value;
