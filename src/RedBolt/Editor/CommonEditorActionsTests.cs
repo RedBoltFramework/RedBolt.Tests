@@ -498,6 +498,86 @@ public sealed class CommonEditorActionsTests
         Assert.Contains("parent node with id 100", exception.Message);
     }
 
+    [Fact]
+    public void Reorder_component_action_redoes_and_undoes_component_order()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Node");
+        var first = node.CreateComponent<Camera>();
+        var second = node.CreateComponent<Camera>();
+        var third = node.CreateComponent<Camera>();
+        var action = new ReorderComponentAction(third, oldIndex: 2, newIndex: 0);
+
+        action.Redo();
+        Assert.Same(third, node.Components[0]);
+        Assert.Same(first, node.Components[1]);
+        Assert.Same(second, node.Components[2]);
+
+        action.Undo();
+        Assert.Same(first, node.Components[0]);
+        Assert.Same(second, node.Components[1]);
+        Assert.Same(third, node.Components[2]);
+    }
+
+    [Fact]
+    public void Reorder_component_action_merges_latest_index_for_same_component_and_node()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Node");
+        var first = node.CreateComponent<Camera>();
+        node.CreateComponent<Camera>();
+        var third = node.CreateComponent<Camera>();
+        var action = new ReorderComponentAction(third, oldIndex: 2, newIndex: 1);
+        var other = new ReorderComponentAction(third, oldIndex: 1, newIndex: 0);
+
+        Assert.True(action.MergeWith(other));
+        action.Redo();
+        Assert.Same(third, node.Components[0]);
+        action.Undo();
+        Assert.Same(first, node.Components[0]);
+        Assert.Same(third, node.Components[2]);
+    }
+
+    [Fact]
+    public void Reorder_component_action_rejects_other_type_scene_component_or_node()
+    {
+        using var scene = new Scene();
+        using var otherScene = new Scene();
+        var node = scene.CreateChild("Node");
+        var component = node.CreateComponent<Camera>();
+        var sibling = node.CreateComponent<Camera>();
+        var otherNode = scene.CreateChild("Other Node");
+        var otherNodeComponent = otherNode.CreateComponent<Camera>();
+        var externalComponent = otherScene.CreateChild("Node").CreateComponent<Camera>();
+        var action = new ReorderComponentAction(component, 0, 1);
+
+        Assert.False(action.MergeWith(new EmptyEditorAction()));
+        Assert.False(action.MergeWith(new ReorderComponentAction(sibling, 1, 0)));
+        Assert.False(action.MergeWith(new ReorderComponentAction(otherNodeComponent, 0, 0)));
+        Assert.False(action.MergeWith(new ReorderComponentAction(externalComponent, 0, 0)));
+    }
+
+    [Fact]
+    public void Reorder_component_action_reports_missing_node_or_component()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Node", 100);
+        var component = node.CreateComponent<Camera>(200);
+        var action = new ReorderComponentAction(component, 0, 0);
+
+        Assert.True(action.CanUndoRedo());
+        component.Remove();
+        Assert.False(action.CanUndoRedo());
+        var exception = Assert.Throws<UndoException>(() => action.Redo());
+        Assert.Contains("component with id 200", exception.Message);
+
+        component = node.CreateComponent<Camera>(200);
+        action = new ReorderComponentAction(component, 0, 0);
+        node.Remove();
+        exception = Assert.Throws<UndoException>(() => action.Redo());
+        Assert.Contains("node with id 100", exception.Message);
+    }
+
     private sealed class RecordingEditorAction : EditorAction
     {
         private readonly string _name;
