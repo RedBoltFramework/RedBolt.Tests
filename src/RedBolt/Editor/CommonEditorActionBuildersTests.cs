@@ -324,4 +324,137 @@ public sealed class CommonEditorActionBuildersTests
         Assert.True(clone.OldScene.HasSceneData);
         Assert.True(clone.NewScene.HasSceneData);
     }
+
+    [Fact]
+    public void Change_node_attributes_builder_keeps_other_attributes_local()
+    {
+        var reflection = Context.Instance.GetReflection<Camera>();
+        var oldScopeHint = reflection.ScopeHint;
+        reflection.SetScopeHint(AttributeScopeHint.Scene);
+        try
+        {
+            using var scene = new Scene();
+            var node = scene.CreateChild("Old", 100);
+            node.CreateComponent<Camera>(200);
+            using var buffer = new ChangeAttributeBuffer();
+            IEnumerable<Node> nodes = new HashSet<Node> { node };
+            var attribute = Context.Instance.GetAttribute<Node>("Name");
+            var builder = new ChangeNodeAttributesActionBuilder(buffer, scene, nodes, attribute);
+            node.SetName("New");
+            scene.CreateChild("Unrelated", 101);
+            var action = builder.Build();
+
+            Assert.NotNull(action);
+            action.Undo();
+            Assert.Equal("Old", Assert.IsType<Node>(scene.GetNode(100)).Name);
+            Assert.Equal("Unrelated", Assert.IsType<Node>(scene.GetNode(101)).Name);
+            action.Redo();
+            Assert.Equal("New", Assert.IsType<Node>(scene.GetNode(100)).Name);
+            Assert.Equal("Unrelated", Assert.IsType<Node>(scene.GetNode(101)).Name);
+        }
+        finally
+        {
+            reflection.SetScopeHint(oldScopeHint);
+        }
+    }
+
+    [Fact]
+    public void Change_node_attributes_builder_undoes_and_redoes_serializable_scope_change()
+    {
+        var reflection = Context.Instance.GetReflection<Camera>();
+        var oldScopeHint = reflection.ScopeHint;
+        reflection.SetScopeHint(AttributeScopeHint.Serializable);
+        try
+        {
+            using var scene = new Scene();
+            var node = scene.CreateChild("Node", 100);
+            node.CreateComponent<Camera>(200);
+            using var buffer = new ChangeAttributeBuffer();
+            var attribute = Context.Instance.GetAttribute<Node>("Is Enabled");
+            var builder = new ChangeNodeAttributesActionBuilder(buffer, scene, new[] { node }, attribute);
+            node.SetEnabled(false);
+            var action = builder.Build();
+
+            Assert.NotNull(action);
+            action.Undo();
+            Assert.True(Assert.IsType<Node>(scene.GetNode(100)).IsEnabled);
+            action.Redo();
+            Assert.False(Assert.IsType<Node>(scene.GetNode(100)).IsEnabled);
+        }
+        finally
+        {
+            reflection.SetScopeHint(oldScopeHint);
+        }
+    }
+
+    [Fact]
+    public void Change_node_attributes_builder_undoes_and_redoes_node_scope_change()
+    {
+        var reflection = Context.Instance.GetReflection<Camera>();
+        var oldScopeHint = reflection.ScopeHint;
+        reflection.SetScopeHint(AttributeScopeHint.Node);
+        try
+        {
+            using var scene = new Scene();
+            var node = scene.CreateChild("Old Parent", 100);
+            node.CreateComponent<Camera>(200);
+            var child = node.CreateChild("Old Child", 101);
+            using var buffer = new ChangeAttributeBuffer();
+            var attribute = Context.Instance.GetAttribute<Node>("Is Enabled");
+            var builder = new ChangeNodeAttributesActionBuilder(buffer, scene, new[] { node, child }, attribute);
+            node.SetName("New Parent");
+            child.SetName("New Child");
+            node.SetEnabled(false);
+            var action = builder.Build();
+
+            Assert.NotNull(action);
+            action.Undo();
+            var oldNode = Assert.IsType<Node>(scene.GetNode(100));
+            Assert.Equal("Old Parent", oldNode.Name);
+            Assert.True(oldNode.IsEnabled);
+            Assert.Equal("Old Child", Assert.IsType<Node>(scene.GetNode(101)).Name);
+            action.Redo();
+            var newNode = Assert.IsType<Node>(scene.GetNode(100));
+            Assert.Equal("New Parent", newNode.Name);
+            Assert.False(newNode.IsEnabled);
+            Assert.Equal("New Child", Assert.IsType<Node>(scene.GetNode(101)).Name);
+        }
+        finally
+        {
+            reflection.SetScopeHint(oldScopeHint);
+        }
+    }
+
+    [Fact]
+    public void Change_node_attributes_builder_undoes_and_redoes_scene_scope_change()
+    {
+        var reflection = Context.Instance.GetReflection<Camera>();
+        var oldScopeHint = reflection.ScopeHint;
+        reflection.SetScopeHint(AttributeScopeHint.Scene);
+        try
+        {
+            using var scene = new Scene();
+            var node = scene.CreateChild("Node", 100);
+            node.CreateComponent<Camera>(200);
+            var existing = scene.CreateChild("Old", 101);
+            using var buffer = new ChangeAttributeBuffer();
+            var attribute = Context.Instance.GetAttribute<Node>("Is Enabled");
+            var builder = new ChangeNodeAttributesActionBuilder(buffer, scene, new[] { node }, attribute);
+            node.SetEnabled(false);
+            existing.SetName("New");
+            var action = builder.Build();
+
+            Assert.NotNull(action);
+            action.Undo();
+            Assert.True(Assert.IsType<Node>(scene.GetNode(100)).IsEnabled);
+            Assert.Equal("Old", Assert.IsType<Node>(scene.GetNode(101)).Name);
+            action.Redo();
+            Assert.False(Assert.IsType<Node>(scene.GetNode(100)).IsEnabled);
+            Assert.Equal("New", Assert.IsType<Node>(scene.GetNode(101)).Name);
+        }
+        finally
+        {
+            reflection.SetScopeHint(oldScopeHint);
+        }
+    }
 }
