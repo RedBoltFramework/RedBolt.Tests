@@ -331,6 +331,95 @@ public sealed class CommonEditorActionsTests
         Assert.False(action.MergeWith(differentScene));
     }
 
+    [Fact]
+    public void Change_component_attributes_action_undoes_and_redoes_values_for_all_components()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Node");
+        var first = node.CreateComponent<Camera>();
+        var second = node.CreateComponent<Camera>();
+        first.Fov = 60.0f;
+        second.Fov = 70.0f;
+        using var oldValues = new VariantVector { new(40.0f), new(50.0f) };
+        using var newValues = new VariantVector { new(60.0f), new(70.0f) };
+        var action = new ChangeComponentAttributesAction(
+            scene, "FOV", new Component[] { first, second }, oldValues, newValues);
+        oldValues.Clear();
+        newValues.Clear();
+
+        action.Undo();
+        Assert.Equal(40.0f, first.Fov);
+        Assert.Equal(50.0f, second.Fov);
+
+        action.Redo();
+        Assert.Equal(60.0f, first.Fov);
+        Assert.Equal(70.0f, second.Fov);
+    }
+
+    [Fact]
+    public void Change_component_attributes_action_requires_every_component_to_exist()
+    {
+        using var scene = new Scene();
+        var node = scene.CreateChild("Node");
+        var first = node.CreateComponent<Camera>();
+        var second = node.CreateComponent<Camera>();
+        using var oldValues = new VariantVector { new(40.0f), new(50.0f) };
+        using var newValues = new VariantVector { new(60.0f), new(70.0f) };
+        var action = new ChangeComponentAttributesAction(
+            scene, "FOV", new Component[] { first, second }, oldValues, newValues);
+
+        Assert.True(action.CanUndoRedo());
+        second.Remove();
+        Assert.False(action.CanUndoRedo());
+
+        action.Undo();
+        Assert.Equal(40.0f, first.Fov);
+    }
+
+    [Fact]
+    public void Change_component_attributes_action_merges_latest_values_for_same_components()
+    {
+        using var scene = new Scene();
+        var camera = scene.CreateChild("Node").CreateComponent<Camera>();
+        using var oldValues = new VariantVector { new(40.0f) };
+        using var intermediateValues = new VariantVector { new(50.0f) };
+        using var newestValues = new VariantVector { new(60.0f) };
+        var action = new ChangeComponentAttributesAction(
+            scene, "FOV", new Component[] { camera }, oldValues, intermediateValues);
+        var other = new ChangeComponentAttributesAction(
+            scene, "FOV", new Component[] { camera }, intermediateValues, newestValues);
+
+        Assert.True(action.MergeWith(other));
+        newestValues.Clear();
+        action.Undo();
+        Assert.Equal(40.0f, camera.Fov);
+        action.Redo();
+        Assert.Equal(60.0f, camera.Fov);
+    }
+
+    [Fact]
+    public void Change_component_attributes_action_rejects_other_type_scene_or_component_order()
+    {
+        using var scene = new Scene();
+        using var otherScene = new Scene();
+        var node = scene.CreateChild("Node");
+        var first = node.CreateComponent<Camera>();
+        var second = node.CreateComponent<Camera>();
+        var otherCamera = otherScene.CreateChild("Other").CreateComponent<Camera>();
+        using var values = new VariantVector { new(50.0f), new(50.0f) };
+        using var oneValue = new VariantVector { new(50.0f) };
+        var action = new ChangeComponentAttributesAction(
+            scene, "FOV", new Component[] { first, second }, values, values);
+        var reordered = new ChangeComponentAttributesAction(
+            scene, "FOV", new Component[] { second, first }, values, values);
+        var differentScene = new ChangeComponentAttributesAction(
+            otherScene, "FOV", new Component[] { otherCamera }, oneValue, oneValue);
+
+        Assert.False(action.MergeWith(new EmptyEditorAction()));
+        Assert.False(action.MergeWith(reordered));
+        Assert.False(action.MergeWith(differentScene));
+    }
+
     private sealed class RecordingEditorAction : EditorAction
     {
         private readonly string _name;
