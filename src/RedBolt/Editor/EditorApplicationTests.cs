@@ -91,6 +91,36 @@ public sealed class EditorApplicationTests
         }
     }
 
+    [Fact]
+    public void Setup_detects_nearest_resource_prefix_and_command_line_can_override_it()
+    {
+        var rootPath = Path.Combine(
+            Path.GetTempPath(), "RedBolt.EditorPrefixTests", Guid.NewGuid().ToString("N"));
+        var workingPath = Path.Combine(rootPath, "Nested", "Working");
+        var originalWorkingDirectory = Environment.CurrentDirectory;
+        Directory.CreateDirectory(Path.Combine(rootPath, "CoreData"));
+        Directory.CreateDirectory(workingPath);
+        try
+        {
+            using var application = new TestEditorApplication();
+            Environment.CurrentDirectory = workingPath;
+            var parameters = application.Configure();
+
+            Assert.Equal(rootPath.Replace('\\', '/') + "/", parameters.ResourcePrefixPaths);
+
+            var parser = new CommandLineParser(parameters.ApplicationName);
+            Engine.DefineParameters(parser, parameters);
+            application.RegisterCommandLine(parser, parameters);
+            Assert.True(parser.Parse(["--prefix-paths", "ExplicitPrefix"]).IsSuccess);
+            Assert.Equal("ExplicitPrefix", parameters.ResourcePrefixPaths);
+        }
+        finally
+        {
+            Environment.CurrentDirectory = originalWorkingDirectory;
+            Directory.Delete(rootPath, true);
+        }
+    }
+
     [GraphicsFact]
     public void Runtime_initializes_editor_ui_and_exits_cleanly_with_software_graphics()
     {
