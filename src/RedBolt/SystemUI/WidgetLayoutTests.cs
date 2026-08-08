@@ -75,6 +75,12 @@ public sealed class WidgetLayoutTests
             AssertClose(buttonSize, renderedButtonSize.X);
             AssertClose(buttonSize, renderedButtonSize.Y);
             Assert.Equal(originalButtonColor, ImGui.GetStyleColorVec4(ImGuiCol.ImGuiColButton));
+
+            var separatorStart = ImGui.GetCursorScreenPos();
+            using var style = ImGui.GetStyle();
+            var separatorWidth = style.FramePadding.X;
+            Widgets.ToolbarSeparator();
+            AssertClose(separatorStart.X + separatorWidth, ImGui.GetCursorScreenPos().X);
         }
         finally
         {
