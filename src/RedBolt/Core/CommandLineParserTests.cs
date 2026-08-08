@@ -58,6 +58,42 @@ public sealed class CommandLineParserTests
     }
 
     [Fact]
+    public void Parse_applies_optional_positional_arguments_in_registration_order()
+    {
+        var parser = new CommandLineParser("RedBolt.Editor");
+        var project = string.Empty;
+        var command = string.Empty;
+
+        parser.AddPositional("project", "Project to open or create on startup.", value => project = value);
+        parser.AddPositional("command", "Command to execute.", value => command = value);
+
+        Assert.True(parser.Parse([]).IsSuccess);
+        Assert.True(parser.Parse(["Data/Project", "Build"]).IsSuccess);
+        Assert.Equal("Data/Project", project);
+        Assert.Equal("Build", command);
+        Assert.Equal(
+            "Unexpected positional argument 'extra'.",
+            parser.Parse(["Data/Project", "Build", "extra"]).ErrorMessage);
+    }
+
+    [Fact]
+    public void Positional_arguments_are_listed_in_usage_and_report_action_errors()
+    {
+        var parser = new CommandLineParser("RedBolt.Editor");
+        parser.AddPositional("project", "Project to open or create on startup.",
+            _ => throw new InvalidOperationException("Invalid project."));
+
+        var result = parser.Parse(["Data/Project"]);
+        var usage = parser.GetUsage();
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Invalid project.", result.ErrorMessage);
+        Assert.Contains("Usage: RedBolt.Editor [options] [project]", usage);
+        Assert.Contains("Arguments:", usage);
+        Assert.Contains("project  Project to open or create on startup.", usage);
+    }
+
+    [Fact]
     public void Command_line_option_base_operations_are_safe_for_the_wrong_option_shape()
     {
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;

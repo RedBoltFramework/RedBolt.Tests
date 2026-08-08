@@ -32,6 +32,8 @@ public sealed class CoreCoverageGapTests
         Assert.Throws<ArgumentNullException>(() => parser.AddOption(null!, "value", "option", static _ => { }));
         Assert.Throws<ArgumentException>(() => parser.AddOption(["--blank-value"], " ", "option", static _ => { }));
         Assert.Throws<ArgumentNullException>(() => parser.AddOption(["--null-action"], "value", "option", null!));
+        Assert.Throws<ArgumentException>(() => parser.AddPositional(" ", "argument", static _ => { }));
+        Assert.Throws<ArgumentNullException>(() => parser.AddPositional("value", "argument", null!));
 
         var flagApplied = false;
         var optionValue = string.Empty;
