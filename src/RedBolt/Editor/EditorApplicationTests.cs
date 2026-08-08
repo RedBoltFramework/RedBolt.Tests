@@ -41,6 +41,8 @@ public sealed class EditorApplicationTests
         Assert.False(parameters.Borderless);
         Assert.True(parameters.WindowResizable);
         Assert.True(parameters.WindowMaximize);
+        Assert.Equal(0, parameters.WindowWidth);
+        Assert.Equal(0, parameters.WindowHeight);
         Assert.Equal("CoreData;EditorData", parameters.ResourcePaths);
         Assert.Equal(string.Empty, parameters.ResourceRootFile);
         Assert.False(parameters.EngineAutoLoadScripts);
@@ -147,6 +149,7 @@ public sealed class EditorApplicationTests
             Assert.True(application.HasProjectSettingsHandler);
             Assert.True(application.HasDocking);
             Assert.True(application.ScalesFontsForDpi);
+            Assert.True(application.HasUsableRenderSize);
             Assert.Equal(3.0f, application.WindowRounding);
             Assert.Equal(new Vector2f(4.0f, 4.0f), application.ItemSpacing);
             Assert.False(application.HasWorkQueue);
@@ -215,6 +218,8 @@ public sealed class EditorApplicationTests
 
         public bool ScalesFontsForDpi { get; private set; }
 
+        public bool HasUsableRenderSize { get; private set; }
+
         public float WindowRounding { get; private set; }
 
         public Vector2f ItemSpacing { get; private set; }
@@ -233,8 +238,6 @@ public sealed class EditorApplicationTests
                 Path.GetFullPath(Path.Combine(_repositoryRoot, "..", "rbfx", "bin")));
             parameters.WindowHidden = true;
             parameters.WindowMaximize = false;
-            parameters.WindowWidth = 320;
-            parameters.WindowHeight = 240;
         }
 
         protected override void Start()
@@ -245,6 +248,8 @@ public sealed class EditorApplicationTests
             HasDebugHud = Context.GetSubsystem<RedBolt.SystemUI.DebugHud>() is not null;
             HasRmlUI = Context.GetSubsystem<RedBolt.RmlUI.RmlUI>() is not null;
             HasSystemUI = Context.GetSubsystem<RedBolt.DearImGui.DearImGui>() is not null;
+            var graphics = GetSubsystem<global::RedBolt.Graphics.Graphics>();
+            HasUsableRenderSize = graphics.Width > 1 && graphics.Height > 1;
 
             using (var io = ImGui.GetIO())
             {

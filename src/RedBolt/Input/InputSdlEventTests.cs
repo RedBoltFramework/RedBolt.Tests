@@ -1,6 +1,7 @@
 namespace RedBolt.Tests;
 
 using RedBolt.Bindings.Sdl;
+using RedBolt.Graphics;
 using RedBolt.Input;
 
 [Collection(nameof(GraphicsEngineCollection))]
@@ -72,5 +73,24 @@ public sealed class InputSdlEventTests
         {
             Input.SetEnabled(true);
         }
+    }
+
+    [GraphicsFact]
+    public void Window_resize_updates_the_swap_chain_and_sends_screen_mode_event()
+    {
+        var screenModeEvents = 0;
+        using var receiver = new TestEventReceiver();
+        receiver.SubscribeToEvent<GraphicsEvents.ScreenModeEvent>(
+            (ref GraphicsEvents.ScreenModeEvent _) => ++screenModeEvents);
+
+        using var resized = new SdlEvent();
+        resized.Type = (uint)SdlEventType.SdlWindowevent;
+        resized.WindowEvent = (byte)SdlWindowEventID.SdlWindoweventResized;
+        Assert.Equal(1, SdlNativeBindings.SdlPushEvent(resized));
+
+        Input.BeginFrame();
+        Input.PollEvents();
+
+        Assert.Equal(1, screenModeEvents);
     }
 }

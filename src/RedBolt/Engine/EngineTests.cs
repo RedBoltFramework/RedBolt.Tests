@@ -105,8 +105,8 @@ public sealed class EngineTests
         Assert.Equal("{\"gpuDescriptorHeapSize_cvb_srv_uav\":32768,\"gpuDescriptorHeapDynamicSize_cvb_srv_uav\":24576}", parameters.TweakD3D12);
         Assert.Equal("{\"dynamicHeapSize\":33554432}", parameters.TweakVulkan);
         Assert.True(parameters.WindowMaximize);
-        Assert.Equal(0, parameters.WindowPositionX);
-        Assert.Equal(0, parameters.WindowPositionY);
+        Assert.Null(parameters.WindowPositionX);
+        Assert.Null(parameters.WindowPositionY);
         Assert.False(parameters.WindowHidden);
         Assert.Equal("Urho3D", parameters.WindowTitle);
         Assert.Equal(0, parameters.WindowWidth);
