@@ -37,6 +37,8 @@
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Platform/Linux/RedBolt.Platform.Linux.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/RmlUI/RedBolt.RmlUI.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Utility/RedBolt.Utility.csproj" />
+    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/UserCode/Desktop/RedBolt.UserCode.Desktop.csproj" />
+    <ProjectReference Include="src/Fixtures/UserCodePlugin/RedBolt.UserCode.TestPlugin.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Generator/Reflection/RedBolt.Generator.Reflection.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false"
@@ -63,6 +65,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="src/Fixtures/**/*.cs" />
     <Compile Remove="scripts/coverage-merge/**/*.cs" />
     <None Remove="xunit.runner.json" />
     <None Remove="src/RedBolt/**/References/**/*.png" />
