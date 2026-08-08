@@ -1,0 +1,242 @@
+namespace RedBolt.Tests;
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+
+using RedBolt.Bindings.DearImGui;
+using RedBolt.Core;
+using RedBolt.Editor;
+using RedBolt.Engine;
+using RedBolt.Math;
+using RedBolt.Resource;
+using RedBolt.RenderAPI;
+
+[Collection(nameof(ApplicationLifecycleCollection))]
+public sealed class EditorApplicationTests
+{
+    [Fact]
+    public void Setup_and_command_line_preserve_editor_defaults_and_project_argument()
+    {
+        using var application = new TestEditorApplication();
+        var parameters = application.Configure();
+        var parser = new CommandLineParser(parameters.ApplicationName);
+        application.RegisterCommandLine(parser, parameters);
+
+        var result = parser.Parse(
+        [
+            "--read-only",
+            "--single-process",
+            "--command",
+            "Idle",
+            "--exit",
+            "Projects\\Sample",
+        ]);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("TestEditorApplication", parameters.WindowTitle);
+        Assert.Equal("Editor | OpenGL", parameters.ApplicationName);
+        Assert.False(parameters.Headless);
+        Assert.False(parameters.FullScreen);
+        Assert.False(parameters.Borderless);
+        Assert.True(parameters.WindowResizable);
+        Assert.True(parameters.WindowMaximize);
+        Assert.Equal("CoreData;EditorData", parameters.ResourcePaths);
+        Assert.Equal(string.Empty, parameters.ResourceRootFile);
+        Assert.False(parameters.EngineAutoLoadScripts);
+        Assert.False(parameters.ReloadPlugins);
+        Assert.True(parameters.Profile);
+        Assert.NotEqual(0u, parameters.SystemUIFlags & (1u << 14));
+        if (!string.Equals(Environment.GetEnvironmentVariable("XDG_SESSION_TYPE"), "wayland", StringComparison.Ordinal))
+        {
+            Assert.NotEqual(0u,
+                parameters.SystemUIFlags & (uint)ImGuiConfigFlags.ImGuiConfigFlagsViewportsEnable);
+        }
+
+        Assert.True(application.IsReadOnly);
+        Assert.True(application.IsSingleProcess);
+        Assert.Equal("Idle", application.Command);
+        Assert.True(application.ExitAfterCommand);
+        Assert.Equal("Projects\\Sample", application.PendingOpenProject);
+        Assert.Contains("[project]", parser.GetUsage());
+
+        application.OpenProject("Projects\\Sample");
+        Assert.Equal("Projects/Sample/", application.PendingOpenProject);
+    }
+
+    [Fact]
+    public void Serialization_round_trips_recent_projects_and_prunes_missing_directories()
+    {
+        using var application = new TestEditorApplication();
+        var existingProject = Path.Combine(
+            Path.GetTempPath(), "RedBolt.EditorApplicationTests", Guid.NewGuid().ToString("N"));
+        var missingProject = existingProject + "-missing";
+        Directory.CreateDirectory(existingProject);
+        try
+        {
+            application.RecentProjects.Add(existingProject);
+            application.RecentProjects.Add(missingProject);
+
+            using var json = new JSONFile();
+            Assert.True(json.SaveObject(application));
+
+            application.RecentProjects.Clear();
+            Assert.True(json.LoadObject(application));
+
+            Assert.Equal([existingProject], application.RecentProjects);
+        }
+        finally
+        {
+            Directory.Delete(existingProject, true);
+        }
+    }
+
+    [GraphicsFact]
+    public void Runtime_initializes_editor_ui_and_exits_cleanly_with_software_graphics()
+    {
+        var repositoryRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+        var preferencesPath = Path.Combine(
+            Path.GetTempPath(), "RedBolt.EditorApplicationRuntimeTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(preferencesPath);
+        try
+        {
+            using var application = new RuntimeEditorApplication(repositoryRoot, preferencesPath)
+            {
+                MaxFrameCount = 10,
+            };
+
+            var exitCode = application.Run([]);
+            Assert.True(exitCode == 0, application.ErrorMessage);
+            Assert.True(application.StartCalled);
+            Assert.True(application.StopCalled);
+            Assert.True(application.HasConsole);
+            Assert.True(application.HasDebugHud);
+            Assert.True(application.HasRmlUI);
+            Assert.True(application.HasSystemUI);
+            Assert.True(application.HasDefaultFont);
+            Assert.True(application.HasProjectSettingsHandler);
+            Assert.True(application.HasDocking);
+            Assert.True(application.ScalesFontsForDpi);
+            Assert.Equal(3.0f, application.WindowRounding);
+            Assert.Equal(new Vector2f(4.0f, 4.0f), application.ItemSpacing);
+            Assert.False(application.HasWorkQueue);
+        }
+        finally
+        {
+            Directory.Delete(preferencesPath, true);
+        }
+    }
+
+    private sealed class TestEditorApplication : EditorApplication
+    {
+        public bool IsReadOnly => _readOnly;
+
+        public bool IsSingleProcess => _singleProcess;
+
+        public string Command => _command;
+
+        public bool ExitAfterCommand => _exitAfterCommand;
+
+        public string PendingOpenProject => _pendingOpenProject;
+
+        public List<string> RecentProjects => _recentProjects;
+
+        public EngineParameters Configure()
+        {
+            var parameters = new EngineParameters();
+            Setup(parameters);
+            return parameters;
+        }
+
+        public void RegisterCommandLine(CommandLineParser parser, EngineParameters parameters)
+        {
+            SetupCommandLine(parser, parameters);
+        }
+    }
+
+    private sealed class RuntimeEditorApplication : EditorApplication
+    {
+        private readonly string _repositoryRoot;
+        private readonly string _preferencesPath;
+
+        public RuntimeEditorApplication(string repositoryRoot, string preferencesPath)
+        {
+            _repositoryRoot = repositoryRoot;
+            _preferencesPath = preferencesPath;
+        }
+
+        public bool StartCalled { get; private set; }
+
+        public bool StopCalled { get; private set; }
+
+        public bool HasConsole { get; private set; }
+
+        public bool HasDebugHud { get; private set; }
+
+        public bool HasRmlUI { get; private set; }
+
+        public bool HasSystemUI { get; private set; }
+
+        public bool HasDefaultFont { get; private set; }
+
+        public bool HasProjectSettingsHandler { get; private set; }
+
+        public bool HasDocking { get; private set; }
+
+        public bool ScalesFontsForDpi { get; private set; }
+
+        public float WindowRounding { get; private set; }
+
+        public Vector2f ItemSpacing { get; private set; }
+
+        public bool HasWorkQueue => Context.GetSubsystem<WorkQueue>() is not null;
+
+        protected override void Setup(EngineParameters parameters)
+        {
+            base.Setup(parameters);
+            parameters.ApplicationPreferencesDir = _preferencesPath + Path.DirectorySeparatorChar;
+            parameters.LogName = string.Empty;
+            parameters.LogQuiet = true;
+            parameters.RenderBackend = RenderBackend.OpenGL;
+            parameters.ResourcePrefixPaths = string.Join(';',
+                Path.Combine(_repositoryRoot, "bin"),
+                Path.GetFullPath(Path.Combine(_repositoryRoot, "..", "rbfx", "bin")));
+            parameters.WindowHidden = true;
+            parameters.WindowMaximize = false;
+            parameters.WindowWidth = 320;
+            parameters.WindowHeight = 240;
+        }
+
+        protected override void Start()
+        {
+            base.Start();
+            StartCalled = true;
+            HasConsole = Context.GetSubsystem<RedBolt.SystemUI.Console>() is not null;
+            HasDebugHud = Context.GetSubsystem<RedBolt.SystemUI.DebugHud>() is not null;
+            HasRmlUI = Context.GetSubsystem<RedBolt.RmlUI.RmlUI>() is not null;
+            HasSystemUI = Context.GetSubsystem<RedBolt.DearImGui.DearImGui>() is not null;
+
+            using (var io = ImGui.GetIO())
+            {
+                HasDefaultFont = !io.FontDefault.IsNull;
+                HasDocking = (io.ConfigFlags & ImGuiConfigFlags.ImGuiConfigFlagsDockingEnable) != 0;
+                ScalesFontsForDpi = io.ConfigDpiScaleFonts;
+            }
+            using (var style = ImGui.GetStyle())
+            {
+                WindowRounding = style.WindowRounding;
+                ItemSpacing = style.ItemSpacing;
+            }
+            using (var handler = ImGui.FindSettingsHandler("Project"u8))
+                HasProjectSettingsHandler = !handler.IsNull;
+
+            SendEvent<RedBolt.Input.InputEvents.ExitRequestedEvent>();
+        }
+
+        protected override void Stop()
+        {
+            base.Stop();
+            StopCalled = true;
+        }
+    }
+}
