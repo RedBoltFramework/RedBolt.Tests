@@ -43,6 +43,14 @@ public sealed class DearImGuiFontTests
             Assert.Equal(initialSources + 2, GetFontSourceCount());
             Assert.True(IsFontAtlasBuilt());
 
+            using var baked = font.GetFontBaked(16.0f);
+            using var glyph = baked.FindGlyph('W');
+            using var glyphRect = new ImFontAtlasRect();
+            using var io = ImGui.GetIO();
+            using var atlas = io.Fonts;
+            Assert.True(atlas.GetCustomRect(glyph.PackId, glyphRect));
+            Assert.True(glyphRect.W > (glyph.X1 - glyph.X0) * 1.5f);
+
             Assert.Null(systemUI.AddFont("Fonts/DoesNotExist.ttf", ranges));
             Assert.Equal(initialSources + 2, GetFontSourceCount());
         }
