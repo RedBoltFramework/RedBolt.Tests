@@ -39,6 +39,15 @@ public sealed class PlatformLifecycleTests
         Assert.False(application.StopCalled);
     }
 
+    [Fact]
+    public void Desktop_application_is_not_terminated_after_10000_frames()
+    {
+        using var application = new LongRunningApplication();
+
+        Assert.Equal(0, application.Run([]));
+        Assert.Equal(10_001, application.UpdateCount);
+    }
+
     private sealed class LifecycleApplication : Application
     {
         public List<string> Events { get; } = [];
@@ -127,6 +136,25 @@ public sealed class PlatformLifecycleTests
         protected override void Stop()
         {
             StopCalled = true;
+        }
+    }
+
+    private sealed class LongRunningApplication : Application
+    {
+        public int UpdateCount { get; private set; }
+
+        protected override void Setup(EngineParameters parameters)
+        {
+            parameters.ApplicationName = "RedBolt.Tests.PlatformLongRunning";
+            parameters.EngineCliParameters = false;
+            parameters.FrameLimiter = false;
+            parameters.Headless = true;
+        }
+
+        protected override void Update(float timeStep)
+        {
+            if (++UpdateCount == 10_001)
+                Exit();
         }
     }
 }

@@ -168,10 +168,7 @@ public sealed class EditorApplicationTests
         Directory.CreateDirectory(preferencesPath);
         try
         {
-            using var application = new RuntimeEditorApplication(repositoryRoot, preferencesPath)
-            {
-                MaxFrameCount = 10,
-            };
+            using var application = new RuntimeEditorApplication(repositoryRoot, preferencesPath);
 
             var exitCode = application.Run([]);
             Assert.True(exitCode == 0, application.ErrorMessage);
@@ -189,6 +186,7 @@ public sealed class EditorApplicationTests
             Assert.Equal(3.0f, application.WindowRounding);
             Assert.Equal(new Vector2f(4.0f, 4.0f), application.ItemSpacing);
             Assert.False(application.HasWorkQueue);
+            Assert.False(application.ReadUninitializedTextureWarning);
         }
         finally
         {
@@ -211,10 +209,7 @@ public sealed class EditorApplicationTests
         File.WriteAllText(Path.Combine(firstProjectPath, "Project.json"), "{}");
         try
         {
-            using var application = new RuntimeEditorApplication(repositoryRoot, preferencesPath, droppedProjectPath)
-            {
-                MaxFrameCount = 300,
-            };
+            using var application = new RuntimeEditorApplication(repositoryRoot, preferencesPath, droppedProjectPath);
 
             var exitCode = application.Run([firstProjectPath]);
             Assert.True(exitCode == 0, application.ErrorMessage);
@@ -266,6 +261,7 @@ public sealed class EditorApplicationTests
         private readonly string _preferencesPath;
         private readonly string? _droppedProjectPath;
         private TestEventReceiver? _dropObserver;
+        private TestEventReceiver? _logObserver;
         private bool _dropScheduled;
 
         public RuntimeEditorApplication(string repositoryRoot, string preferencesPath, string? droppedProjectPath = null)
@@ -299,6 +295,8 @@ public sealed class EditorApplicationTests
 
         public bool DroppedProjectOpened { get; private set; }
 
+        public bool ReadUninitializedTextureWarning { get; private set; }
+
         public float WindowRounding { get; private set; }
 
         public Vector2f ItemSpacing { get; private set; }
@@ -315,6 +313,7 @@ public sealed class EditorApplicationTests
             parameters.ResourcePrefixPaths = string.Join(';',
                 Path.Combine(_repositoryRoot, "bin"),
                 Path.GetFullPath(Path.Combine(_repositoryRoot, "..", "rbfx", "bin")));
+            parameters.TimeOut = _droppedProjectPath is null ? 0 : 10;
             parameters.WindowHidden = true;
             parameters.WindowMaximize = false;
         }
@@ -322,6 +321,8 @@ public sealed class EditorApplicationTests
         protected override void Start()
         {
             base.Start();
+            _logObserver = new TestEventReceiver();
+            _logObserver.SubscribeToEvent<RedBolt.IO.IOEvents.LogMessage>(ObserveLogMessage);
             StartCalled = true;
             HasConsole = Context.GetSubsystem<RedBolt.SystemUI.Console>() is not null;
             HasDebugHud = Context.GetSubsystem<RedBolt.SystemUI.DebugHud>() is not null;
@@ -377,10 +378,17 @@ public sealed class EditorApplicationTests
             SendEvent(ref eventData);
         }
 
+        private void ObserveLogMessage(ref RedBolt.IO.IOEvents.LogMessage eventData)
+        {
+            ReadUninitializedTextureWarning |= eventData.Message.Contains(
+                "RawTexture::Read is ignored for uninitialized texture", StringComparison.Ordinal);
+        }
+
         protected override void Stop()
         {
             _dropObserver?.Dispose();
             base.Stop();
+            _logObserver?.Dispose();
             StopCalled = true;
         }
     }
