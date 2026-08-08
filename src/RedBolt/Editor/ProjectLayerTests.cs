@@ -4,7 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Text;
 
+using RedBolt.Bindings.DearImGui;
 using RedBolt.Container;
 using RedBolt.Core;
 using RedBolt.Editor.Assets;
@@ -90,6 +93,93 @@ public sealed class ProjectLayerTests
             project.IgnoreFileNamePattern("Temp/?a*.tmp");
             Assert.True(project.IsFileNameIgnored("Temp/value.tmp"));
             Assert.False(project.IsFileNameIgnored("Temp/a.tmp"));
+        });
+    }
+
+    [NativeBindingFact]
+    public void Project_reset_layout_docks_tabs_and_opens_defaults()
+    {
+        WithProject((project, _) =>
+        {
+            var context = ImGui.CreateContext();
+            var frameStarted = false;
+            try
+            {
+                ImGui.SetCurrentContext(context);
+                using (var io = ImGui.GetIO())
+                {
+                    io.DisplaySize = new Vector2f(1000.0f, 800.0f);
+                    io.DeltaTime = 1.0f / 60.0f;
+                    io.ConfigFlags |= ImGuiConfigFlags.ImGuiConfigFlagsDockingEnable;
+                    io.BackendFlags |= ImGuiBackendFlags.ImGuiBackendFlagsRendererHasTextures;
+                }
+
+                ImGui.NewFrame();
+                frameStarted = true;
+
+                var dockspaceId = ImGui.GetID("Project dockspace test"u8);
+                ImGui.DockSpace(dockspaceId);
+                typeof(Project).GetField("_dockspaceId", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .SetValue(project, dockspaceId);
+
+                var tabs = (List<EditorTab>)typeof(Project)
+                    .GetField("_tabs", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .GetValue(project)!;
+                var center = AddTab(tabs, "Center", EditorTabPlacement.DockCenter);
+                var left = AddTab(tabs, "Left", EditorTabPlacement.DockLeft);
+                var right = AddTab(tabs, "Right", EditorTabPlacement.DockRight);
+                var bottom = AddTab(tabs, "Bottom", EditorTabPlacement.DockBottom);
+                var closed = new EditorTab(
+                    "Closed", "ProjectLayerTests.Closed", EditorTabFlag.None, EditorTabPlacement.Floating);
+                tabs.Add(closed);
+
+                typeof(Project).GetMethod("ResetLayout", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(project, null);
+
+                center.Render();
+                left.Render();
+                right.Render();
+                bottom.Render();
+                closed.Render();
+
+                Assert.True(center.IsOpen);
+                Assert.True(left.IsOpen);
+                Assert.True(right.IsOpen);
+                Assert.True(bottom.IsOpen);
+                Assert.False(closed.IsOpen);
+
+                using var rootNode = ImGui.DockBuilderGetNode(dockspaceId);
+                using var centerWindow = FindWindow(center);
+                using var leftWindow = FindWindow(left);
+                using var rightWindow = FindWindow(right);
+                using var bottomWindow = FindWindow(bottom);
+                using var closedWindow = FindWindow(closed);
+                using var centerNode = ImGui.DockBuilderGetNode(centerWindow.DockId);
+                using var leftNode = ImGui.DockBuilderGetNode(leftWindow.DockId);
+                using var rightNode = ImGui.DockBuilderGetNode(rightWindow.DockId);
+                using var bottomNode = ImGui.DockBuilderGetNode(bottomWindow.DockId);
+
+                Assert.False(rootNode.IsNull);
+                Assert.True(rootNode.IsSplitNode());
+                Assert.Equal(new Vector2f(1000.0f, 800.0f), rootNode.Size);
+                Assert.Equal(4, new[]
+                {
+                    centerWindow.DockId,
+                    leftWindow.DockId,
+                    rightWindow.DockId,
+                    bottomWindow.DockId,
+                }.Distinct().Count());
+                Assert.True(leftNode.Rect().Max.X <= centerNode.Rect().Min.X);
+                Assert.True(rightNode.Rect().Min.X >= centerNode.Rect().Max.X);
+                Assert.True(bottomNode.Rect().Min.Y >= centerNode.Rect().Max.Y);
+                Assert.True(closedWindow.IsNull);
+            }
+            finally
+            {
+                if (frameStarted)
+                    ImGui.EndFrame();
+                ImGui.DestroyContext(context);
+            }
         });
     }
 
@@ -296,6 +386,17 @@ public sealed class ProjectLayerTests
         using var jsonValue = new JSONValue(value);
         file.Root.Set("value", jsonValue);
     }
+
+    private static EditorTab AddTab(List<EditorTab> tabs, string title, EditorTabPlacement placement)
+    {
+        var tab = new EditorTab(
+            title, $"ProjectLayerTests.{title}", EditorTabFlag.OpenByDefault, placement);
+        tabs.Add(tab);
+        return tab;
+    }
+
+    private static ImGuiWindow FindWindow(EditorTab tab) =>
+        ImGui.FindWindowByName(Encoding.UTF8.GetBytes(tab.UniqueId));
 
     private sealed class TestResourceTab()
         : ResourceEditorTab("Resources", "ProjectLayerTests", EditorTabFlag.None, EditorTabPlacement.Floating)
