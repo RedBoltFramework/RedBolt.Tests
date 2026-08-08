@@ -49,7 +49,7 @@ public sealed class DearImGuiFontTests
             using var io = ImGui.GetIO();
             using var atlas = io.Fonts;
             Assert.True(atlas.GetCustomRect(glyph.PackId, glyphRect));
-            Assert.True(glyphRect.W > (glyph.X1 - glyph.X0) * 1.5f);
+            Assert.InRange(MathF.Abs(glyphRect.W - (glyph.X1 - glyph.X0)), 0.0f, 0.001f);
 
             Assert.Null(systemUI.AddFont("Fonts/DoesNotExist.ttf", ranges));
             Assert.Equal(initialSources + 2, GetFontSourceCount());
