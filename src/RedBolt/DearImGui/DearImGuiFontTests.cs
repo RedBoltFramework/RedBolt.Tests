@@ -1,5 +1,6 @@
 namespace RedBolt.Tests;
 
+using System.Runtime.InteropServices;
 using System.Text;
 
 using RedBolt.Bindings.DearImGui;
@@ -26,6 +27,7 @@ public sealed class DearImGuiFontTests
             systemUI = new DearImGuiSubsystem();
             _fixture.Context.RegisterSubsystem(systemUI);
 
+            Assert.Equal("HarfBuzz", GetFontLoaderName());
             var initialSources = GetFontSourceCount();
 
             ushort[] ranges = [0x20, 0x7e, 0];
@@ -59,6 +61,13 @@ public sealed class DearImGuiFontTests
         using var io = ImGui.GetIO();
         using var atlas = io.Fonts;
         return atlas.SourcesSize;
+    }
+
+    private static string? GetFontLoaderName()
+    {
+        using var io = ImGui.GetIO();
+        using var atlas = io.Fonts;
+        return Marshal.PtrToStringUTF8(atlas.FontLoaderName);
     }
 
     private static bool IsFontAtlasBuilt()
