@@ -5,18 +5,18 @@ using RedBolt.Math;
 using RedBolt.Resource;
 using RedBolt.Scene;
 
-[Collection(nameof(HeadlessEngineCollection))]
+[Collection(nameof(GraphicsEngineCollection))]
 public sealed class Text3DTests
 {
-    private readonly HeadlessEngineFixture _fixture;
+    private readonly GraphicsEngineFixture _fixture;
 
-    public Text3DTests(HeadlessEngineFixture fixture)
+    public Text3DTests(GraphicsEngineFixture fixture)
     {
         _fixture = fixture;
     }
 
-    [Fact]
-    public void HarfBuzz_font_builds_text_geometry()
+    [GraphicsFact]
+    public void Ttf_font_preserves_codepoint_layout_and_builds_gpu_geometry()
     {
         var font = _fixture.Resources.Get<Font>("Fonts/Anonymous Pro.ttf");
         using var scene = new Scene();
@@ -32,7 +32,16 @@ public sealed class Text3DTests
         Assert.Equal(1, text.GetNumRows());
         Assert.True(text.GetRowWidth(0) > 0);
         Assert.Equal(48u, text.GetNumVertices(0));
-        Assert.NotNull(text.GetMaterial());
+        var material = text.GetMaterial();
+        Assert.NotNull(material);
+        Assert.Equal("HarfBuzzGpuText", material.GetTechnique(0)!.GetPass("alpha")!.PixelShader);
+        Assert.All(text.GetVertices()[0], static vertex =>
+        {
+            Assert.True(MathF.Floor(vertex.TexCoord.X) >= 2.0f);
+            Assert.True(MathF.Floor(vertex.TexCoord.Y) >= 2.0f);
+            Assert.InRange(vertex.TexCoord.X - MathF.Floor(vertex.TexCoord.X), 0.125f, 0.875f);
+            Assert.InRange(vertex.TexCoord.Y - MathF.Floor(vertex.TexCoord.Y), 0.125f, 0.875f);
+        });
         Assert.True(text.GetBoundingBox().Defined);
     }
 

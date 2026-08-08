@@ -53,24 +53,24 @@ public sealed class VisualRegressionTerrainTextTests
     }
 
     [VisualFact]
-    public void Text3d_bitmap_sdf_alignment_wrap_and_corner_colors_render()
+    public void Text3d_harfbuzz_gpu_sdf_alignment_wrap_and_corner_colors_render()
     {
         using var fixture = new VisualRegressionFixture(256, 192);
         using var scene = VisualRegressionSceneFactory.CreateScene(Color.Black);
 
-        var bitmapNode = scene.CreateChild("BitmapText");
-        bitmapNode.SetPosition(new Vector3f(-1.8f, 1.0f, 0.0f));
-        bitmapNode.SetScale(1.2f);
-        var bitmap = bitmapNode.CreateComponent<Text3D>();
-        bitmap.SetFont(fixture.Resources.Get<Font>("Fonts/Anonymous Pro.ttf"), 42.0f);
-        bitmap.SetText("Bitmap\nwrap");
-        bitmap.SetWidth(190);
-        bitmap.SetWordwrap(true);
-        bitmap.SetAlignment(HorizontalAlignment.Left, VerticalAlignment.Top);
-        bitmap.SetColor(Corner.TopLeft, Color.Red);
-        bitmap.SetColor(Corner.TopRight, Color.Yellow);
-        bitmap.SetColor(Corner.BottomLeft, Color.Cyan);
-        bitmap.SetColor(Corner.BottomRight, Color.White);
+        var gpuNode = scene.CreateChild("GpuText");
+        gpuNode.SetPosition(new Vector3f(-1.8f, 1.0f, 0.0f));
+        gpuNode.SetScale(1.2f);
+        var gpu = gpuNode.CreateComponent<Text3D>();
+        gpu.SetFont(fixture.Resources.Get<Font>("Fonts/Anonymous Pro.ttf"), 42.0f);
+        gpu.SetText("GPU ΩЖ\nwrap");
+        gpu.SetWidth(190);
+        gpu.SetWordwrap(true);
+        gpu.SetAlignment(HorizontalAlignment.Left, VerticalAlignment.Top);
+        gpu.SetColor(Corner.TopLeft, Color.Red);
+        gpu.SetColor(Corner.TopRight, Color.Yellow);
+        gpu.SetColor(Corner.BottomLeft, Color.Cyan);
+        gpu.SetColor(Corner.BottomRight, Color.White);
 
         var sdfNode = scene.CreateChild("SdfText");
         sdfNode.SetPosition(new Vector3f(-1.8f, -0.25f, 0.0f));
@@ -97,7 +97,7 @@ public sealed class VisualRegressionTerrainTextTests
     }
 
     [VisualFact]
-    public void Text3d_harfbuzz_shaping_handles_combining_marks_and_ligatures()
+    public void Text3d_codepoint_and_kerning_layout_handles_combining_marks_and_ligature_codepoints()
     {
         using var fixture = new VisualRegressionFixture(256, 128);
         using var scene = VisualRegressionSceneFactory.CreateScene(Color.Black);

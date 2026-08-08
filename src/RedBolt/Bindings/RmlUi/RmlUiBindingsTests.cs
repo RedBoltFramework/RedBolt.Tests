@@ -7,8 +7,13 @@ using RedBolt.Bindings.RmlUi;
 using RedBoltNative;
 
 [Collection(nameof(RmlUiBindingsCollection))]
-public sealed class RmlUiBindingsTests
+public sealed class RmlUiBindingsTests : IDisposable
 {
+    private readonly IDisposable _providerModule =
+        global::Std.Infrastructure.ProviderRegistry.PushModule("RedBolt.Bindings.RmlUi");
+
+    public void Dispose() => _providerModule.Dispose();
+
     [Fact]
     public void Variant_round_trips_vector_value()
     {
@@ -237,7 +242,7 @@ public sealed class RmlUiBindingsTests
     }
 
     [Fact]
-    public void HarfBuzz_font_engine_rasterizes_rml_document()
+    public void HarfBuzz_font_engine_encodes_gpu_textured_rml_document()
     {
         var originalFileInterface = RmlUiNativeBindings.GetFileInterface();
         var originalFontEngineInterface = RmlUiNativeBindings.GetFontEngineInterface();
@@ -266,7 +271,7 @@ public sealed class RmlUiBindingsTests
                     body { font-family: "Anonymous Pro"; font-size: 32px; color: white; }
                 </style>
             </head>
-            <body id="harfbuzz-document">HarfBuzz raster</body>
+            <body id="harfbuzz-document">HarfBuzz GPU</body>
             </rml>
             """);
         sourceUrl.Assign("memory://harfbuzz.rml");
@@ -338,8 +343,27 @@ public sealed class RmlUiBindingsTests
             Assert.True(context.Render());
             Assert.True(renderInterface.GeneratedTexture);
             Assert.True(renderInterface.RenderedTexturedGeometry);
-            Assert.True(renderInterface.TextureDimensions.X > 0);
-            Assert.True(renderInterface.TextureDimensions.Y > 0);
+            Assert.True(renderInterface.HasGpuAtlasSignature);
+            Assert.True(renderInterface.RenderedPackedUvs);
+            Assert.Equal(2048, renderInterface.TextureDimensions.X);
+            Assert.InRange(renderInterface.TextureDimensions.Y, 8, 512);
+            Assert.Equal(0, renderInterface.TextureDimensions.Y & (renderInterface.TextureDimensions.Y - 1));
+
+            var initialAtlasVersion = renderInterface.TextureGenerationCount;
+            using var addedGlyphSource = new Std.String();
+            using var addedGlyphUrl = new Std.String();
+            addedGlyphSource.Assign("""
+                <rml><head><style>body { font-family: "Anonymous Pro"; font-size: 32px; }</style></head>
+                <body>Previously unused glyph: Ω</body></rml>
+                """);
+            addedGlyphUrl.Assign("memory://harfbuzz-added-glyph.rml");
+            using var addedGlyphDocument = context.LoadDocumentFromMemory(addedGlyphSource, addedGlyphUrl);
+            Assert.NotNull(addedGlyphDocument);
+            addedGlyphDocument.Show();
+            Assert.True(context.Update());
+            Assert.True(context.Render());
+            Assert.True(renderInterface.TextureGenerationCount > initialAtlasVersion);
+            addedGlyphDocument.Close();
 
             document.Close();
             document.Dispose();
@@ -489,13 +513,30 @@ public sealed class RmlUiBindingsTests
 
         public bool RenderedTexturedGeometry { get; private set; }
 
+        public bool RenderedPackedUvs { get; private set; }
+
+        public bool HasGpuAtlasSignature { get; private set; }
+
+        public int TextureGenerationCount { get; private set; }
+
         public RmlUiLegacyVector2i TextureDimensions { get; private set; }
 
-        public override void RenderGeometry(
+        public override unsafe void RenderGeometry(
             nint vertices, int numVertices, nint indices, int numIndices, nuint texture, nint translation)
         {
             if (vertices != 0 && numVertices > 0 && indices != 0 && numIndices > 0 && texture != 0)
+            {
                 RenderedTexturedGeometry = true;
+                var sourceVertices = new ReadOnlySpan<RmlUiLegacyVertex>((void*)vertices, numVertices);
+                foreach (var vertex in sourceVertices)
+                {
+                    if (MathF.Floor(vertex.TexCoord.X) >= 2.0f && MathF.Floor(vertex.TexCoord.Y) >= 2.0f)
+                    {
+                        RenderedPackedUvs = true;
+                        break;
+                    }
+                }
+            }
         }
 
         public override void EnableScissorRegion(bool enable)
@@ -511,8 +552,21 @@ public sealed class RmlUiBindingsTests
             if (textureHandle == 0 || source == 0 || sourceDimensions == 0)
                 return false;
             TextureDimensions = *(RmlUiLegacyVector2i*)sourceDimensions;
+            var sourceLength = checked(TextureDimensions.X * TextureDimensions.Y * 4);
+            var sourceData = new ReadOnlySpan<byte>((void*)source, sourceLength);
+            ReadOnlySpan<byte> transportSignature =
+                [(byte)'R', (byte)'B', (byte)'H', 0xff, (byte)'B', (byte)'G', (byte)'P', 0xff,
+                    (byte)'U', (byte)'1', 0, 0xff];
+            if (TextureDimensions.X == 2048 && sourceData.StartsWith(transportSignature))
+            {
+                Span<byte> decodedSignature = stackalloc byte[8];
+                for (var index = 0; index < decodedSignature.Length; ++index)
+                    decodedSignature[index] = sourceData[transportSignature.Length + (index / 3) * 4 + index % 3];
+                HasGpuAtlasSignature |= decodedSignature.SequenceEqual("RBHBGPU1"u8);
+            }
             *(nuint*)textureHandle = 1;
             GeneratedTexture = true;
+            ++TextureGenerationCount;
             return true;
         }
     }

@@ -188,6 +188,32 @@ internal sealed class VisualRegressionFixture : IDisposable
 
     public void RenderFrameForVisualTest() => RenderFrame();
 
+    public VisualRegressionImage CaptureBackBuffer(Action renderFrame, Color? clearColor = null,
+        int warmupFrames = 2)
+    {
+        ArgumentNullException.ThrowIfNull(renderFrame);
+        if (warmupFrames < 0)
+            throw new ArgumentOutOfRangeException(nameof(warmupFrames));
+
+        for (var i = 0; i <= warmupFrames; ++i)
+        {
+            Assert.True(Graphics.BeginFrame());
+            try
+            {
+                var renderContext = _engineFixture.RenderContext;
+                renderContext.SetSwapChainRenderTargets();
+                renderContext.SetFullViewport();
+                renderContext.ClearRenderTarget(0, clearColor ?? Color.Black);
+                renderFrame();
+            }
+            finally
+            {
+                Graphics.EndFrame();
+            }
+        }
+        return TakeScreenShot();
+    }
+
     public VisualRegressionImage ReadTextureImage(Texture2D texture)
     {
         ArgumentNullException.ThrowIfNull(texture);

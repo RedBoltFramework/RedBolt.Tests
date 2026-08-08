@@ -27,7 +27,7 @@ public sealed class DearImGuiFontTests
             systemUI = new DearImGuiSubsystem();
             _fixture.Context.RegisterSubsystem(systemUI);
 
-            Assert.Equal("HarfBuzz", GetFontLoaderName());
+            Assert.Equal("HarfBuzz GPU", GetFontLoaderName());
             var initialSources = GetFontSourceCount();
 
             ushort[] ranges = [0x20, 0x7e, 0];
@@ -45,11 +45,17 @@ public sealed class DearImGuiFontTests
 
             using var baked = font.GetFontBaked(16.0f);
             using var glyph = baked.FindGlyph('W');
-            using var glyphRect = new ImFontAtlasRect();
             using var io = ImGui.GetIO();
             using var atlas = io.Fonts;
-            Assert.True(atlas.GetCustomRect(glyph.PackId, glyphRect));
-            Assert.InRange(MathF.Abs(glyphRect.W - (glyph.X1 - glyph.X0)), 0.0f, 0.001f);
+            Assert.Equal(-1, glyph.PackId);
+            Assert.True(MathF.Floor(glyph.U0) >= 2.0f);
+            Assert.True(MathF.Floor(glyph.V0) >= 2.0f);
+            Assert.Equal(MathF.Floor(glyph.U0), MathF.Floor(glyph.U1));
+            Assert.Equal(MathF.Floor(glyph.V0), MathF.Floor(glyph.V1));
+            Assert.InRange(glyph.U0 - MathF.Floor(glyph.U0), 0.125f, 0.875f);
+            Assert.InRange(glyph.V0 - MathF.Floor(glyph.V0), 0.125f, 0.875f);
+            Assert.InRange(atlas.TexUvWhitePixel.X, 0.0f, 1.0f);
+            Assert.InRange(atlas.TexUvWhitePixel.Y, 0.0f, 1.0f);
 
             Assert.Null(systemUI.AddFont("Fonts/DoesNotExist.ttf", ranges));
             Assert.Equal(initialSources + 2, GetFontSourceCount());

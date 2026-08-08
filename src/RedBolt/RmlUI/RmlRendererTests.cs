@@ -4,14 +4,18 @@ using RedBolt.Bindings.RmlUi;
 using RedBolt.RmlUI;
 
 [Collection(nameof(GraphicsEngineCollection))]
-public sealed class RmlRendererTests
+public sealed class RmlRendererTests : IDisposable
 {
     private readonly GraphicsEngineFixture _fixture;
+    private readonly IDisposable _providerModule;
 
     public RmlRendererTests(GraphicsEngineFixture fixture)
     {
         _fixture = fixture;
+        _providerModule = global::Std.Infrastructure.ProviderRegistry.PushModule("RedBolt.Bindings.RmlUi");
     }
+
+    public void Dispose() => _providerModule.Dispose();
 
     [GraphicsFact]
     public unsafe void RmlRenderer_matches_texture_callback_behavior()
@@ -29,6 +33,38 @@ public sealed class RmlRendererTests
         }
         Assert.NotEqual(0u, generatedTexture);
         renderer.ReleaseTexture(generatedTexture);
+
+        size = new RmlUiLegacyVector2i { X = 1024, Y = 8 };
+        var gpuAtlas = new byte[size.X * size.Y * 4];
+        "RBHBGPU1"u8.CopyTo(gpuAtlas);
+        nuint generatedGpuTexture = 0;
+        fixed (byte* source = gpuAtlas)
+        {
+            Assert.True(renderer.GenerateTexture(
+                (nint)(&generatedGpuTexture), (nint)source, (nint)(&size)));
+        }
+        Assert.NotEqual(0u, generatedGpuTexture);
+        renderer.ReleaseTexture(generatedGpuTexture);
+
+        size = new RmlUiLegacyVector2i { X = 2048, Y = 8 };
+        var transportedGpuAtlas = new byte[size.X * size.Y * 4];
+        ReadOnlySpan<byte> transportSignature =
+            [(byte)'R', (byte)'B', (byte)'H', 0xff, (byte)'B', (byte)'G', (byte)'P', 0xff,
+                (byte)'U', (byte)'1', 0, 0xff];
+        transportSignature.CopyTo(transportedGpuAtlas);
+        for (var alpha = 3; alpha < transportedGpuAtlas.Length; alpha += 4)
+            transportedGpuAtlas[alpha] = 0xff;
+        ReadOnlySpan<byte> atlasSignature = "RBHBGPU1"u8;
+        for (var index = 0; index < atlasSignature.Length; ++index)
+            transportedGpuAtlas[transportSignature.Length + (index / 3) * 4 + index % 3] = atlasSignature[index];
+        generatedGpuTexture = 0;
+        fixed (byte* source = transportedGpuAtlas)
+        {
+            Assert.True(renderer.GenerateTexture(
+                (nint)(&generatedGpuTexture), (nint)source, (nint)(&size)));
+        }
+        Assert.NotEqual(0u, generatedGpuTexture);
+        renderer.ReleaseTexture(generatedGpuTexture);
 
         using var path = new Std.String();
         path.Assign("Textures/Missing.png");
