@@ -51,4 +51,26 @@ public sealed class InputSdlEventTests
         Assert.Equal(1, SdlNativeBindings.SdlPushEvent(keyUp));
         Input.PollEvents();
     }
+
+    [GraphicsFact]
+    public void Disabled_input_still_completes_the_input_frame()
+    {
+        var inputEnded = false;
+        using var receiver = new TestEventReceiver();
+        receiver.SubscribeToEvent<InputEvents.InputEndEvent>(
+            (ref InputEvents.InputEndEvent _) => inputEnded = true);
+
+        Input.SetEnabled(false);
+        try
+        {
+            Input.BeginFrame();
+            Input.PollEvents();
+
+            Assert.True(inputEnded);
+        }
+        finally
+        {
+            Input.SetEnabled(true);
+        }
+    }
 }
