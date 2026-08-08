@@ -71,6 +71,9 @@ public sealed class ResourceBrowserTabTests
             initialSelection.SelectedLeftPath = "Changed outside the tab";
             Assert.Equal(string.Empty, tab.GetSelection().SelectedLeftPath);
 
+            tab.ReadIniSettings("SelectedRightPaths=");
+            Assert.Empty(tab.GetSelection().SelectedRightPaths);
+
             var folderSelection = Selection("Folder", "Folder/Nested.txt");
             tab.SetSelection(folderSelection);
             folderSelection.SelectedLeftPath = string.Empty;

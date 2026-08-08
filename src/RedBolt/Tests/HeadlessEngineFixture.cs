@@ -3,6 +3,7 @@ namespace RedBolt.Tests;
 using RedBolt;
 using RedBolt.Audio;
 using RedBolt.Core;
+using RedBolt.Editor.Core;
 using RedBolt.Engine;
 using RedBolt.Graphics;
 using RedBolt.IO;
@@ -20,6 +21,8 @@ public class HeadlessEngineFixture : IDisposable
     public HeadlessEngineFixture()
     {
         Engine = new Engine();
+        EditorPlugins = new EditorPluginManager();
+        Context.RegisterSubsystem(EditorPlugins);
         var log = Engine.GetSubsystem<Log>()!;
         log.SetQuiet(true);
         LogSink = new TestLogSink(log);
@@ -49,6 +52,8 @@ public class HeadlessEngineFixture : IDisposable
 
     public TestLogSink LogSink { get; }
 
+    public EditorPluginManager EditorPlugins { get; }
+
     public Context Context => Engine.Context;
 
     public Time Time => Engine.GetSubsystem<Time>()!;
@@ -71,6 +76,8 @@ public class HeadlessEngineFixture : IDisposable
     {
         try
         {
+            Context.RemoveSubsystem<EditorPluginManager>();
+            EditorPlugins.Dispose();
             Engine.Shutdown();
         }
         finally

@@ -75,6 +75,8 @@ public sealed class Texture2DViewTabTests
             Assert.False(tab.CanOpenResource(cubemapDescriptor));
 
             Assert.Null(GetPreview(tab));
+            tab.ReadIniSettings("ResourceNames=");
+            tab.OnProjectLoaded();
             RenderFrame(tab.RenderContent);
             Assert.Equal(0, tab.RenderTitleCount);
 
