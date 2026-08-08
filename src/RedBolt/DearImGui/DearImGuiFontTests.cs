@@ -39,6 +39,7 @@ public sealed class DearImGuiFontTests
             Assert.NotNull(mergedFont);
             Assert.Equal(16.0f, mergedFont.LegacySize);
             Assert.Equal(initialSources + 2, GetFontSourceCount());
+            Assert.True(IsFontAtlasBuilt());
 
             Assert.Null(systemUI.AddFont("Fonts/DoesNotExist.ttf", ranges));
             Assert.Equal(initialSources + 2, GetFontSourceCount());
@@ -58,5 +59,12 @@ public sealed class DearImGuiFontTests
         using var io = ImGui.GetIO();
         using var atlas = io.Fonts;
         return atlas.SourcesSize;
+    }
+
+    private static bool IsFontAtlasBuilt()
+    {
+        using var io = ImGui.GetIO();
+        using var atlas = io.Fonts;
+        return atlas.TexIsBuilt;
     }
 }
