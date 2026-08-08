@@ -94,6 +94,42 @@ public sealed class EditorApplicationTests
     }
 
     [Fact]
+    public void Dropped_project_file_project_directory_and_empty_directory_are_opened()
+    {
+        using var application = new TestEditorApplication();
+        var rootPath = Path.Combine(
+            Path.GetTempPath(), "RedBolt.EditorDropTests", Guid.NewGuid().ToString("N"));
+        var projectPath = Path.Combine(rootPath, "Project");
+        var projectFileName = Path.Combine(projectPath, "Project.json");
+        var emptyPath = Path.Combine(rootPath, "Empty");
+        var nonProjectPath = Path.Combine(rootPath, "NonProject");
+        Directory.CreateDirectory(projectPath);
+        Directory.CreateDirectory(emptyPath);
+        Directory.CreateDirectory(nonProjectPath);
+        File.WriteAllText(projectFileName, "{}");
+        File.WriteAllText(Path.Combine(nonProjectPath, "readme.txt"), string.Empty);
+        try
+        {
+            application.DropFile(projectFileName);
+            Assert.Equal(projectPath.Replace('\\', '/') + "/", application.PendingOpenProject);
+
+            application.DropFile(projectPath);
+            Assert.Equal(projectPath.Replace('\\', '/') + "/", application.PendingOpenProject);
+
+            application.DropFile(emptyPath);
+            var emptyProjectPath = emptyPath.Replace('\\', '/') + "/";
+            Assert.Equal(emptyProjectPath, application.PendingOpenProject);
+
+            application.DropFile(nonProjectPath);
+            Assert.Equal(emptyProjectPath, application.PendingOpenProject);
+        }
+        finally
+        {
+            Directory.Delete(rootPath, true);
+        }
+    }
+
+    [Fact]
     public void Setup_detects_nearest_resource_prefix_and_command_line_can_override_it()
     {
         var rootPath = Path.Combine(
@@ -160,6 +196,37 @@ public sealed class EditorApplicationTests
         }
     }
 
+    [GraphicsFact]
+    public void Runtime_drop_closes_open_project_and_creates_project_in_empty_directory()
+    {
+        var repositoryRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+        var rootPath = Path.Combine(
+            Path.GetTempPath(), "RedBolt.EditorDropRuntimeTests", Guid.NewGuid().ToString("N"));
+        var preferencesPath = Path.Combine(rootPath, "Preferences");
+        var firstProjectPath = Path.Combine(rootPath, "First");
+        var droppedProjectPath = Path.Combine(rootPath, "Dropped");
+        Directory.CreateDirectory(preferencesPath);
+        Directory.CreateDirectory(firstProjectPath);
+        Directory.CreateDirectory(droppedProjectPath);
+        File.WriteAllText(Path.Combine(firstProjectPath, "Project.json"), "{}");
+        try
+        {
+            using var application = new RuntimeEditorApplication(repositoryRoot, preferencesPath, droppedProjectPath)
+            {
+                MaxFrameCount = 300,
+            };
+
+            var exitCode = application.Run([firstProjectPath]);
+            Assert.True(exitCode == 0, application.ErrorMessage);
+            Assert.True(application.DroppedProjectOpened);
+            Assert.True(File.Exists(Path.Combine(droppedProjectPath, "Project.json")));
+        }
+        finally
+        {
+            Directory.Delete(rootPath, true);
+        }
+    }
+
     private sealed class TestEditorApplication : EditorApplication
     {
         public bool IsReadOnly => _readOnly;
@@ -185,17 +252,27 @@ public sealed class EditorApplicationTests
         {
             SetupCommandLine(parser, parameters);
         }
+
+        public void DropFile(string fileName)
+        {
+            var eventData = new RedBolt.Input.InputEvents.DropFileEvent { FileName = fileName };
+            OnDropFile(ref eventData);
+        }
     }
 
     private sealed class RuntimeEditorApplication : EditorApplication
     {
         private readonly string _repositoryRoot;
         private readonly string _preferencesPath;
+        private readonly string? _droppedProjectPath;
+        private TestEventReceiver? _dropObserver;
+        private bool _dropScheduled;
 
-        public RuntimeEditorApplication(string repositoryRoot, string preferencesPath)
+        public RuntimeEditorApplication(string repositoryRoot, string preferencesPath, string? droppedProjectPath = null)
         {
             _repositoryRoot = repositoryRoot;
             _preferencesPath = preferencesPath;
+            _droppedProjectPath = droppedProjectPath;
         }
 
         public bool StartCalled { get; private set; }
@@ -219,6 +296,8 @@ public sealed class EditorApplicationTests
         public bool ScalesFontsForDpi { get; private set; }
 
         public bool HasUsableRenderSize { get; private set; }
+
+        public bool DroppedProjectOpened { get; private set; }
 
         public float WindowRounding { get; private set; }
 
@@ -265,11 +344,42 @@ public sealed class EditorApplicationTests
             using (var handler = ImGui.FindSettingsHandler("Project"u8))
                 HasProjectSettingsHandler = !handler.IsNull;
 
-            SendEvent<RedBolt.Input.InputEvents.ExitRequestedEvent>();
+            if (_droppedProjectPath is null)
+                SendEvent<RedBolt.Input.InputEvents.ExitRequestedEvent>();
+            else
+            {
+                _dropObserver = new TestEventReceiver();
+                _dropObserver.SubscribeToEvent<CoreEvents.EndFrameEvent>(HandleDropProject);
+            }
+        }
+
+        private void HandleDropProject(ref CoreEvents.EndFrameEvent _)
+        {
+            if (_project is null)
+                return;
+
+            if (!_dropScheduled)
+            {
+                _dropScheduled = true;
+                _project.OnInitialized += DropProject;
+            }
+            else if (string.Equals(
+                _project.ProjectPath, _droppedProjectPath!.Replace('\\', '/') + "/", StringComparison.Ordinal))
+            {
+                DroppedProjectOpened = true;
+                SendEvent<RedBolt.Input.InputEvents.ExitRequestedEvent>();
+            }
+        }
+
+        private void DropProject(global::RedBolt.Editor.Project.Project _)
+        {
+            var eventData = new RedBolt.Input.InputEvents.DropFileEvent { FileName = _droppedProjectPath! };
+            SendEvent(ref eventData);
         }
 
         protected override void Stop()
         {
+            _dropObserver?.Dispose();
             base.Stop();
             StopCalled = true;
         }
