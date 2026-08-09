@@ -24,7 +24,7 @@ public sealed class VisualRegressionGpuTextTests
         ReadOnlySpan<ushort> iconRanges = [0xf000, 0xf8ff, 0];
         var defaultFont = systemUI.AddFont("Fonts/NotoSans-CondensedItalic.ttf", textRanges, 16.0f);
         Assert.NotNull(defaultFont);
-        var fontRoot = Path.Combine(AppContext.BaseDirectory, "..", "EditorData", "Fonts");
+        var fontRoot = Path.Combine(RbfxTestData.EditorData, "Fonts");
         Assert.NotNull(systemUI.AddFont(
             File.ReadAllBytes(Path.Combine(fontRoot, "fa-solid-900.ttf")),
             "Font Awesome", iconRanges, 16.0f, merge: true));

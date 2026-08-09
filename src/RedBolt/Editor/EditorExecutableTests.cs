@@ -6,7 +6,7 @@ using System.Diagnostics;
 public sealed class EditorExecutableTests
 {
     [Fact]
-    public void Built_editor_reports_command_line_usage_and_stages_editor_data()
+    public void Built_editor_reports_command_line_usage_and_uses_repository_editor_data()
     {
         var result = RunEditor(["--help"]);
 
@@ -15,7 +15,7 @@ public sealed class EditorExecutableTests
         Assert.Contains("--read-only", result.StandardOutput);
         Assert.Contains("[project]", result.StandardOutput);
 
-        var editorData = Path.Combine(Path.GetDirectoryName(EditorExecutable)!, "EditorData");
+        var editorData = RbfxTestData.EditorData;
         Assert.True(Directory.Exists(editorData));
         Assert.True(File.Exists(Path.Combine(editorData, "Fonts", "NotoSans-Regular.ttf")));
         Assert.True(File.Exists(Path.Combine(editorData, "Textures", "Editor", "EditorIcons.png")));
@@ -73,7 +73,8 @@ public sealed class EditorExecutableTests
     }
 
     private static string EditorExecutable { get; } = Path.GetFullPath(
-        Path.Combine(AppContext.BaseDirectory, "..", OperatingSystem.IsWindows() ? "RedBolt.Editor.exe" : "RedBolt.Editor"));
+        RbfxTestData.GetAppFile(
+            "core", "RedBolt.Editor", OperatingSystem.IsWindows() ? "RedBolt.Editor.exe" : "RedBolt.Editor"));
 
     private readonly record struct ProcessResult(int ExitCode, string StandardOutput, string StandardError);
 }

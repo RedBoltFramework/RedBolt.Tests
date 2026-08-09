@@ -79,14 +79,17 @@ public sealed class EngineTests
     }
 
     [Fact]
-    public void Engine_constructor_uses_executable_directory_and_staged_resources()
+    public void Engine_constructor_uses_executable_directory_and_repository_resources()
     {
         var executableDirectory = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
-        var resourceDirectory = Path.GetFullPath(Path.Combine(executableDirectory, ".."));
 
         Assert.Equal(executableDirectory, Directory.GetCurrentDirectory());
-        Assert.Contains(Path.Combine(resourceDirectory, "CoreData"), _fixture.Resources.GetResourceDirs());
-        Assert.Contains(Path.Combine(resourceDirectory, "Data"), _fixture.Resources.GetResourceDirs());
+        var virtualFileSystem = _fixture.Context.GetSubsystem<VirtualFileSystem>();
+        Assert.NotNull(virtualFileSystem);
+        Assert.True(virtualFileSystem!.Exists(new FileIdentifier(
+            "alias", "res:CoreData:/Techniques/BasicVColUnlitAlpha.xml")));
+        Assert.True(virtualFileSystem.Exists(new FileIdentifier(
+            "alias", "res:Data:/Scenes/SimpleScene.scene")));
     }
 
     [Fact]
@@ -334,6 +337,7 @@ public sealed class EngineTests
             {
                 ApplicationName = "RedBolt.Tests.ResourcePaths",
                 Headless = true,
+                ResourceRootFile = string.Empty,
                 ResourcePrefixPaths = resourceRoot,
                 ResourcePaths = "CoreData;Data"
             });

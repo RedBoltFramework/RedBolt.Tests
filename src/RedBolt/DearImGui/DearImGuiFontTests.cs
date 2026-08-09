@@ -41,7 +41,7 @@ public sealed class DearImGuiFontTests
             Assert.Equal(initialSources + 1, GetFontSourceCount());
 
             var iconData = File.ReadAllBytes(Path.Combine(
-                AppContext.BaseDirectory, "..", "EditorData", "Fonts", "fa-solid-900.ttf"));
+                RbfxTestData.EditorData, "Fonts", "fa-solid-900.ttf"));
             ushort[] iconRanges = [0xf015, 0xf015, 0];
             var mergedFont = systemUI.AddFont(iconData, "Font Awesome", iconRanges, merge: true);
             Assert.NotNull(mergedFont);

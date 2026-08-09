@@ -25,9 +25,6 @@
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Editor/RedBolt.Editor.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Glow/RedBolt.Glow.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Generator/Dependencies/RedBolt.Generator.Dependencies.csproj"
-                      ReferenceOutputAssembly="false"
-                      Private="false"
-                      PrivateAssets="all"
                       GlobalPropertiesToRemove="RedBoltPlatform;RedBoltNativePreset" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/IK/RedBolt.IK.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/JoltPhysics/RedBolt.JoltPhysics.csproj" />
@@ -50,6 +47,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="$(RedBoltSharpCppRoot)/src/SharpCpp.Model/SharpCpp.Model.csproj"
+                      PrivateAssets="all"
+                      AdditionalProperties="$(RedBoltSharpCppManagedProperties)" />
+    <ProjectReference Include="$(RedBoltSharpCppRoot)/src/SharpCpp.Metadata/SharpCpp.Metadata.csproj"
+                      PrivateAssets="all"
+                      AdditionalProperties="$(RedBoltSharpCppManagedProperties)" />
+    <ProjectReference Include="$(RedBoltSharpCppRoot)/src/SharpCpp.Parsing/SharpCpp.Parsing.csproj"
+                      PrivateAssets="all"
+                      AdditionalProperties="$(RedBoltSharpCppManagedProperties)" />
+    <ProjectReference Include="$(RedBoltSharpCppRoot)/src/SharpCpp.Pipeline/SharpCpp.Pipeline.csproj"
+                      PrivateAssets="all"
+                      AdditionalProperties="$(RedBoltSharpCppManagedProperties)" />
+    <ProjectReference Include="$(RedBoltSharpCppRoot)/src/SharpCpp.Rendering/SharpCpp.Rendering.csproj"
+                      PrivateAssets="all"
+                      AdditionalProperties="$(RedBoltSharpCppManagedProperties)" />
     <ProjectReference Include="$(RedBoltSharpCppRoot)/src/SharpCpp.Support/SharpCpp.Support.csproj"
                       PrivateAssets="all"
                       AdditionalProperties="$(RedBoltSharpCppManagedProperties)" />

@@ -124,11 +124,8 @@ public sealed class PackageToolTests
 
     private static PackageToolResult RunPackageToolProcess(IEnumerable<string> arguments)
     {
-        var testOutputName = new DirectoryInfo(AppContext.BaseDirectory).Name;
-        var pivotParts = testOutputName.Split('-', 4);
-        var packageToolPath = Path.GetFullPath(
-            Path.Combine(AppContext.BaseDirectory, "..", $"tools-{pivotParts[1]}-{pivotParts[2]}",
-                "RedBolt.PackageTool.dll"));
+        var packageToolPath = RbfxTestData.GetAppFile(
+            "tools", "RedBolt.PackageTool", "RedBolt.PackageTool.dll");
         var startInfo = new ProcessStartInfo("dotnet")
         {
             RedirectStandardError = true,

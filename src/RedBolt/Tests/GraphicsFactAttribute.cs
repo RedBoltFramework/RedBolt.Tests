@@ -79,7 +79,7 @@ internal static class NativeBindingCapability
                 }
             }
 
-            var nativeDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "runtimes"));
+            var nativeRoot = Path.Combine(RbfxTestData.BuildRoot, "native");
             var runtimeIds = new[]
             {
                 System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier,
@@ -94,7 +94,8 @@ internal static class NativeBindingCapability
             foreach (var runtimeId in runtimeIds.Distinct(StringComparer.OrdinalIgnoreCase))
             foreach (var libraryName in libraryNames)
             {
-                var runtimeNativeDirectory = Path.Combine(nativeDirectory, runtimeId, "native");
+                var runtimeNativeDirectory = Path.Combine(
+                    nativeRoot, runtimeId, "runtime", RbfxTestData.BuildConfiguration);
                 if (!Directory.Exists(runtimeNativeDirectory))
                     continue;
                 foreach (var candidate in Directory.EnumerateFiles(runtimeNativeDirectory, libraryName))
