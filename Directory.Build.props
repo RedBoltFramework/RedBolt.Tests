@@ -9,6 +9,9 @@
     <RedBoltIsSampleProject>false</RedBoltIsSampleProject>
     <RedBoltArtifactCategory>tests</RedBoltArtifactCategory>
     <RedBoltArtifactPivots>$(Configuration.ToLowerInvariant())-$(TargetFramework.ToLowerInvariant())</RedBoltArtifactPivots>
+    <RedBoltOutputDir>$(RedBoltOutputRoot)/tests</RedBoltOutputDir>
+    <OutputPath>$(RedBoltOutputDir)/</OutputPath>
+    <RuntimeIdentifier Condition="'$(RedBoltPlatform)' == 'linux-x64'">linux-x64</RuntimeIdentifier>
     <ArtifactsProjectName>$(RedBoltArtifactCategory)</ArtifactsProjectName>
     <ArtifactsPivots>$(RedBoltArtifactPivots)</ArtifactsPivots>
     <BaseOutputPath>$(RedBoltBuildRoot)/$(RedBoltArtifactCategory)-</BaseOutputPath>
