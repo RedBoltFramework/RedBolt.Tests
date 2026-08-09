@@ -7,8 +7,13 @@
 
   <PropertyGroup>
     <RedBoltIsSampleProject>false</RedBoltIsSampleProject>
-    <RuntimeIdentifier Condition="'$(RedBoltPlatform)' == 'linux-x64'">linux-x64</RuntimeIdentifier>
-    <RedBoltOutputDir>$(RedBoltOutputRoot)/tests</RedBoltOutputDir>
-    <OutputPath>$(RedBoltOutputDir)/</OutputPath>
+    <RedBoltArtifactCategory>tests</RedBoltArtifactCategory>
+    <RedBoltArtifactPivots>$(Configuration.ToLowerInvariant())-$(TargetFramework.ToLowerInvariant())</RedBoltArtifactPivots>
+    <ArtifactsProjectName>$(RedBoltArtifactCategory)</ArtifactsProjectName>
+    <ArtifactsPivots>$(RedBoltArtifactPivots)</ArtifactsPivots>
+    <BaseOutputPath>$(RedBoltBuildRoot)/$(RedBoltArtifactCategory)-</BaseOutputPath>
+    <PublishDir>$(RedBoltBuildRoot)/publish-$(RedBoltArtifactCategory)-$(RedBoltArtifactPivots)/</PublishDir>
+    <BaseIntermediateOutputPath>$(RedBoltBuildRoot)/obj/$(RedBoltArtifactCategory)/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
   </PropertyGroup>
 </Project>

@@ -12,7 +12,6 @@ offscreen_coverage_arguments=(
     --results-directory "$results_directory"
     --settings "$tests_root/coverage.runsettings"
     --collect:"XPlat Code Coverage"
-    -p:RedBoltKeepParentRuntimeAssemblies=true
     -p:BuildProjectReferences=false
 )
 

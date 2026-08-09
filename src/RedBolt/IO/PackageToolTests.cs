@@ -124,16 +124,16 @@ public sealed class PackageToolTests
 
     private static PackageToolResult RunPackageToolProcess(IEnumerable<string> arguments)
     {
+        var testOutputName = new DirectoryInfo(AppContext.BaseDirectory).Name;
+        var pivotParts = testOutputName.Split('-', 4);
         var packageToolPath = Path.GetFullPath(
-            Path.Combine(AppContext.BaseDirectory, "..", "tools", "RedBolt.PackageTool.dll"));
+            Path.Combine(AppContext.BaseDirectory, "..", $"tools-{pivotParts[1]}-{pivotParts[2]}",
+                "RedBolt.PackageTool.dll"));
         var startInfo = new ProcessStartInfo("dotnet")
         {
             RedirectStandardError = true,
             RedirectStandardOutput = true,
         };
-        var nativeDirectory = Path.GetFullPath(
-            Path.Combine(AppContext.BaseDirectory, "..", "runtimes", "linux-x64", "native"));
-        startInfo.Environment["LD_LIBRARY_PATH"] = nativeDirectory;
         startInfo.ArgumentList.Add(packageToolPath);
         foreach (var argument in arguments)
             startInfo.ArgumentList.Add(argument);

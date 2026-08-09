@@ -36,6 +36,10 @@
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Particles/RedBolt.Particles.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Platform/Linux/RedBolt.Platform.Linux.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/RmlUI/RedBolt.RmlUI.csproj" />
+    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Tools/PackageTool/RedBolt.PackageTool.csproj"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      PrivateAssets="all" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Utility/RedBolt.Utility.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/UserCode/Desktop/RedBolt.UserCode.Desktop.csproj" />
     <ProjectReference Include="src/Fixtures/UserCodePlugin/RedBolt.UserCode.TestPlugin.csproj" />
