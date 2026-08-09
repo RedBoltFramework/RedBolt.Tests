@@ -1,9 +1,9 @@
 namespace RedBolt.Tests;
 
 using RedBolt.Core;
-using RedBolt.JoltPhysics;
 using RedBolt.Math;
 using RedBolt.Network;
+using RedBolt.PhysicsJolt;
 using RedBolt.Replica;
 using RedBolt.Resource;
 using RedBolt.Scene;

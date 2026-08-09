@@ -5,8 +5,8 @@ using System.Reflection;
 
 using RedBolt.Bindings.Jolt;
 using RedBolt.Graphics;
-using RedBolt.JoltPhysics;
 using RedBolt.Math;
+using RedBolt.PhysicsJolt;
 using RedBolt.Scene;
 
 [Collection(nameof(HeadlessEngineCollection))]

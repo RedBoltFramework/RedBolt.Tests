@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 using RedBolt.Bindings.Diligent;
 using RedBolt.Bindings.Jolt;
-using RedBolt.JoltPhysics;
+using RedBolt.PhysicsJolt;
 
 public sealed class HandwrittenBindingsValueTests
 {

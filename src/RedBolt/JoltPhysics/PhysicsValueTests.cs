@@ -1,7 +1,7 @@
 namespace RedBolt.Tests;
 
-using RedBolt.JoltPhysics;
 using RedBolt.Math;
+using RedBolt.PhysicsJolt;
 
 public sealed class PhysicsValueTests
 {

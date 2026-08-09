@@ -1,8 +1,8 @@
 namespace RedBolt.Tests;
 
 using RedBolt.Core;
-using RedBolt.JoltPhysics;
 using RedBolt.Math;
+using RedBolt.PhysicsJolt;
 using RedBolt.Scene;
 
 [Collection(nameof(HeadlessEngineCollection))]

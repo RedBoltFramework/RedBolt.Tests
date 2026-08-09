@@ -2,8 +2,8 @@ namespace RedBolt.Tests;
 
 using RedBolt.Bindings.Jolt;
 using RedBolt.Graphics;
-using RedBolt.JoltPhysics;
 using RedBolt.Math;
+using RedBolt.PhysicsJolt;
 using RedBolt.Scene;
 using MathColor = RedBolt.Math.Color;
 

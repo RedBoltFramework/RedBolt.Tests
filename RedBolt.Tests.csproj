@@ -9,7 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Actions/RedBolt.Actions.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Audio/RedBolt.Audio.csproj" />
-    <Compile Include="$(RedBoltRoot)/src/RedBolt/RedBolt/GlobalAliases.cs"
+    <Compile Include="$(RedBoltRoot)/src/RedBolt/Core/GlobalAliases.cs"
              Link="GlobalAliases.cs"
              Visible="false" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Bindings/Diligent/RedBolt.Bindings.Diligent.csproj" />
@@ -20,7 +20,7 @@
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Bindings/RmlUi/RedBolt.Bindings.RmlUi.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Bindings/SpirVCross/RedBolt.Bindings.SpirVCross.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Bindings/SpirVTools/RedBolt.Bindings.SpirVTools.csproj" />
-    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/RedBolt/RedBolt.csproj" />
+    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Core/RedBolt.Core.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/DearImGui/RedBolt.DearImGui.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Editor/RedBolt.Editor.csproj"
                       Private="false" />
@@ -28,7 +28,7 @@
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Generator/Dependencies/RedBolt.Generator.Dependencies.csproj"
                       GlobalPropertiesToRemove="RedBoltPlatform;RedBoltNativePreset" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/IK/RedBolt.IK.csproj" />
-    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/JoltPhysics/RedBolt.JoltPhysics.csproj" />
+    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/PhysicsJolt/RedBolt.PhysicsJolt.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Navigation/RedBolt.Navigation.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Network/RedBolt.Network.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Particles/RedBolt.Particles.csproj" />
