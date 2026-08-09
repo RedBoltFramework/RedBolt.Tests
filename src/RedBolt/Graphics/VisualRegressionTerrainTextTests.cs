@@ -97,24 +97,24 @@ public sealed class VisualRegressionTerrainTextTests
     }
 
     [VisualFact]
-    public void Text3d_codepoint_and_kerning_layout_handles_combining_marks_and_ligature_codepoints()
+    public void Text3d_harfbuzz_shaping_handles_combining_marks_and_ligatures()
     {
         using var fixture = new VisualRegressionFixture(256, 128);
         using var scene = VisualRegressionSceneFactory.CreateScene(Color.Black);
         var textNode = scene.CreateChild("ShapedText");
-        textNode.SetPosition(new Vector3f(-0.35f, 0.0f, 0.0f));
+        textNode.SetPosition(new Vector3f(-1.1f, 0.2f, 0.0f));
         var text = textNode.CreateComponent<Text3D>();
-        text.SetFont(fixture.Resources.Get<Font>("Fonts/NotoSans-Condensed.ttf"), 24.0f);
-        text.SetWidth(500);
+        text.SetFont(fixture.Resources.Get<Font>("Fonts/NotoSans-CondensedItalic.ttf"), 24.0f);
         text.SetAlignment(HorizontalAlignment.Left, VerticalAlignment.Center);
-        text.SetText("Cafe\u0301  A\u0308  fi fl  ΩЖ");
+        text.SetTextAlignment(HorizontalAlignment.Left);
+        text.SetText("Cafe\u0301  A\u0308  office affine\nfi fl  ΩЖ");
 
         var camera = VisualRegressionSceneFactory.AddCamera(
             scene, new Vector3f(0.0f, 0.0f, -5.0f), Vector3f.Zero, 256.0f / 128.0f,
             orthographic: true, orthoSize: 2.5f);
         var latin = fixture.Capture(scene, camera);
 
-        text.SetText("A\u0301  e\u0308  O\u0302  fi fl");
+        text.SetText("A\u0301  e\u0308  O\u0302  efficient waffle\nfi fl");
         var alternate = fixture.Capture(scene, camera);
 
         fixture.AssertMatches(

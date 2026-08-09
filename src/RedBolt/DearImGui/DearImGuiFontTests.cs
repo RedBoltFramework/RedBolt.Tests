@@ -4,6 +4,9 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 using RedBolt.Bindings.DearImGui;
+using RedBolt.Graphics;
+using RedBolt.Input;
+using RedBolt.Math;
 
 using DearImGuiSubsystem = RedBolt.DearImGui.DearImGui;
 
@@ -37,25 +40,31 @@ public sealed class DearImGuiFontTests
             Assert.Contains("BlueHighway (16.00)", Encoding.UTF8.GetString(font.GetDebugName()));
             Assert.Equal(initialSources + 1, GetFontSourceCount());
 
-            var mergedFont = systemUI.AddFont("Fonts/BlueHighway.ttf", ranges, merge: true);
+            var iconData = File.ReadAllBytes(Path.Combine(
+                AppContext.BaseDirectory, "..", "EditorData", "Fonts", "fa-solid-900.ttf"));
+            ushort[] iconRanges = [0xf015, 0xf015, 0];
+            var mergedFont = systemUI.AddFont(iconData, "Font Awesome", iconRanges, merge: true);
             Assert.NotNull(mergedFont);
             Assert.Equal(16.0f, mergedFont.LegacySize);
             Assert.Equal(initialSources + 2, GetFontSourceCount());
             Assert.True(IsFontAtlasBuilt());
 
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
             using var baked = font.GetFontBaked(16.0f);
-            using var glyph = baked.FindGlyph('W');
-            using var io = ImGui.GetIO();
-            using var atlas = io.Fonts;
-            Assert.Equal(-1, glyph.PackId);
-            Assert.True(MathF.Floor(glyph.U0) >= 2.0f);
-            Assert.True(MathF.Floor(glyph.V0) >= 2.0f);
-            Assert.Equal(MathF.Floor(glyph.U0), MathF.Floor(glyph.U1));
-            Assert.Equal(MathF.Floor(glyph.V0), MathF.Floor(glyph.V1));
-            Assert.InRange(glyph.U0 - MathF.Floor(glyph.U0), 0.125f, 0.875f);
-            Assert.InRange(glyph.V0 - MathF.Floor(glyph.V0), 0.125f, 0.875f);
-            Assert.InRange(atlas.TexUvWhitePixel.X, 0.0f, 1.0f);
-            Assert.InRange(atlas.TexUvWhitePixel.Y, 0.0f, 1.0f);
+            using var icon = baked.FindGlyph(0xf015);
+            Assert.Equal(1u, icon.SourceIdx);
+            Assert.True(icon.AdvanceX > 0.0f);
+
+            using (var io = ImGui.GetIO())
+                io.FontDefault = font;
+            _fixture.Context.SendEvent<InputEvents.InputEndEvent>();
+            using (var drawList = ImGui.GetForegroundDrawList())
+                drawList.AddText(new Vector2f(4.0f, 4.0f), 0xffffffff, "\uf015"u8);
+            _fixture.Context.SendEvent<GraphicsEvents.EndRenderingEvent>();
+            using var drawData = ImGui.GetDrawData();
+            Assert.True(drawData.TotalVtxCount >= 4);
 
             Assert.Null(systemUI.AddFont("Fonts/DoesNotExist.ttf", ranges));
             Assert.Equal(initialSources + 2, GetFontSourceCount());

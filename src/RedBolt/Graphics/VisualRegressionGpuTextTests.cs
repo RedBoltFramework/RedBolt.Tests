@@ -20,6 +20,16 @@ public sealed class VisualRegressionGpuTextTests
         using var fixture = new VisualRegressionFixture(360, 144);
         using var systemUI = new DearImGuiSubsystem();
         fixture.EngineFixture.Context.RegisterSubsystem(systemUI);
+        ReadOnlySpan<ushort> textRanges = [0x20, 0x52f, 0];
+        ReadOnlySpan<ushort> iconRanges = [0xf000, 0xf8ff, 0];
+        var defaultFont = systemUI.AddFont("Fonts/NotoSans-CondensedItalic.ttf", textRanges, 16.0f);
+        Assert.NotNull(defaultFont);
+        var fontRoot = Path.Combine(AppContext.BaseDirectory, "..", "EditorData", "Fonts");
+        Assert.NotNull(systemUI.AddFont(
+            File.ReadAllBytes(Path.Combine(fontRoot, "fa-solid-900.ttf")),
+            "Font Awesome", iconRanges, 16.0f, merge: true));
+        using (var io = ImGui.GetIO())
+            io.FontDefault = defaultFont;
         using var customTexture = new Texture2D();
         customTexture.SetNumLevels(1);
         Assert.True(customTexture.SetSize(2, 2, TextureFormat.TexFormatRgba8Unorm));
@@ -44,7 +54,7 @@ public sealed class VisualRegressionGpuTextTests
                     | ImGuiWindowFlags.ImGuiWindowFlagsNoMove
                     | ImGuiWindowFlags.ImGuiWindowFlagsNoCollapse);
                 ImGui.TextUnformatted("Software: right | Hardware: right"u8);
-                ImGui.TextUnformatted("minimum iii | fi fl | edge"u8);
+                ImGui.TextUnformatted("office affine | fi fl | \uf015 \uf013"u8);
                 var cursor = ImGui.GetCursorScreenPos();
                 ImGui.GetWindowDrawList().AddRectFilled(
                     cursor, cursor + new Vector2f(120.0f, 12.0f), 0xffd06020);

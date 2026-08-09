@@ -45,6 +45,21 @@ public sealed class Text3DTests
         Assert.True(text.GetBoundingBox().Defined);
     }
 
+    [GraphicsFact]
+    public void Ttf_font_shapes_ligatures_before_building_gpu_geometry()
+    {
+        var font = _fixture.Resources.Get<Font>("Fonts/NotoSans-CondensedItalic.ttf");
+        using var scene = new Scene();
+        var text = scene.CreateChild("Text").CreateComponent<Text3D>();
+
+        Assert.True(text.SetFont(font, 32.0f));
+        text.SetText("fi");
+
+        Assert.Equal(2, text.GetNumChars());
+        Assert.Equal(6u, text.GetNumVertices(0));
+        Assert.True(text.GetRowWidth(0) > 0);
+    }
+
     [Fact]
     public void Sdf_font_uses_prebaked_pages_and_distance_field_shader()
     {
