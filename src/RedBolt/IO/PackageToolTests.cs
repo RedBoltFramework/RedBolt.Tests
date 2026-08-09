@@ -125,7 +125,7 @@ public sealed class PackageToolTests
     private static PackageToolResult RunPackageToolProcess(IEnumerable<string> arguments)
     {
         var packageToolPath = RbfxTestData.GetAppFile(
-            "tools", "RedBolt.PackageTool", "RedBolt.PackageTool.dll");
+            "tools", "RedBolt.PackageTool.dll");
         var startInfo = new ProcessStartInfo("dotnet")
         {
             RedirectStandardError = true,

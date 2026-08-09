@@ -8,7 +8,7 @@ public sealed class GeneratorContractTests
     private static readonly Assembly GeneratorAssembly = AppDomain.CurrentDomain.GetAssemblies()
         .FirstOrDefault(static assembly => assembly.GetName().Name == "RedBolt.Generator.Dependencies")
         ?? Assembly.LoadFrom(RbfxTestData.GetAppFile(
-            "tools", "RedBolt.Generator.Dependencies", "RedBolt.Generator.Dependencies.dll"));
+            "tools", "RedBolt.Generator.Dependencies.dll"));
 
     [Fact]
     public void Generator_options_normalize_paths_and_keep_repeated_options()

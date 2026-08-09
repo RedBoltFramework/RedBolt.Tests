@@ -18,20 +18,10 @@ internal static class RbfxTestData
 
     public static string EditorData => Path.Combine(Root, "EditorData");
 
-    public static string ArtifactPivots => new DirectoryInfo(AppContext.BaseDirectory)
-        .Parent!.Parent!.Name["tests-".Length..];
+    public static string BuildConfiguration => new DirectoryInfo(AppContext.BaseDirectory).Parent!.Name;
 
-    public static string BuildConfiguration
-    {
-        get
-        {
-            var configuration = ArtifactPivots.Split('-', 2)[0];
-            return char.ToUpperInvariant(configuration[0]) + configuration[1..];
-        }
-    }
-
-    public static string GetAppFile(string category, string project, string fileName) =>
-        Path.Combine(BuildRoot, $"{category}-{ArtifactPivots}", "apps", project, fileName);
+    public static string GetAppFile(string category, string fileName) =>
+        Path.Combine(BuildRoot, "bin", BuildConfiguration, category, fileName);
 
     public static void AddResourceDirs(ResourceCache resources)
     {

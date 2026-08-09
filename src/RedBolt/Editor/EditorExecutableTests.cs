@@ -74,7 +74,7 @@ public sealed class EditorExecutableTests
 
     private static string EditorExecutable { get; } = Path.GetFullPath(
         RbfxTestData.GetAppFile(
-            "core", "RedBolt.Editor", OperatingSystem.IsWindows() ? "RedBolt.Editor.exe" : "RedBolt.Editor"));
+            "tools", OperatingSystem.IsWindows() ? "RedBolt.Editor.exe" : "RedBolt.Editor"));
 
     private readonly record struct ProcessResult(int ExitCode, string StandardOutput, string StandardError);
 }
