@@ -248,7 +248,7 @@ public sealed class RenderApiObjectRemainingCoverageTests
         Assert.Equal(1, RenderAPIUtils.GetMipLevelCount(Vector3i.One));
         Assert.Equal(Vector3i.One, RenderAPIUtils.GetMipLevelSize(Vector3i.One, 8));
 
-        var unknown = RenderAPIUtils.GetTextureFormatInfo((DiligentTextureFormat)int.MaxValue);
+        var unknown = RenderAPIUtils.GetTextureFormatInfo((DiligentTextureFormat)ushort.MaxValue);
         Assert.Equal(DiligentTextureFormat.TexFormatUnknown, unknown.Format);
         Assert.Equal(
             DiligentTextureFormat.TexFormatUnknown,

@@ -90,9 +90,9 @@ public sealed class DiligentOpenGLTests
             };
             using var swapChainDesc = new SwapChainDesc();
 
-            var factory = DiligentNativeBindings.GetEngineFactoryOpenGL();
+            var factory = DiligentNativeBindings.LoadAndGetEngineFactoryOpenGL();
             if (factory.IsNull)
-                throw new InvalidOperationException("GetEngineFactoryOpenGL returned null.");
+                throw new InvalidOperationException("LoadAndGetEngineFactoryOpenGL returned null.");
 
             factory.CreateDeviceAndSwapChainGL(engineCI, out device, out immediateContext,
                 swapChainDesc, out swapChain);
@@ -199,9 +199,9 @@ public sealed class DiligentOpenGLTests
             };
             using var swapChainDesc = new SwapChainDesc();
 
-            var factory = DiligentNativeBindings.GetEngineFactoryOpenGL();
+            var factory = DiligentNativeBindings.LoadAndGetEngineFactoryOpenGL();
             if (factory.IsNull)
-                throw new InvalidOperationException("GetEngineFactoryOpenGL returned null.");
+                throw new InvalidOperationException("LoadAndGetEngineFactoryOpenGL returned null.");
 
             factory.CreateDeviceAndSwapChainGL(engineCI, out device, out immediateContext,
                 swapChainDesc, out swapChain);
@@ -417,13 +417,13 @@ public sealed class DiligentOpenGLTests
 
     private static TextureDescOwner CreateTextureDesc()
     {
-        var apiInfo = DiligentNativeBindings.GetEngineFactoryOpenGL().GetAPIInfo();
+        var apiInfo = DiligentNativeBindings.LoadAndGetEngineFactoryOpenGL().GetAPIInfo();
         return new TextureDescOwner((int)apiInfo.TextureDescSize);
     }
 
     private static TextureViewDescOwner CreateTextureViewDesc()
     {
-        var apiInfo = DiligentNativeBindings.GetEngineFactoryOpenGL().GetAPIInfo();
+        var apiInfo = DiligentNativeBindings.LoadAndGetEngineFactoryOpenGL().GetAPIInfo();
         return new TextureViewDescOwner((int)apiInfo.TextureViewDescSize);
     }
 
