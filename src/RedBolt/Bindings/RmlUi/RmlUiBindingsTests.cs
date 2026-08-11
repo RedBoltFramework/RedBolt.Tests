@@ -1,18 +1,27 @@
 namespace RedBolt.Tests;
 
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using RedBolt.Bindings.RmlUi;
+using Tg = RedBolt.Bindings.TinyGltf;
 
 using RedBoltNative;
 
 [Collection(nameof(RmlUiBindingsCollection))]
-public sealed class RmlUiBindingsTests : IDisposable
+public sealed class RmlUiBindingsTests
 {
-    private readonly IDisposable _providerModule =
-        global::Std.Infrastructure.ProviderRegistry.PushModule("RedBolt.Bindings.RmlUi");
+    [Fact]
+    public void Shared_string_shape_works_across_binding_modules()
+    {
+        RuntimeHelpers.RunModuleConstructor(typeof(RmlUiNativeBindings).Module.ModuleHandle);
+        RuntimeHelpers.RunModuleConstructor(typeof(Tg.TinyGLTF).Module.ModuleHandle);
 
-    public void Dispose() => _providerModule.Dispose();
+        using var value = new Std.String("data:application/octet-stream;base64,cmVkYm9sdA==");
+
+        Assert.True(Tg.TinyGltfNativeBindings.IsDataURI(value));
+        Assert.Equal("data:application/octet-stream;base64,cmVkYm9sdA==", value.ToString());
+    }
 
     [Fact]
     public void Variant_round_trips_vector_value()
