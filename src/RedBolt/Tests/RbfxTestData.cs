@@ -6,7 +6,7 @@ using RedBolt.Resource;
 internal static class RbfxTestData
 {
     public static string RepositoryRoot => Path.GetFullPath(
-        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
 
     public static string BuildRoot => Path.Combine(RepositoryRoot, "build");
 
@@ -18,10 +18,15 @@ internal static class RbfxTestData
 
     public static string EditorData => Path.Combine(Root, "EditorData");
 
-    public static string BuildConfiguration => new DirectoryInfo(AppContext.BaseDirectory).Parent!.Name;
+    public static string BuildConfiguration => new DirectoryInfo(AppContext.BaseDirectory).Parent!.Parent!.Name;
+
+    public static string TargetPlatform => new DirectoryInfo(AppContext.BaseDirectory).Parent!.Name;
 
     public static string GetAppFile(string category, string fileName) =>
-        Path.Combine(BuildRoot, "bin", BuildConfiguration, category, fileName);
+        Path.Combine(BuildRoot, "bin", BuildConfiguration, TargetPlatform, category, fileName);
+
+    public static string GetHostAppFile(string category, string fileName) =>
+        Path.Combine(BuildRoot, "bin", BuildConfiguration, "host", category, fileName);
 
     public static void AddResourceDirs(ResourceCache resources)
     {

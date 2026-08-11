@@ -162,7 +162,7 @@ public sealed class EditorApplicationTests
     [GraphicsFact]
     public void Runtime_initializes_editor_ui_and_exits_cleanly_with_software_graphics()
     {
-        var repositoryRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+        var repositoryRoot = RbfxTestData.RepositoryRoot;
         var preferencesPath = Path.Combine(
             Path.GetTempPath(), "RedBolt.EditorApplicationRuntimeTests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(preferencesPath);
@@ -197,7 +197,7 @@ public sealed class EditorApplicationTests
     [GraphicsFact]
     public void Runtime_drop_closes_open_project_and_creates_project_in_empty_directory()
     {
-        var repositoryRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+        var repositoryRoot = RbfxTestData.RepositoryRoot;
         var rootPath = Path.Combine(
             Path.GetTempPath(), "RedBolt.EditorDropRuntimeTests", Guid.NewGuid().ToString("N"));
         var preferencesPath = Path.Combine(rootPath, "Preferences");
