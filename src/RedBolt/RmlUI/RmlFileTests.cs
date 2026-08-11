@@ -6,14 +6,18 @@ using RedBolt.Bindings.RmlUi;
 using RedBolt.RmlUI;
 
 [Collection(nameof(HeadlessEngineCollection))]
-public sealed class RmlFileTests
+public sealed class RmlFileTests : IDisposable
 {
     private readonly HeadlessEngineFixture _fixture;
+    private readonly IDisposable _providerModule =
+        global::Std.Infrastructure.ProviderRegistry.PushModule("RedBolt.Bindings.RmlUi");
 
     public RmlFileTests(HeadlessEngineFixture fixture)
     {
         _fixture = fixture;
     }
+
+    public void Dispose() => _providerModule.Dispose();
 
     [Fact]
     public unsafe void RmlFile_matches_resource_file_behavior()

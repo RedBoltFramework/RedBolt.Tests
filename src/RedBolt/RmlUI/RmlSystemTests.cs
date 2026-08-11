@@ -5,14 +5,18 @@ using RedBolt.Resource;
 using RedBolt.RmlUI;
 
 [Collection(nameof(HeadlessEngineCollection))]
-public sealed class RmlSystemTests
+public sealed class RmlSystemTests : IDisposable
 {
     private readonly HeadlessEngineFixture _fixture;
+    private readonly IDisposable _providerModule =
+        global::Std.Infrastructure.ProviderRegistry.PushModule("RedBolt.Bindings.RmlUi");
 
     public RmlSystemTests(HeadlessEngineFixture fixture)
     {
         _fixture = fixture;
     }
+
+    public void Dispose() => _providerModule.Dispose();
 
     [Fact]
     public void RmlSystem_matches_engine_system_behavior()

@@ -13,8 +13,13 @@ using RedBolt.RmlUI;
 using RedBoltNative;
 
 [Collection(nameof(RmlUiBindingsCollection))]
-public sealed class RmlUITests
+public sealed class RmlUITests : IDisposable
 {
+    private readonly IDisposable _providerModule =
+        global::Std.Infrastructure.ProviderRegistry.PushModule("RedBolt.Bindings.RmlUi");
+
+    public void Dispose() => _providerModule.Dispose();
+
     [Fact]
     public void Subsystem_manages_context_and_document_lifecycle()
     {

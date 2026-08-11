@@ -13,7 +13,7 @@ using RedBolt.RmlUI;
 using RedBolt.Scene;
 
 [Collection(nameof(GraphicsEngineCollection))]
-public sealed partial class RmlUIComponentTests
+public sealed partial class RmlUIComponentTests : IDisposable
 {
     [Reflected("Tests")]
     private sealed partial class InspectorTarget : Serializable
@@ -71,11 +71,15 @@ public sealed partial class RmlUIComponentTests
     }
 
     private readonly GraphicsEngineFixture _fixture;
+    private readonly IDisposable _providerModule =
+        global::Std.Infrastructure.ProviderRegistry.PushModule("RedBolt.Bindings.RmlUi");
 
     public RmlUIComponentTests(GraphicsEngineFixture fixture)
     {
         _fixture = fixture;
     }
+
+    public void Dispose() => _providerModule.Dispose();
 
     [GraphicsFact]
     public void Component_manages_document_and_data_model_lifecycle()

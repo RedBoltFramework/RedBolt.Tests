@@ -25,7 +25,7 @@ public sealed class ShaderConstsTests
     {
         var fields = typeof(ShaderResources).GetFields(BindingFlags.Public | BindingFlags.Static);
 
-        Assert.Equal(10, fields.Length);
+        Assert.Equal(11, fields.Length);
         foreach (var field in fields)
         {
             var value = Assert.IsType<ConstString>(field.GetValue(null));
