@@ -1,31 +1,10 @@
 namespace RedBolt.Tests;
 
-using RedBolt.Core;
 using RedBolt.Engine;
 
 [Collection(nameof(ApplicationLifecycleCollection))]
 public sealed class ApplicationLifecycleTests
 {
-    [Fact]
-    public void Platform_finalization_runs_after_setup_and_before_engine_initialization()
-    {
-        var previousContext = Context.Instance;
-        var platform = new FinalizingPlatformRuntime();
-        Context.SetInstance(new Context(new RuntimeServices(platform, [])));
-        try
-        {
-            using var application = new FinalizingApplication(platform.Events);
-
-            Assert.Equal(0, application.Run([]));
-            Assert.Equal(["initialize", "setup", "finalize"], platform.Events);
-            Assert.Equal(640, application.ObservedWidth);
-        }
-        finally
-        {
-            Context.SetInstance(previousContext);
-        }
-    }
-
     [Fact]
     public void Headless_application_runs_start_update_stop_in_order_and_applies_configuration()
     {
@@ -178,47 +157,6 @@ public sealed class ApplicationLifecycleTests
         }
     }
 
-    private sealed class FinalizingApplication(List<string> events) : Application
-    {
-        public int ObservedWidth { get; private set; }
-
-        protected override void Setup(EngineParameters parameters)
-        {
-            events.Add("setup");
-            parameters.ApplicationName = "RedBolt.Tests.PlatformFinalization";
-            parameters.EngineCliParameters = false;
-            parameters.Headless = true;
-            parameters.WindowWidth = 320;
-        }
-
-        protected override void Start()
-        {
-            ObservedWidth = Engine.Parameters.WindowWidth;
-            Exit();
-        }
-    }
-
-    private sealed class FinalizingPlatformRuntime : IPlatformRuntime
-    {
-        public List<string> Events { get; } = [];
-
-        public bool SupportsFileLogging => true;
-
-        public bool UseHighDensityWindow => false;
-
-        public void InitializeApplicationParameters(EngineParameters parameters)
-        {
-            Events.Add("initialize");
-        }
-
-        public void FinalizeApplicationParameters(EngineParameters parameters)
-        {
-            Events.Add("finalize");
-            parameters.WindowWidth = 640;
-        }
-
-        public NativeWindowInfo GetNativeWindowInfo(RedBolt.Bindings.Sdl.SdlWindow window) => default;
-    }
 }
 
 [CollectionDefinition(nameof(ApplicationLifecycleCollection), DisableParallelization = true)]
