@@ -62,14 +62,13 @@ public sealed class RenderApiResidualCoverageTests
     }
 
     [Fact]
-    public void Render_backend_defaults_cover_windows_and_non_windows_platforms()
+    public void Render_backend_default_uses_the_backend_compiled_for_this_platform()
     {
-        var method = typeof(RenderAPIUtils).GetMethod(
-            "GetDefaultRenderBackend", BindingFlags.Static | BindingFlags.NonPublic)!;
-
-        Assert.Equal(RenderBackend.D3D11, method.Invoke(null, [PlatformId.Windows]));
-        Assert.Equal(RenderBackend.D3D11, method.Invoke(null, [PlatformId.UniversalWindowsPlatform]));
-        Assert.Equal(RenderBackend.OpenGL, method.Invoke(null, [PlatformId.Linux]));
+#if REDBOLT_PLATFORM_WINDOWS
+        Assert.Equal(RenderBackend.D3D11, RenderAPIUtils.SelectRenderBackend());
+#else
+        Assert.Equal(RenderBackend.OpenGL, RenderAPIUtils.SelectRenderBackend());
+#endif
     }
 
     [Fact]

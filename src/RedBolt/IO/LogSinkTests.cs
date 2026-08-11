@@ -2,11 +2,10 @@ namespace RedBolt.Tests;
 
 using System.Reflection;
 
-using RedBolt.Bindings.Sdl;
 using RedBolt.Core;
 using RedBolt.Engine;
 using RedBolt.Logging;
-using RedBolt.Platform;
+using RedBolt.RenderAPI;
 using IOEvents = RedBolt.IO.IOEvents;
 
 [Collection(nameof(HeadlessEngineCollection))]
@@ -23,7 +22,7 @@ public sealed class LogSinkTests
         File.WriteAllText(fileName, "current");
         File.WriteAllText(fileName + ".1", "previous");
 
-        WithLog(true, log =>
+        WithLog(log =>
         {
             log.SetQuiet(true);
             log.SetLogFormat("%v");
@@ -52,7 +51,7 @@ public sealed class LogSinkTests
         var first = "first-entry-" + Guid.NewGuid().ToString("N");
         var second = "second-entry-" + Guid.NewGuid().ToString("N");
 
-        WithLog(true, log =>
+        WithLog(log =>
         {
             log.SetQuiet(true);
             log.SetLevel(LogLevel.Trace);
@@ -83,7 +82,7 @@ public sealed class LogSinkTests
         var duplicate = "duplicate-error-" + Guid.NewGuid().ToString("N");
         var distinct = "distinct-error-" + Guid.NewGuid().ToString("N");
 
-        WithLog(true, log =>
+        WithLog(log =>
         {
             log.SetQuiet(true);
             log.SetLevel(LogLevel.Trace);
@@ -114,7 +113,7 @@ public sealed class LogSinkTests
         const int workerCount = 4;
         const int messagesPerWorker = 40;
 
-        WithLog(true, log =>
+        WithLog(log =>
         {
             log.SetQuiet(true);
             log.SetLevel(LogLevel.Trace);
@@ -150,7 +149,7 @@ public sealed class LogSinkTests
         var directoryPath = Path.Combine(scope.DirectoryPath, "not-a-file");
         Directory.CreateDirectory(directoryPath);
 
-        WithLog(true, log =>
+        WithLog(log =>
         {
             log.SetQuiet(true);
             log.SetLevel(LogLevel.Trace);
@@ -165,36 +164,12 @@ public sealed class LogSinkTests
     }
 
     [Fact]
-    public void Unsupported_platform_and_empty_or_null_device_names_are_no_ops()
-    {
-        using var scope = new TestArtifactScope(nameof(Unsupported_platform_and_empty_or_null_device_names_are_no_ops));
-        var previous = Context.Instance;
-        var context = new Context(new RuntimeServices(new FakePlatformRuntime(false), []));
-        Context.SetInstance(context);
-        try
-        {
-            using var log = new Log();
-            log.Open(Path.Combine(scope.DirectoryPath, "unsupported.log"));
-            log.Open(string.Empty);
-            log.Open(null!);
-            log.Open(OperatingSystem.IsWindows() ? "NUL" : "/dev/null");
-        }
-        finally
-        {
-            Context.SetInstance(previous);
-            context.Dispose();
-        }
-
-        Assert.False(File.Exists(Path.Combine(scope.DirectoryPath, "unsupported.log")));
-    }
-
-    [Fact]
     public void Logger_formatting_and_invalid_levels_cover_managed_logging_edges()
     {
         using var scope = new TestArtifactScope(nameof(Logger_formatting_and_invalid_levels_cover_managed_logging_edges));
         var fileName = Path.Combine(scope.DirectoryPath, "format.log");
 
-        WithLog(true, log =>
+        WithLog(log =>
         {
             log.SetQuiet(true);
             log.SetLevel(LogLevel.Trace);
@@ -260,11 +235,11 @@ public sealed class LogSinkTests
         }
     }
 
-    private static void WithLog(bool supportsFileLogging, Action<Log> action)
+    private static void WithLog(Action<Log> action)
     {
         SetMainThreadMethod.Invoke(null, null);
         var previous = Context.Instance;
-        var context = new Context(new RuntimeServices(new FakePlatformRuntime(supportsFileLogging), []));
+        var context = new Context(new RuntimeServices([]));
         Context.SetInstance(context);
         var log = new Log();
         context.RegisterSubsystem(log);
@@ -297,17 +272,4 @@ public sealed class LogSinkTests
         }
     }
 
-    private sealed class FakePlatformRuntime(bool supportsFileLogging) : IPlatformRuntime
-    {
-        public bool SupportsFileLogging => supportsFileLogging;
-
-        public bool UseHighDensityWindow => false;
-
-        public void InitializeApplicationParameters(EngineParameters parameters)
-        {
-        }
-
-        public NativeWindowInfo GetNativeWindowInfo(SdlWindow window) =>
-            throw new PlatformNotSupportedException("Native windows are not part of this logging test.");
-    }
 }

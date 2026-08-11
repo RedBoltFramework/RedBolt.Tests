@@ -126,7 +126,11 @@ public sealed class RenderContextTests
                 renderContext.SetClipPlaneMask(7);
             }
 
-            Assert.Equal(ProcessUtils.GetPlatform() != PlatformId.Web, renderContext.IsDebugScopeEnabled());
+#if REDBOLT_PLATFORM_BROWSER
+            Assert.False(renderContext.IsDebugScopeEnabled());
+#else
+            Assert.True(renderContext.IsDebugScopeEnabled());
+#endif
             Assert.Equal(before, renderContext.GetCurrentViewport());
         });
     }

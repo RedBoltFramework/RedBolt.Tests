@@ -9,7 +9,7 @@ using RedBolt.Bindings.Sdl;
 using RedBolt.Core;
 using RedBolt.Engine;
 using RedBolt.Logging;
-using RedBolt.Platform;
+using RedBolt.RenderAPI;
 using RedBoltLogLevel = RedBolt.Logging.LogLevel;
 
 [Collection(nameof(HeadlessEngineCollection))]
@@ -54,37 +54,21 @@ public sealed class IOResidualCoverageTests
         });
     }
 
-    [Fact]
-    public void Empty_platform_runtime_paths_are_observable_through_the_internal_singleton()
-    {
-        var property = typeof(RuntimeServices).GetProperty("Empty", BindingFlags.Static | BindingFlags.NonPublic)!;
-        var empty = Assert.IsType<RuntimeServices>(property.GetValue(null));
-        var platform = empty.Platform;
-
-        Assert.True(platform.SupportsFileLogging);
-        Assert.False(platform.UseHighDensityWindow);
-        platform.InitializeApplicationParameters(new EngineParameters());
-
-        using var window = SdlWindow.CreateManagedWrapper(0, false);
-        Assert.Throws<PlatformNotSupportedException>(() => platform.GetNativeWindowInfo(window));
-    }
-
     [NativeBindingFact]
-    public void Linux_runtime_rejects_a_null_native_window_before_wm_info_is_available()
+    public void Native_window_helper_rejects_a_null_window_before_wm_info_is_available()
     {
-        var platform = Context.Instance.RuntimeServices.Platform;
+        var nativeWindowType = typeof(RuntimeServices).Assembly.GetType("RedBolt.RenderAPI.NativeWindow")!;
+        var getInfo = nativeWindowType.GetMethod("GetInfo", BindingFlags.Static | BindingFlags.Public)!;
         using var window = SdlWindow.CreateManagedWrapper(0, false);
 
-        Assert.ThrowsAny<Exception>(() => platform.GetNativeWindowInfo(window));
+        Assert.Throws<TargetInvocationException>(() => getInfo.Invoke(null, [window]));
     }
 
     [Fact]
-    public void Linux_runtime_validates_each_native_window_info_failure_and_success_shape()
+    public void Native_window_helper_validates_each_linux_window_info_shape()
     {
-        var runtimeType = AppDomain.CurrentDomain.GetAssemblies()
-            .Select(assembly => assembly.GetType("RedBolt.Platform.LinuxPlatformRuntime"))
-            .First(type => type is not null)!;
-        var validator = runtimeType.GetMethod("ValidateNativeWindowInfo", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var nativeWindowType = typeof(RuntimeServices).Assembly.GetType("RedBolt.RenderAPI.NativeWindow")!;
+        var validator = nativeWindowType.GetMethod("ValidateLinuxInfo", BindingFlags.Static | BindingFlags.NonPublic)!;
 
         using var failureInfo = new SdlSysWMinfo();
         Assert.Throws<TargetInvocationException>(() => validator.Invoke(null, [SdlBool.SdlFalse, failureInfo]));
@@ -105,7 +89,7 @@ public sealed class IOResidualCoverageTests
     private static void WithLog(Action<Log> action)
     {
         var previous = Context.Instance;
-        var context = new Context(new RuntimeServices(new FakePlatformRuntime(), []));
+        var context = new Context(new RuntimeServices([]));
         Context.SetInstance(context);
         var log = new Log();
         context.RegisterSubsystem(log);
@@ -122,16 +106,4 @@ public sealed class IOResidualCoverageTests
         }
     }
 
-    private sealed class FakePlatformRuntime : IPlatformRuntime
-    {
-        public bool SupportsFileLogging => true;
-
-        public bool UseHighDensityWindow => false;
-
-        public void InitializeApplicationParameters(EngineParameters parameters)
-        {
-        }
-
-        public NativeWindowInfo GetNativeWindowInfo(SdlWindow window) => default;
-    }
 }

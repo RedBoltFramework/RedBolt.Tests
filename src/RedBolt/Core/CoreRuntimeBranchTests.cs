@@ -3,7 +3,6 @@ namespace RedBolt.Tests;
 using RedBolt.Bindings.Sdl;
 using RedBolt.Core;
 using RedBolt.Engine;
-using RedBolt.Platform;
 using RedBolt.RenderAPI;
 using RedBolt.Scene;
 
@@ -150,11 +149,10 @@ public sealed class CoreRuntimeBranchTests
     public void Runtime_services_returns_null_for_missing_backend_api()
     {
         var backend = new TestGraphicsBackend(RenderBackend.OpenGL);
-        var services = new RuntimeServices(new TestPlatformRuntime(), [backend]);
+        var services = new RuntimeServices([backend]);
 
         Assert.Same(backend, services.GetGraphicsApi<IGraphicsBackend>(RenderBackend.OpenGL));
         Assert.Null(services.GetGraphicsApi<IGraphicsBackend>(RenderBackend.Vulkan));
-        Assert.Same(services.Platform, services.GetPlatformApi<TestPlatformRuntime>());
     }
 
     private enum TestMode
@@ -196,19 +194,6 @@ public sealed class CoreRuntimeBranchTests
         public void Dispose() => IsDisposed = true;
     }
 
-    private sealed class TestPlatformRuntime : IPlatformRuntime
-    {
-        public bool SupportsFileLogging => true;
-
-        public bool UseHighDensityWindow => false;
-
-        public void InitializeApplicationParameters(EngineParameters parameters)
-        {
-        }
-
-        public NativeWindowInfo GetNativeWindowInfo(SdlWindow window) => default;
-    }
-
     private sealed class TestGraphicsBackend(RenderBackend backend) : IGraphicsBackend
     {
         public RenderBackend Backend => backend;
@@ -220,7 +205,7 @@ public sealed class CoreRuntimeBranchTests
         }
 
         public GraphicsBackendResources Initialize(EngineParameters parameters, RenderDeviceSettings deviceSettings,
-            WindowSettings windowSettings, SdlWindow window, IPlatformRuntime platform) =>
+            WindowSettings windowSettings, SdlWindow window) =>
             throw new NotSupportedException();
     }
 }

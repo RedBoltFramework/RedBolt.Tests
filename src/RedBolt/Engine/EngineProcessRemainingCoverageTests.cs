@@ -145,34 +145,27 @@ public sealed class EngineProcessRemainingCoverageTests
     [Fact]
     public void Process_utils_covers_portable_queries_and_rejects_url_input_without_spawning()
     {
-        var expectedSuffix = OperatingSystem.IsWindows()
-            ? ".dll"
-            : OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS()
-                ? ".dylib"
-                : ".so";
-        Assert.Equal(expectedSuffix, ProcessUtils.DynLibSuffix);
+#if REDBOLT_PLATFORM_WINDOWS
+        Assert.Equal(".dll", ProcessUtils.DynLibSuffix);
+#else
+        Assert.Equal(".so", ProcessUtils.DynLibSuffix);
+#endif
 
         var parsed = ProcessUtils.ParseArguments(new[] { "program", "--win32-console", "--flag" });
-        if (OperatingSystem.IsWindows())
-            Assert.Equal(["--flag"], parsed);
-        else
-            Assert.Equal(["--win32-console", "--flag"], parsed);
+#if REDBOLT_PLATFORM_WINDOWS
+        Assert.Equal(["--flag"], parsed);
+#else
+        Assert.Equal(["--win32-console", "--flag"], parsed);
+#endif
         Assert.Same(parsed, ProcessUtils.GetArguments());
 
-        var platformName = ProcessUtils.GetPlatform() switch
-        {
-            PlatformId.Windows => "Windows",
-            PlatformId.UniversalWindowsPlatform => "UWP",
-            PlatformId.Linux => "Linux",
-            PlatformId.Android => "Android",
-            PlatformId.RaspberryPi => "Raspberry Pi",
-            PlatformId.MacOS => "macOS",
-            PlatformId.iOS => "iOS",
-            PlatformId.TvOS => "tvOS",
-            PlatformId.Web => "Web",
-            _ => "(?)"
-        };
-        Assert.Equal(platformName, ProcessUtils.GetPlatformName());
+#if REDBOLT_PLATFORM_WINDOWS
+        Assert.Equal(PlatformId.Windows, ProcessUtils.GetPlatform());
+        Assert.Equal("Windows", ProcessUtils.GetPlatformName());
+#elif REDBOLT_PLATFORM_LINUX
+        Assert.Equal(PlatformId.Linux, ProcessUtils.GetPlatform());
+        Assert.Equal("Linux", ProcessUtils.GetPlatformName());
+#endif
 
         Assert.True(ProcessUtils.GetNumLogicalCPUs() >= 1);
         Assert.True(ProcessUtils.GetNumPhysicalCPUs() >= 1);

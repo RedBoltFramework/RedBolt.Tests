@@ -1,10 +1,9 @@
 namespace RedBolt.Tests;
 
 using RedBolt.Engine;
-using RedBolt.Platform;
 
 [Collection(nameof(ApplicationLifecycleCollection))]
-public sealed class PlatformLifecycleTests
+public sealed class ApplicationLifecycleTests
 {
     [Fact]
     public void Headless_application_runs_start_update_stop_in_order_and_applies_configuration()

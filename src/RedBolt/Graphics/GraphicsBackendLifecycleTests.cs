@@ -4,6 +4,7 @@ using RedBolt;
 using RedBolt.Bindings.Sdl;
 using RedBolt.Graphics;
 using RedBolt.RenderAPI;
+using RedBolt.RenderAPI.Backends;
 
 public sealed class GraphicsBackendLifecycleTests
 {

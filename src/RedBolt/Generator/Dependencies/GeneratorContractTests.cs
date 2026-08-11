@@ -54,7 +54,9 @@ public sealed class GeneratorContractTests
 
         var discoveryType = GeneratorAssembly.GetType("RedBolt.Generator.Dependencies.CompilerToolchainDiscovery")!;
         var discover = discoveryType.GetMethod("Discover", BindingFlags.Public | BindingFlags.Static)!;
-        var toolchainInfo = discover.Invoke(null, [Environment.GetEnvironmentVariable("CXX") ?? "c++"])!;
+        var toolchainInfo = discover.Invoke(
+            null,
+            [Environment.GetEnvironmentVariable("CXX") ?? "c++", null, null])!;
         var includeDirectories = (IReadOnlyList<string>)toolchainInfo.GetType()
             .GetProperty("IncludeDirectories")!.GetValue(toolchainInfo)!;
 
