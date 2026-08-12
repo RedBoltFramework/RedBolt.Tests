@@ -52,6 +52,13 @@ public sealed class PhysicsValueTests
     }
 
     [Fact]
+    public void World_scale_change_uses_rbfx_squared_distance_threshold()
+    {
+        Assert.False(PhysicsUtils.HasWorldScaleChanged(Vector3f.One, new Vector3f(1.09f, 1.0f, 1.0f)));
+        Assert.True(PhysicsUtils.HasWorldScaleChanged(Vector3f.One, new Vector3f(1.11f, 1.0f, 1.0f)));
+    }
+
+    [Fact]
     public void Detached_components_keep_safe_defaults_and_clamp_local_values()
     {
         var body = new RigidBody();
