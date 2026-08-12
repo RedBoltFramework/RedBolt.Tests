@@ -124,7 +124,7 @@ public sealed class KinematicCharacterControllerTests
         Assert.NotNull(startEvent.Contacts);
         Assert.Empty(startEvent.Contacts);
 
-        controller.Warp(new Vector3f(20.0f, 0.0f, 0.0f));
+        characterNode.SetWorldPosition(new Vector3f(20.0f, 0.0f, 0.0f));
         for (var i = 0; i < 3; ++i)
             world.Update(timeStep);
 
@@ -184,5 +184,42 @@ public sealed class KinematicCharacterControllerTests
 
         Assert.InRange(controller.RawPosition.X, 0.9f, 1.1f);
         Assert.InRange(node.WorldPosition.X, 0.4f, 0.6f);
+    }
+
+    [Fact]
+    public void Trigger_character_does_not_push_rigid_bodies()
+    {
+        var triggerBodyPosition = SimulateCharacterPush(isTrigger: true);
+        var solidBodyPosition = SimulateCharacterPush(isTrigger: false);
+
+        Assert.InRange(triggerBodyPosition, 1.95f, 2.05f);
+        Assert.True(solidBodyPosition > triggerBodyPosition + 0.25f);
+    }
+
+    private static float SimulateCharacterPush(bool isTrigger)
+    {
+        using var scene = new Scene();
+        var world = scene.CreateComponent<PhysicsWorld>();
+        world.ManualUpdate = true;
+        world.Interpolation = false;
+        world.Gravity = Vector3f.Zero;
+
+        var bodyNode = scene.CreateChild("Body");
+        bodyNode.SetPosition(new Vector3f(0.0f, 0.9f, 2.0f));
+        bodyNode.CreateComponent<CollisionShape>().SetBox(Vector3f.One);
+        var body = bodyNode.CreateComponent<RigidBody>();
+        body.Mass = 1.0f;
+
+        var characterNode = scene.CreateChild("Character");
+        var controller = characterNode.CreateComponent<KinematicCharacterController>();
+        controller.Gravity = Vector3f.Zero;
+        controller.IsTrigger = isTrigger;
+
+        const float timeStep = 1.0f / 60.0f;
+        controller.SetWalkIncrement(Vector3f.Forward * (2.0f * timeStep));
+        for (var i = 0; i < 120; ++i)
+            world.Update(timeStep);
+
+        return bodyNode.WorldPosition.Z;
     }
 }
