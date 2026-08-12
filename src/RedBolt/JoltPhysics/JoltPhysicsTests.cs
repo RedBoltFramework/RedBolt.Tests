@@ -1,5 +1,6 @@
 namespace RedBolt.Tests;
 
+using RedBolt.Bindings.Jolt;
 using RedBolt.Core;
 using RedBolt.Math;
 using RedBolt.PhysicsJolt;
@@ -76,5 +77,31 @@ public sealed class JoltPhysicsTests
         Assert.Contains(bodyAttributes, attribute => attribute.Name == "Mass");
         Assert.Contains(bodyAttributes, attribute => attribute.Name == "Collision Layer");
         Assert.Contains(bodyAttributes, attribute => attribute.Name == "Collision Mask");
+    }
+
+    [Fact]
+    public void Raycast_reports_unregistered_native_body_without_dereferencing_invalid_hits()
+    {
+        using var scene = new Scene();
+        var world = scene.CreateComponent<PhysicsWorld>();
+        using var nativeShape = new BoxShape(new Vector3f(0.5f, 0.5f, 0.5f));
+        using var settings = new BodyCreationSettings(
+            nativeShape, Vector3f.Zero, Quaternion.IDENTITY, EMotionType.Static,
+            ObjectLayerPairFilterMask.SGetObjectLayer(2, uint.MaxValue & 0xffff));
+        var bodyId = world.BodyInterface.CreateAndAddBody(settings, EActivation.DontActivate);
+
+        try
+        {
+            Assert.True(world.TryRaycastSingle(
+                new Ray(new Vector3f(0.0f, 2.0f, 0.0f), Vector3f.Down), 4.0f, out var hit, 2));
+            Assert.Null(hit.Body);
+            Assert.InRange(hit.Position.Y, 0.49f, 0.51f);
+            Assert.True(hit.Normal.Y > 0.9f);
+        }
+        finally
+        {
+            world.BodyInterface.RemoveBody(in bodyId);
+            world.BodyInterface.DestroyBody(in bodyId);
+        }
     }
 }
