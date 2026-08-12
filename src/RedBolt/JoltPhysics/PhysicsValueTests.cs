@@ -29,6 +29,29 @@ public sealed class PhysicsValueTests
     }
 
     [Fact]
+    public void Raycast_result_inequality_matches_rbfx_payload_fields()
+    {
+        using var firstBody = new RigidBody();
+        using var secondBody = new RigidBody();
+        var first = new PhysicsRaycastResult
+        {
+            Body = firstBody,
+            Position = Vector3f.One,
+            Normal = Vector3f.Up,
+            Distance = 2.0f,
+            HitFraction = 0.25f
+        };
+        var same = first;
+        same.HitFraction = 0.75f;
+
+        Assert.True(first == same);
+        Assert.False(first != same);
+
+        same.Body = secondBody;
+        Assert.True(first != same);
+    }
+
+    [Fact]
     public void Detached_components_keep_safe_defaults_and_clamp_local_values()
     {
         var body = new RigidBody();
