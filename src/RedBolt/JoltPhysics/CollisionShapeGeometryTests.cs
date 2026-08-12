@@ -1,5 +1,6 @@
 namespace RedBolt.Tests;
 
+using RedBolt.Bindings.Jolt;
 using RedBolt.Core;
 using RedBolt.Graphics;
 using RedBolt.Math;
@@ -10,6 +11,7 @@ using RedBolt.Scene;
 [Collection(nameof(HeadlessEngineCollection))]
 public sealed class CollisionShapeGeometryTests
 {
+    private const int CustomShapeType = 100;
     private readonly HeadlessEngineFixture _fixture;
 
     public CollisionShapeGeometryTests(HeadlessEngineFixture fixture)
@@ -51,6 +53,25 @@ public sealed class CollisionShapeGeometryTests
         _fixture.Context.GetSubsystem<WorkQueue>()!.Update();
         model.SendEvent<ResourceEvents.ReloadFinished>();
         Assert.Null(cache.GetCachedGeometry(model, 0));
+    }
+
+    [Fact]
+    public void Derived_collision_shape_creates_custom_native_shape()
+    {
+        using var scene = new Scene();
+        var world = scene.CreateComponent<PhysicsWorld>();
+        world.ManualUpdate = true;
+
+        var node = scene.CreateChild("DerivedShape");
+        node.SetScale(new Vector3f(-2.0f, 3.0f, 4.0f));
+        var shape = new DerivedCollisionShape();
+        node.AddComponent(shape);
+        shape.ShapeType = (ShapeType)CustomShapeType;
+
+        Assert.Equal(CustomShapeType, shape.RequestedShapeType);
+        Assert.Equal(node.WorldScale, shape.RequestedWorldScale);
+        Assert.NotNull(shape.JoltShape);
+        Assert.Equal(new Vector3f(2.0f, 3.0f, 4.0f), shape.GetWorldBoundingBox().Size);
     }
 
     [Fact]
@@ -166,5 +187,18 @@ public sealed class CollisionShapeGeometryTests
         for (var i = 0; i < 180; ++i)
             world.Update(1.0f / 60.0f);
         Assert.InRange(meshNode.WorldPosition.Y, 0.35f, 0.75f);
+    }
+
+    private sealed class DerivedCollisionShape : CollisionShape
+    {
+        public int RequestedShapeType { get; private set; }
+        public Vector3f RequestedWorldScale { get; private set; }
+
+        protected override Shape? UpdateDerivedShape(int shapeType, Vector3f newWorldScale)
+        {
+            RequestedShapeType = shapeType;
+            RequestedWorldScale = newWorldScale;
+            return new BoxShape(newWorldScale.Abs * 0.5f);
+        }
     }
 }
