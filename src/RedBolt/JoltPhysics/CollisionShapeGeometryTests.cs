@@ -1,5 +1,6 @@
 namespace RedBolt.Tests;
 
+using RedBolt.Core;
 using RedBolt.Graphics;
 using RedBolt.Math;
 using RedBolt.PhysicsJolt;
@@ -31,6 +32,23 @@ public sealed class CollisionShapeGeometryTests
         var afterRelease = cache.GetOrCreateGeometry(model, 0);
         Assert.NotSame(first, afterRelease);
 
+        _fixture.Context.GetSubsystem<WorkQueue>()!.Update();
+        model.SendEvent<ResourceEvents.ReloadFinished>();
+        Assert.Null(cache.GetCachedGeometry(model, 0));
+    }
+
+    [Fact]
+    public async Task Model_reload_subscription_created_on_worker_is_deferred_to_main_thread()
+    {
+        var model = _fixture.Resources.Get<Model>("Models/Box.mdl");
+        using var cache = new CollisionGeometryDataCache(ShapeType.TriangleMesh);
+
+        var geometry = await Task.Run(() => cache.GetOrCreateGeometry(model, 0));
+
+        model.SendEvent<ResourceEvents.ReloadFinished>();
+        Assert.Same(geometry, cache.GetCachedGeometry(model, 0));
+
+        _fixture.Context.GetSubsystem<WorkQueue>()!.Update();
         model.SendEvent<ResourceEvents.ReloadFinished>();
         Assert.Null(cache.GetCachedGeometry(model, 0));
     }
