@@ -64,6 +64,7 @@ public sealed class IOResidualCoverageTests
         Assert.Throws<TargetInvocationException>(() => getInfo.Invoke(null, [window]));
     }
 
+#if REDBOLT_PLATFORM_LINUX
     [Fact]
     public void Native_window_helper_validates_each_linux_window_info_shape()
     {
@@ -85,6 +86,7 @@ public sealed class IOResidualCoverageTests
         Assert.Equal((nint)1, result.Display);
         Assert.Equal(2u, result.WindowId);
     }
+#endif
 
     private static void WithLog(Action<Log> action)
     {

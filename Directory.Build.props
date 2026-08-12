@@ -17,6 +17,5 @@
     <BaseOutputPath>$(RedBoltBuildRoot)/$(RedBoltArtifactCategory)-</BaseOutputPath>
     <PublishDir>$(RedBoltBuildRoot)/publish-$(RedBoltArtifactCategory)-$(RedBoltArtifactPivots)/</PublishDir>
     <BaseIntermediateOutputPath>$(RedBoltBuildRoot)/obj/$(RedBoltArtifactCategory)/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
-    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
   </PropertyGroup>
 </Project>

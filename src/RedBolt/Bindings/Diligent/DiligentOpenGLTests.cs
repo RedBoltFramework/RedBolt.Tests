@@ -80,14 +80,17 @@ public sealed class DiligentOpenGLTests
             if (SdlNativeBindings.SdlGetWindowWMInfo(window, wmInfo) != SdlBool.SdlTrue)
                 throw new InvalidOperationException("SDL_GetWindowWMInfo failed.");
 
+            using var engineCI = new EngineGLCreateInfo();
+#if REDBOLT_PLATFORM_LINUX
             if (wmInfo.Subsystem != SdlSyswmType.SdlSyswmX11)
                 throw new InvalidOperationException($"Expected X11 WM info, got {wmInfo.Subsystem}.");
-
-            using var engineCI = new EngineGLCreateInfo
-            {
-                WindowPDisplay = wmInfo.InfoX11Display,
-                WindowWindowId = checked((uint)wmInfo.InfoX11Window)
-            };
+            engineCI.WindowPDisplay = wmInfo.InfoX11Display;
+            engineCI.WindowWindowId = checked((uint)wmInfo.InfoX11Window);
+#elif REDBOLT_PLATFORM_WINDOWS
+            if (wmInfo.Subsystem != SdlSyswmType.SdlSyswmWindows)
+                throw new InvalidOperationException($"Expected Win32 WM info, got {wmInfo.Subsystem}.");
+            engineCI.WindowHWnd = wmInfo.InfoWinWindow;
+#endif
             using var swapChainDesc = new SwapChainDesc();
 
             var factory = DiligentNativeBindings.LoadAndGetEngineFactoryOpenGL();
@@ -189,14 +192,17 @@ public sealed class DiligentOpenGLTests
             if (SdlNativeBindings.SdlGetWindowWMInfo(window, wmInfo) != SdlBool.SdlTrue)
                 throw new InvalidOperationException("SDL_GetWindowWMInfo failed.");
 
+            using var engineCI = new EngineGLCreateInfo();
+#if REDBOLT_PLATFORM_LINUX
             if (wmInfo.Subsystem != SdlSyswmType.SdlSyswmX11)
                 throw new InvalidOperationException($"Expected X11 WM info, got {wmInfo.Subsystem}.");
-
-            using var engineCI = new EngineGLCreateInfo
-            {
-                WindowPDisplay = wmInfo.InfoX11Display,
-                WindowWindowId = checked((uint)wmInfo.InfoX11Window)
-            };
+            engineCI.WindowPDisplay = wmInfo.InfoX11Display;
+            engineCI.WindowWindowId = checked((uint)wmInfo.InfoX11Window);
+#elif REDBOLT_PLATFORM_WINDOWS
+            if (wmInfo.Subsystem != SdlSyswmType.SdlSyswmWindows)
+                throw new InvalidOperationException($"Expected Win32 WM info, got {wmInfo.Subsystem}.");
+            engineCI.WindowHWnd = wmInfo.InfoWinWindow;
+#endif
             using var swapChainDesc = new SwapChainDesc();
 
             var factory = DiligentNativeBindings.LoadAndGetEngineFactoryOpenGL();
