@@ -68,8 +68,13 @@ public sealed class JoltRemainingCoverageTests
         var nodeStarts = 0;
         var nodeOngoing = 0;
         var nodeEnds = 0;
+        var maximumContactCount = 0;
         scene.SubscribeToEvent<PhysicsEvents.PhysicsCollisionStartEvent>(
-            (ref PhysicsEvents.PhysicsCollisionStartEvent _) => ++starts);
+            (ref PhysicsEvents.PhysicsCollisionStartEvent eventData) =>
+            {
+                ++starts;
+                maximumContactCount = System.Math.Max(maximumContactCount, eventData.Contacts.Count);
+            });
         scene.SubscribeToEvent<PhysicsEvents.PhysicsCollisionEvent>(
             (ref PhysicsEvents.PhysicsCollisionEvent _) => ++ongoing);
         scene.SubscribeToEvent<PhysicsEvents.PhysicsCollisionEndEvent>(
@@ -87,6 +92,7 @@ public sealed class JoltRemainingCoverageTests
         Assert.True(ongoing > 0);
         Assert.True(nodeStarts > 0);
         Assert.True(nodeOngoing > 0);
+        Assert.True(maximumContactCount > 1);
 
         var colliding = new List<RigidBody>();
         world.GetCollidingBodies(colliding, floor.Body);
@@ -176,7 +182,7 @@ public sealed class JoltRemainingCoverageTests
                 {
                     removed = true;
                     removedBody = eventData.BodyA;
-                    eventData.BodyA.Remove();
+                    eventData.BodyA!.Remove();
                 }
             });
 
@@ -338,8 +344,8 @@ public sealed class JoltRemainingCoverageTests
 
         var contactType = typeof(PhysicsWorld).GetNestedType("ContactData", BindingFlags.NonPublic)!;
         var contactConstructor = contactType.GetConstructors(InstanceNonPublic | BindingFlags.Public)
-            .Single(constructor => constructor.GetParameters().Length == 3);
-        var contact = contactConstructor.Invoke(new object?[] { pair, false, new PhysicsContact() });
+            .Single(constructor => constructor.GetParameters().Length == 4);
+        var contact = contactConstructor.Invoke(new object?[] { pair, false, false, new[] { new PhysicsContact() } });
         GetDictionary(world, fieldName)[pair] = contact;
     }
 

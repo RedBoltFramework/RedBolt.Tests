@@ -55,7 +55,7 @@ public sealed class PhysicsValueTests
         Assert.Equal(0.0f, body.CcdRadius);
         Assert.Equal(new Vector3f(1.0f, 2.0f, 3.0f), body.Position);
         Assert.Equal(0.0f, shape.Margin);
-        Assert.False(shape.IsSupported);
+        Assert.True(shape.IsSupported);
 
         body.Dispose();
         body.Dispose();

@@ -43,7 +43,7 @@ public sealed class JoltCoverageGapTests
         Assert.Equal(new Vector3f(1.0f, 2.0f, 3.0f), shape.Position);
 
         shape.ShapeType = ShapeType.TriangleMesh;
-        Assert.False(shape.IsSupported);
+        Assert.True(shape.IsSupported);
         Assert.Null(shape.JoltShape);
         shape.ShapeType = ShapeType.Box;
         Assert.True(shape.IsSupported);
@@ -82,7 +82,7 @@ public sealed class JoltCoverageGapTests
         shape.SetTransform(Vector3f.Zero, Quaternion.IDENTITY);
         shape.SetTransform(Vector3f.Zero, Quaternion.IDENTITY);
         shape.ShapeType = ShapeType.Terrain;
-        Assert.False(shape.IsSupported);
+        Assert.True(shape.IsSupported);
         Assert.Null(shape.JoltShape);
         shape.ShapeType = ShapeType.Box;
         Assert.NotNull(shape.JoltShape);
@@ -286,7 +286,11 @@ public sealed class JoltCoverageGapTests
         var body = new RigidBody();
         var ray = new Ray(Vector3f.Zero, Vector3f.Down);
         Assert.False(world.TryRaycastSingle(ray, 0.0f, out var invalidHit));
-        Assert.Equal(default, invalidHit);
+        Assert.Null(invalidHit.Body);
+        Assert.Equal(Vector3f.Zero, invalidHit.Position);
+        Assert.Equal(Vector3f.Zero, invalidHit.Normal);
+        Assert.True(float.IsPositiveInfinity(invalidHit.Distance));
+        Assert.Equal(0.0f, invalidHit.HitFraction);
         var noHit = new PhysicsRaycastResult
         {
             Body = body,
@@ -294,7 +298,11 @@ public sealed class JoltCoverageGapTests
             HitFraction = 0.5f
         };
         world.RaycastSingle(ref noHit, ray, 0.0f);
-        Assert.Equal(default, noHit);
+        Assert.Null(noHit.Body);
+        Assert.Equal(Vector3f.Zero, noHit.Position);
+        Assert.Equal(Vector3f.Zero, noHit.Normal);
+        Assert.True(float.IsPositiveInfinity(noHit.Distance));
+        Assert.Equal(0.0f, noHit.HitFraction);
 
         var result = new List<RigidBody> { body };
         world.GetCollidingBodies(result, body);

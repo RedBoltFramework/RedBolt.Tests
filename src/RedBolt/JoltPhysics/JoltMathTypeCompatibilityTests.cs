@@ -117,4 +117,19 @@ public sealed class JoltMathTypeCompatibilityTests
         Assert.NotNull(property);
         Assert.Equal(typeof(global::SharpCpp.NativeArray<ulong>), property.PropertyType);
     }
+
+    [Fact]
+    public void Jolt_array_is_a_distinct_native_sequence_type()
+    {
+        using var scene = new Scene();
+        scene.CreateComponent<PhysicsWorld>();
+        using var values = new global::JPH.Array<uint>();
+        values.Add(10);
+        values.Add(20);
+
+        Assert.Equal(typeof(global::JPH.Array<uint>), values.GetType());
+        Assert.NotEqual(typeof(global::Std.Vector<uint>), values.GetType());
+        Assert.IsAssignableFrom<global::SharpCpp.Support.VectorBase<uint>>(values);
+        Assert.Equal(new uint[] { 10, 20 }, values.ToArray());
+    }
 }

@@ -66,4 +66,123 @@ public sealed class KinematicCharacterControllerTests
         Assert.Contains(attributes, attribute => attribute.Name == "Collision Layer");
         Assert.Contains(attributes, attribute => attribute.Name == "Max Slope");
     }
+
+    [Fact]
+    public void Jolt_character_reports_sensor_trigger_lifecycle()
+    {
+        using var scene = new Scene();
+        var world = scene.CreateComponent<PhysicsWorld>();
+        world.ManualUpdate = true;
+        world.Interpolation = false;
+        world.Gravity = Vector3f.Zero;
+
+        var sensorNode = scene.CreateChild("Sensor");
+        sensorNode.SetPosition(new Vector3f(0.0f, 0.9f, 0.0f));
+        sensorNode.CreateComponent<CollisionShape>().SetBox(new Vector3f(4.0f, 2.0f, 4.0f));
+        var sensorBody = sensorNode.CreateComponent<RigidBody>();
+        sensorBody.IsTrigger = true;
+
+        var characterNode = scene.CreateChild("Character");
+        var controller = characterNode.CreateComponent<KinematicCharacterController>();
+        controller.Gravity = Vector3f.Zero;
+
+        var starts = 0;
+        var ongoing = 0;
+        var ends = 0;
+        PhysicsEvents.PhysicsCollisionStartEvent startEvent = default;
+        scene.SubscribeToEvent<PhysicsEvents.PhysicsCollisionStartEvent>(
+            (ref PhysicsEvents.PhysicsCollisionStartEvent eventData) =>
+            {
+                if (eventData.BodyB == sensorBody)
+                {
+                    ++starts;
+                    startEvent = eventData;
+                }
+            });
+        scene.SubscribeToEvent<PhysicsEvents.PhysicsCollisionEvent>(
+            (ref PhysicsEvents.PhysicsCollisionEvent eventData) =>
+            {
+                if (eventData.BodyB == sensorBody)
+                    ++ongoing;
+            });
+        scene.SubscribeToEvent<PhysicsEvents.PhysicsCollisionEndEvent>(
+            (ref PhysicsEvents.PhysicsCollisionEndEvent eventData) =>
+            {
+                if (eventData.BodyB == sensorBody)
+                    ++ends;
+            });
+
+        const float timeStep = 1.0f / 60.0f;
+        for (var i = 0; i < 3; ++i)
+            world.Update(timeStep);
+
+        Assert.Equal(1, starts);
+        Assert.True(ongoing > 0);
+        Assert.Null(startEvent.BodyA);
+        Assert.Same(sensorBody, startEvent.BodyB);
+        Assert.True(startEvent.Trigger);
+        Assert.NotNull(startEvent.Contacts);
+        Assert.Empty(startEvent.Contacts);
+
+        controller.Warp(new Vector3f(20.0f, 0.0f, 0.0f));
+        for (var i = 0; i < 3; ++i)
+            world.Update(timeStep);
+
+        Assert.Equal(1, ends);
+    }
+
+    [Fact]
+    public void Enabling_character_triggers_mid_overlap_starts_a_new_lifecycle()
+    {
+        using var scene = new Scene();
+        var world = scene.CreateComponent<PhysicsWorld>();
+        world.ManualUpdate = true;
+        world.Interpolation = false;
+        world.Gravity = Vector3f.Zero;
+
+        var sensorNode = scene.CreateChild("Sensor");
+        sensorNode.SetPosition(new Vector3f(0.0f, 0.9f, 0.0f));
+        sensorNode.CreateComponent<CollisionShape>().SetBox(new Vector3f(4.0f, 2.0f, 4.0f));
+        sensorNode.CreateComponent<RigidBody>().IsTrigger = true;
+
+        var characterNode = scene.CreateChild("Character");
+        var controller = characterNode.CreateComponent<KinematicCharacterController>();
+        controller.Gravity = Vector3f.Zero;
+        controller.ActivateTriggers = false;
+
+        var starts = 0;
+        scene.SubscribeToEvent<PhysicsEvents.PhysicsCollisionStartEvent>(
+            (ref PhysicsEvents.PhysicsCollisionStartEvent _) => ++starts);
+
+        const float timeStep = 1.0f / 60.0f;
+        for (var i = 0; i < 2; ++i)
+            world.Update(timeStep);
+        Assert.Equal(0, starts);
+
+        controller.ActivateTriggers = true;
+        world.Update(timeStep);
+
+        Assert.Equal(1, starts);
+    }
+
+    [Fact]
+    public void Jolt_character_uses_physics_overtime_for_interpolation()
+    {
+        using var scene = new Scene();
+        var world = scene.CreateComponent<PhysicsWorld>();
+        world.ManualUpdate = true;
+        world.Interpolation = true;
+        world.Gravity = Vector3f.Zero;
+
+        var node = scene.CreateChild("Character");
+        var controller = node.CreateComponent<KinematicCharacterController>();
+        controller.Gravity = Vector3f.Zero;
+        controller.SetWalkIncrement(Vector3f.Right);
+
+        const float fixedTimeStep = 1.0f / 60.0f;
+        world.CustomUpdate(1, fixedTimeStep, fixedTimeStep * 0.5f);
+
+        Assert.InRange(controller.RawPosition.X, 0.9f, 1.1f);
+        Assert.InRange(node.WorldPosition.X, 0.4f, 0.6f);
+    }
 }

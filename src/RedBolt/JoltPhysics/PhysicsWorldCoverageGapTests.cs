@@ -113,7 +113,7 @@ public sealed class PhysicsWorldCoverageGapTests
 
         shape.ShapeType = ShapeType.TriangleMesh;
         shape.DrawDebugGeometry(debug, depthTest: false);
-        Assert.False(shape.IsSupported);
+        Assert.True(shape.IsSupported);
         shape.ShapeType = ShapeType.Box;
         Assert.True(shape.IsSupported);
 
