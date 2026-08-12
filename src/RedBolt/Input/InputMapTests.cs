@@ -21,6 +21,17 @@ public sealed class InputMapTests
     private Input Input => _fixture.Input;
 
     [Fact]
+    public void Bundled_move_and_orbit_map_loads_legacy_key_value_actions()
+    {
+        var map = _fixture.Resources.Get<InputMap>("Input/MoveAndOrbit.inputmap");
+
+        Assert.NotNull(map);
+        Assert.Equal(Scancode.W, Assert.Single(map.GetMapping("Forward").KeyboardKeys.Where(
+            key => key.Scancode == Scancode.W)).Scancode);
+        Assert.Equal(Scancode.F, Assert.Single(map.GetMapping("Brake").KeyboardKeys).Scancode);
+    }
+
+    [Fact]
     public void Dead_zone_clamps_to_zero()
     {
         var map = new InputMap { Name = "Input/Smoke" };
