@@ -104,4 +104,36 @@ public sealed class JoltPhysicsTests
             world.BodyInterface.DestroyBody(in bodyId);
         }
     }
+
+    [Fact]
+    public void Parented_rigid_body_world_transforms_follow_parent_first()
+    {
+        using var scene = new Scene();
+        var world = scene.CreateComponent<PhysicsWorld>();
+        world.ManualUpdate = true;
+        world.Interpolation = false;
+        world.Gravity = Vector3f.Zero;
+
+        var parentNode = scene.CreateChild("Parent");
+        var childNode = parentNode.CreateChild("Child");
+        childNode.SetPosition(new Vector3f(0.0f, 3.0f, 0.0f));
+
+        childNode.CreateComponent<CollisionShape>().SetBox(Vector3f.One);
+        var childBody = childNode.CreateComponent<RigidBody>();
+        childBody.Mass = 1.0f;
+        childBody.UseGravity = false;
+
+        parentNode.CreateComponent<CollisionShape>().SetBox(Vector3f.One);
+        var parentBody = parentNode.CreateComponent<RigidBody>();
+        parentBody.Mass = 1.0f;
+        parentBody.UseGravity = false;
+
+        parentBody.LinearVelocity = Vector3f.Right;
+        childBody.LinearVelocity = Vector3f.Right;
+        world.Update(1.0f / 60.0f);
+
+        Assert.InRange(parentNode.WorldPosition.X, 0.015f, 0.018f);
+        Assert.InRange(childNode.WorldPosition.X, 0.015f, 0.018f);
+        Assert.InRange(childNode.Position.X, -0.001f, 0.001f);
+    }
 }
