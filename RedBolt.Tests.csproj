@@ -21,6 +21,7 @@
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Bindings/SpirVCross/RedBolt.Bindings.SpirVCross.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Bindings/SpirVTools/RedBolt.Bindings.SpirVTools.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Core/RedBolt.Core.csproj" />
+    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/CSG/RedBolt.CSG.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/DearImGui/RedBolt.DearImGui.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Editor/RedBolt.Editor.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Glow/RedBolt.Glow.csproj" />
