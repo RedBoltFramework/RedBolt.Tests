@@ -1,6 +1,7 @@
 namespace RedBolt.Tests;
 
 using System;
+using System.Reflection;
 
 using RedBolt.Core;
 using RedBolt.Particles;
@@ -48,5 +49,53 @@ public sealed class ParticleGraphPinBranchTests
 
         pin.ChangeIsInput(false);
         Assert.False(pin.IsInput);
+    }
+
+    [Fact]
+    public void Friend_bridges_do_not_change_cpp_member_access()
+    {
+        AssertProtectedWithInternalBridge(typeof(ParticleGraphPin), "SetName",
+            "SetNameFromParticleGraphNodeFriend");
+        AssertProtectedWithInternalBridge(typeof(ParticleGraphPin), "SetValueType",
+            "SetValueTypeFromParticleGraphNodeFriend");
+        AssertProtectedWithInternalBridge(typeof(ParticleGraphNode), "SetGraph",
+            "SetGraphFromParticleGraphFriend");
+        AssertProtectedWithInternalBridge(typeof(ParticleGraphNode), "EvaluateOutputPinTypeCore",
+            "EvaluateOutputPinTypeFromParticleGraphAttributeBuilderFriend");
+        AssertProtectedWithInternalBridge(typeof(ParticleGraphLayerInstance), "OnSceneSet",
+            "OnSceneSetFromParticleGraphEmitterFriend");
+        AssertProtectedWithInternalBridge(typeof(ParticleGraphLayerInstance), "SetEmitter",
+            "SetEmitterFromParticleGraphEmitterFriend");
+
+        var pinFields = new[]
+        {
+            "_containerType", "_valueType", "_name", "_nameHash", "_sourceNode", "_sourcePin", "_flags",
+            "_requestedValueType", "_attributeIndex", "_memory"
+        };
+        foreach (var fieldName in pinFields)
+        {
+            var field = typeof(ParticleGraphPin).GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            Assert.True(field.IsPrivate, fieldName);
+        }
+
+        var builderAccess = typeof(ParticleGraphPin).GetNestedType(
+            "ParticleGraphAttributeBuilderFriendAccess", BindingFlags.NonPublic);
+        Assert.NotNull(builderAccess);
+        foreach (var propertyName in new[] { "ContainerType", "Name", "SourceNode", "SourcePin", "RequestedValueType" })
+            Assert.False(builderAccess.GetProperty(propertyName)!.CanWrite, propertyName);
+        foreach (var propertyName in new[] { "ValueType", "AttributeIndex", "Memory" })
+            Assert.True(builderAccess.GetProperty(propertyName)!.CanWrite, propertyName);
+    }
+
+    private static void AssertProtectedWithInternalBridge(Type type, string memberName, string bridgeName)
+    {
+        var member = type.GetMethod(memberName, BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(member);
+        Assert.True(member.IsFamily, memberName);
+
+        var bridge = type.GetMethod(bridgeName, BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(bridge);
+        Assert.True(bridge.IsAssembly, bridgeName);
     }
 }

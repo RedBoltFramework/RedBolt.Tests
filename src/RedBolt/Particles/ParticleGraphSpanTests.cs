@@ -2,7 +2,9 @@ namespace RedBolt.Tests;
 
 using System.Runtime.InteropServices;
 
+using RedBolt.Core;
 using RedBolt.Particles;
+using RedBolt.Resource;
 
 public class ParticleGraphSpanTests
 {
@@ -32,5 +34,21 @@ public class ParticleGraphSpanTests
         Assert.Equal([20, 30], slice.ToArray());
         slice[1] = 50;
         Assert.Equal(50, values[2]);
+    }
+
+    [Fact]
+    public void MemoryBufferReturnsRegisteredReferenceContainingSpans()
+    {
+        var buffer = new ParticleGraphMemoryBuffer(128);
+        var strings = new ParticleGraphSpan(0, VariantTypeUtility.GetVariantTypeSize(VariantType.String) * 2);
+        var resources = new ParticleGraphSpan(64, VariantTypeUtility.GetVariantTypeSize(VariantType.ResourceRef) * 2);
+        buffer.Register<string>(strings, 2);
+        buffer.Register<ResourceRef>(resources, 2);
+
+        strings.MakeSpan<string>(buffer)[0] = "first";
+        resources.MakeSpan<ResourceRef>(buffer)[1] = new ResourceRef("Model", "Models/Box.mdl");
+
+        Assert.Equal("first", strings.MakeSpan<string>(buffer)[0]);
+        Assert.Equal("Models/Box.mdl", resources.MakeSpan<ResourceRef>(buffer)[1].Name);
     }
 }
