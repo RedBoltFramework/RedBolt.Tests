@@ -45,7 +45,7 @@ public sealed class RawTextureRenderDeviceRemainingCoverageTests
             if (nativeType == ResourceDimension.ResourceDimTex3d)
                 description.Depth = depth;
 
-            device.CreateTexture(description, null!, out var nativeTexture);
+            IRenderDevice_CreateTexture(device, description, null!, out var nativeTexture);
             Assert.NotNull(nativeTexture);
             try
             {
@@ -62,7 +62,7 @@ public sealed class RawTextureRenderDeviceRemainingCoverageTests
             }
             finally
             {
-                _ = nativeTexture!.Release();
+                _ = IObject_Release(nativeTexture!);
             }
         }
 
@@ -80,7 +80,7 @@ public sealed class RawTextureRenderDeviceRemainingCoverageTests
                 BindFlags.BindRenderTarget |
                 BindFlags.BindUnorderedAccess
         };
-        device.CreateTexture(boundDescription, null!, out var boundTexture);
+        IRenderDevice_CreateTexture(device, boundDescription, null!, out var boundTexture);
         Assert.NotNull(boundTexture);
         try
         {
@@ -93,7 +93,7 @@ public sealed class RawTextureRenderDeviceRemainingCoverageTests
         }
         finally
         {
-            _ = boundTexture!.Release();
+            _ = IObject_Release(boundTexture!);
         }
     }
 

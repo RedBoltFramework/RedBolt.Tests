@@ -136,7 +136,7 @@ public sealed class CubemapRendererTests
             {
                 var view = destinationRaw.GetUAV(new RawTextureUAVKey().FromLevel(checked((int)level)));
                 Assert.NotNull(view);
-                using var desc = view.GetDesc();
+                using var desc = ITextureView_GetDesc(view);
                 Assert.Equal(checked((uint)level), desc.MostDetailedMip);
             }
         });

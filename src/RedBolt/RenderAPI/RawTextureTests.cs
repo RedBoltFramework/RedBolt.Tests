@@ -308,7 +308,7 @@ public sealed class RawTextureTests
             Assert.NotNull(handle);
             Assert.False(handle!.IsNull);
 
-            var desc = handle.GetDesc();
+            var desc = ITexture_GetDesc(handle);
             Assert.Equal((uint)32, desc.Width);
             Assert.Equal((uint)16, desc.Height);
         });
@@ -328,8 +328,8 @@ public sealed class RawTextureTests
             var writableView = Assert.IsAssignableFrom<ITextureView>(rawTexture.GetHandles().DepthStencilView);
             var readOnlyView = Assert.IsAssignableFrom<ITextureView>(rawTexture.GetHandles().ReadOnlyDepthStencilView);
 
-            Assert.Equal(TextureViewType.TextureViewDepthStencil, writableView.GetDesc().ViewType);
-            Assert.Equal(TextureViewType.TextureViewReadOnlyDepthStencil, readOnlyView.GetDesc().ViewType);
+            Assert.Equal(TextureViewType.TextureViewDepthStencil, ITextureView_GetDesc(writableView).ViewType);
+            Assert.Equal(TextureViewType.TextureViewReadOnlyDepthStencil, ITextureView_GetDesc(readOnlyView).ViewType);
             Assert.Same(writableView, RenderTargetView.Texture(rawTexture).GetView());
             Assert.Same(readOnlyView, RenderTargetView.ReadOnlyDepth(rawTexture).GetView());
         });
@@ -353,7 +353,7 @@ public sealed class RawTextureTests
             Assert.NotNull(firstView);
             Assert.Same(firstView, secondView);
 
-            var desc = firstView!.GetDesc();
+            var desc = ITextureView_GetDesc(firstView!);
             Assert.Equal(TextureViewType.TextureViewUnorderedAccess, desc.ViewType);
             Assert.Equal(ResourceDimension.ResourceDimTex2d, desc.TextureDim);
             Assert.Equal((uint)0, desc.FirstArraySlice);
@@ -397,7 +397,7 @@ public sealed class RawTextureTests
             Assert.NotNull(firstView);
             Assert.Same(firstView, secondView);
 
-            var desc = firstView!.GetDesc();
+            var desc = ITextureView_GetDesc(firstView!);
             Assert.Equal(TextureViewType.TextureViewUnorderedAccess, desc.ViewType);
             Assert.Equal(ResourceDimension.ResourceDimTex2dArray, desc.TextureDim);
             Assert.Equal((uint)0, desc.FirstArraySlice);
@@ -490,7 +490,7 @@ public sealed class RawTextureTests
                 ArraySize = 1,
                 BindFlags = BindFlags.BindRenderTarget
             };
-            _fixture.RenderDevice.GetRenderDevice()!.CreateTexture(desc, null!, out var nativeTexture);
+            IRenderDevice_CreateTexture(_fixture.RenderDevice.GetRenderDevice()!, desc, null!, out var nativeTexture);
             Assert.NotNull(nativeTexture);
 
             var wrapped = new TestRawTexture();
@@ -503,7 +503,7 @@ public sealed class RawTextureTests
             finally
             {
                 wrapped.Destroy();
-                _ = nativeTexture!.Release();
+                _ = IObject_Release(nativeTexture!);
             }
         });
     }

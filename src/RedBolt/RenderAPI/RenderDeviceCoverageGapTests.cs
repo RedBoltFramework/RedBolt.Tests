@@ -161,7 +161,7 @@ public sealed class RenderDeviceCoverageGapTests
         Assert.NotNull(writeOnly);
         Assert.Equal(
             global::RedBolt.Bindings.Diligent.ResourceDimension.ResourceDimTex2dArray,
-            readOnly!.GetDesc().TextureDim);
+            ITextureView_GetDesc(readOnly!).TextureDim);
 
         using var volumeTexture = new RawTexture(new RawTextureParams(
             TextureType.Texture3D,
@@ -176,7 +176,7 @@ public sealed class RenderDeviceCoverageGapTests
         Assert.NotNull(volumeView);
         Assert.Equal(
             global::RedBolt.Bindings.Diligent.ResourceDimension.ResourceDimTex3d,
-            volumeView!.GetDesc().TextureDim);
+            ITextureView_GetDesc(volumeView!).TextureDim);
     }
 
     [GraphicsFact]

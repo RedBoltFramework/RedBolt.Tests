@@ -48,7 +48,7 @@ public sealed class GraphicsRenderTargetViewTests
             var secondView = ResolveRenderTargetView(RenderTargetView.TextureSlice(texture, 3));
             Assert.Same(firstView, secondView);
 
-            var desc = firstView.GetDesc();
+            var desc = ITextureView_GetDesc(firstView);
             Assert.Equal(TextureViewType.TextureViewRenderTarget, desc.ViewType);
             Assert.Equal(ResourceDimension.ResourceDimTex2d, desc.TextureDim);
             Assert.Equal((uint)3, desc.FirstArraySlice);
@@ -85,7 +85,7 @@ public sealed class GraphicsRenderTargetViewTests
             var secondRawTexture = Assert.IsAssignableFrom<RawTexture>(texture.GetRawTexture());
 
             Assert.Same(firstRawTexture, secondRawTexture);
-            Assert.Same(secondRawTexture.GetHandles().Texture, renderTargetView.GetView().GetTexture());
+            Assert.Same(secondRawTexture.GetHandles().Texture, ITextureView_GetTexture(renderTargetView.GetView()));
         });
     }
 
@@ -141,7 +141,7 @@ public sealed class GraphicsRenderTargetViewTests
             var secondView = ResolveRenderTargetView(RenderTargetView.ReadOnlyDepthSlice(texture, 2));
             Assert.Same(firstView, secondView);
 
-            var desc = firstView.GetDesc();
+            var desc = ITextureView_GetDesc(firstView);
             Assert.Equal(TextureViewType.TextureViewReadOnlyDepthStencil, desc.ViewType);
             Assert.Equal(ResourceDimension.ResourceDimTex2d, desc.TextureDim);
             Assert.Equal((uint)2, desc.FirstArraySlice);
@@ -159,7 +159,7 @@ public sealed class GraphicsRenderTargetViewTests
 
             var firstUpload = GetUploadedTexture(texture);
             var firstNativeTexture = GetNativeTexture(firstUpload);
-            var firstDesc = firstNativeTexture.GetDesc();
+            var firstDesc = ITexture_GetDesc(firstNativeTexture);
             var firstWidth = firstDesc.Width;
             var firstHeight = firstDesc.Height;
 
@@ -167,7 +167,7 @@ public sealed class GraphicsRenderTargetViewTests
 
             var secondUpload = GetUploadedTexture(texture);
             var secondNativeTexture = GetNativeTexture(secondUpload);
-            var secondDesc = secondNativeTexture.GetDesc();
+            var secondDesc = ITexture_GetDesc(secondNativeTexture);
 
             Assert.Equal((uint)16, firstWidth);
             Assert.Equal((uint)16, firstHeight);
@@ -190,8 +190,8 @@ public sealed class GraphicsRenderTargetViewTests
             var nativeTexture = GetNativeTexture(uploadedTexture);
 
             Assert.Same(rawTexture.GetHandles().Texture, nativeTexture);
-            Assert.Equal(checked((uint)texture.Levels), nativeTexture.GetDesc().MipLevels);
-            Assert.True(nativeTexture.GetDesc().MipLevels > 1u);
+            Assert.Equal(checked((uint)texture.Levels), ITexture_GetDesc(nativeTexture).MipLevels);
+            Assert.True(ITexture_GetDesc(nativeTexture).MipLevels > 1u);
         });
     }
 
@@ -207,9 +207,9 @@ public sealed class GraphicsRenderTargetViewTests
             Assert.True(texture.SetSize(16, 16, TextureFormat.TexFormatRgba8Unorm, TextureFlag.BindRenderTarget, sampleCount));
 
             var nativeTexture = GetNativeTexture(GetUploadedTexture(texture));
-            var desc = nativeTexture.GetDesc();
+            var desc = ITexture_GetDesc(nativeTexture);
             var shaderResourceTexture = GetShaderResourceTexture(texture);
-            var shaderResourceDesc = shaderResourceTexture.GetDesc();
+            var shaderResourceDesc = ITexture_GetDesc(shaderResourceTexture);
 
             Assert.Equal((uint)sampleCount, desc.SampleCount);
             Assert.Equal(1u, shaderResourceDesc.SampleCount);
@@ -285,8 +285,8 @@ public sealed class GraphicsRenderTargetViewTests
             var nativeTexture = GetNativeTexture(GetUploadedTexture(texture));
             var shaderResourceTexture = GetShaderResourceTexture(texture);
 
-            Assert.Equal((uint)sampleCount, nativeTexture.GetDesc().SampleCount);
-            Assert.Equal((uint)sampleCount, shaderResourceTexture.GetDesc().SampleCount);
+            Assert.Equal((uint)sampleCount, ITexture_GetDesc(nativeTexture).SampleCount);
+            Assert.Equal((uint)sampleCount, ITexture_GetDesc(shaderResourceTexture).SampleCount);
         }, multiSample: 4);
     }
 
@@ -398,7 +398,7 @@ public sealed class GraphicsRenderTargetViewTests
         var method = typeof(Graphics).GetMethod("GetShaderResourceView", BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("Graphics.GetShaderResourceView was not found.");
         var view = Assert.IsAssignableFrom<ITextureView>(method.Invoke(_fixture.Graphics, [texture]));
-        return view.GetTexture();
+        return ITextureView_GetTexture(view);
     }
 
     private void SetRenderTargets(IntRect viewportRect, RenderTargetView? colorTarget, RenderTargetView? depthStencilTarget)
@@ -439,7 +439,7 @@ public sealed class GraphicsRenderTargetViewTests
         var field = typeof(Graphics).GetField("_immediateContext", BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("Graphics.immediateContext was not found.");
         var immediateContext = Assert.IsAssignableFrom<IDeviceContext>(field.GetValue(_fixture.Graphics));
-        return immediateContext.GetStats();
+        return IDeviceContext_GetStats(immediateContext);
     }
 
     private Color ReadBackTexturePixel(ITexture texture)
@@ -454,12 +454,13 @@ public sealed class GraphicsRenderTargetViewTests
         try
         {
             using var mappedData = new MappedTextureSubresource();
-            immediateContext.MapTextureSubresource(stagingTexture, 0, 0, MapType.MapRead, MapFlags.MapFlagNone, null!, mappedData);
+            IDeviceContext_MapTextureSubresource(
+                immediateContext, stagingTexture, 0, 0, MapType.MapRead, MapFlags.MapFlagNone, null!, mappedData);
             try
             {
                 var data = new byte[4];
                 Marshal.Copy(mappedData.PData, data, 0, data.Length);
-                using var desc = stagingTexture.GetDesc();
+                using var desc = ITexture_GetDesc(stagingTexture);
                 if (desc.Format is RedBolt.Bindings.Diligent.TextureFormat.TexFormatBgra8Unorm
                     or RedBolt.Bindings.Diligent.TextureFormat.TexFormatBgra8UnormSrgb)
                     (data[0], data[2]) = (data[2], data[0]);
@@ -467,12 +468,12 @@ public sealed class GraphicsRenderTargetViewTests
             }
             finally
             {
-                immediateContext.UnmapTextureSubresource(stagingTexture, 0, 0);
+                IDeviceContext_UnmapTextureSubresource(immediateContext, stagingTexture, 0, 0);
             }
         }
         finally
         {
-            _ = stagingTexture.Release();
+            _ = IObject_Release(stagingTexture);
         }
     }
 

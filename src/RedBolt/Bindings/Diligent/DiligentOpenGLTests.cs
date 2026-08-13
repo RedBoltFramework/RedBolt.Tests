@@ -23,18 +23,16 @@ public sealed class DiligentOpenGLTests
     }
 
     [Fact]
-    public void Core_cpp_interface_methods_are_generated()
+    public void Core_c_interface_macros_are_generated()
     {
         var diligentAssembly = Assembly.Load("RedBolt.Bindings.Diligent");
-        var renderDevice = diligentAssembly.GetType("RedBolt.Bindings.Diligent.IRenderDevice")
-            ?? throw new InvalidOperationException("IRenderDevice type was not found.");
-        var deviceContext = diligentAssembly.GetType("RedBolt.Bindings.Diligent.IDeviceContext")
-            ?? throw new InvalidOperationException("IDeviceContext type was not found.");
+        var bindings = diligentAssembly.GetType("RedBolt.Bindings.Diligent.DiligentNativeBindings")
+            ?? throw new InvalidOperationException("DiligentNativeBindings type was not found.");
 
-        Assert.NotNull(renderDevice.GetMethod("CreateBuffer"));
-        Assert.NotNull(deviceContext.GetMethod("SetVertexBuffers"));
-        Assert.NotNull(deviceContext.GetMethod("SetIndexBuffer"));
-        Assert.NotNull(deviceContext.GetMethod("DrawIndexed"));
+        Assert.NotNull(bindings.GetMethod("IRenderDevice_CreateBuffer"));
+        Assert.NotNull(bindings.GetMethod("IDeviceContext_SetVertexBuffers"));
+        Assert.NotNull(bindings.GetMethod("IDeviceContext_SetIndexBuffer"));
+        Assert.NotNull(bindings.GetMethod("IDeviceContext_DrawIndexed"));
     }
 
     [DiligentGraphicsFact]
@@ -93,28 +91,30 @@ public sealed class DiligentOpenGLTests
 #endif
             using var swapChainDesc = new SwapChainDesc();
 
-            var factory = DiligentNativeBindings.LoadAndGetEngineFactoryOpenGL();
+            var factory = DiligentNativeBindings.DiligentLoadAndGetEngineFactoryOpenGL();
             if (factory.IsNull)
                 throw new InvalidOperationException("LoadAndGetEngineFactoryOpenGL returned null.");
 
-            factory.CreateDeviceAndSwapChainGL(engineCI, out device, out immediateContext,
+            IEngineFactoryOpenGL_CreateDeviceAndSwapChainGL(factory, engineCI, out device,
+                out immediateContext,
                 swapChainDesc, out swapChain);
             if (device.IsNull || immediateContext.IsNull || swapChain.IsNull)
                 throw new InvalidOperationException("CreateDeviceAndSwapChainGL returned null objects.");
 
-            var rtv = swapChain.GetCurrentBackBufferRTV();
+            var rtv = ISwapChain_GetCurrentBackBufferRTV(swapChain);
             if (rtv.IsNull)
                 throw new InvalidOperationException("GetCurrentBackBufferRTV returned null.");
 
             ITextureView?[] renderTargets = [rtv];
-            immediateContext.SetRenderTargets((uint)renderTargets.Length, renderTargets, null!,
+            IDeviceContext_SetRenderTargets(immediateContext, (uint)renderTargets.Length,
+                renderTargets, null!,
                 ResourceStateTransitionMode.ResourceStateTransitionModeTransition);
 
             var clearColor = new[] { 0.08f, 0.16f, 0.30f, 1.0f };
             var handle = GCHandle.Alloc(clearColor, GCHandleType.Pinned);
             try
             {
-                immediateContext.ClearRenderTarget(rtv, handle.AddrOfPinnedObject(),
+                IDeviceContext_ClearRenderTarget(immediateContext, rtv, handle.AddrOfPinnedObject(),
                     ResourceStateTransitionMode.ResourceStateTransitionModeTransition);
             }
             finally
@@ -122,8 +122,8 @@ public sealed class DiligentOpenGLTests
                 handle.Free();
             }
 
-            swapChain.Present(0);
-            immediateContext.SetRenderTargets(0, Array.Empty<ITextureView?>(), null!,
+            ISwapChain_Present(swapChain, 0);
+            IDeviceContext_SetRenderTargets(immediateContext, 0, Array.Empty<ITextureView?>(), null!,
                 ResourceStateTransitionMode.ResourceStateTransitionModeNone);
         }
         finally
@@ -205,11 +205,12 @@ public sealed class DiligentOpenGLTests
 #endif
             using var swapChainDesc = new SwapChainDesc();
 
-            var factory = DiligentNativeBindings.LoadAndGetEngineFactoryOpenGL();
+            var factory = DiligentNativeBindings.DiligentLoadAndGetEngineFactoryOpenGL();
             if (factory.IsNull)
                 throw new InvalidOperationException("LoadAndGetEngineFactoryOpenGL returned null.");
 
-            factory.CreateDeviceAndSwapChainGL(engineCI, out device, out immediateContext,
+            IEngineFactoryOpenGL_CreateDeviceAndSwapChainGL(factory, engineCI, out device,
+                out immediateContext,
                 swapChainDesc, out swapChain);
             if (device.IsNull || immediateContext.IsNull || swapChain.IsNull)
                 throw new InvalidOperationException("CreateDeviceAndSwapChainGL returned null objects.");
@@ -239,9 +240,20 @@ public sealed class DiligentOpenGLTests
                 var uploadHandle = GCHandle.Alloc(uploadPixels, GCHandleType.Pinned);
                 try
                 {
-                    using var subresource = new TextureSubResData(uploadHandle.AddrOfPinnedObject(), 8u * 4u, 0);
-                    using var textureData = new TextureData(subresource, 1, immediateContext);
-                    device.CreateTexture(uploadTextureDesc, textureData, out uploadedTexture);
+                    using var subresource = new TextureSubResData
+                    {
+                        PData = uploadHandle.AddrOfPinnedObject(),
+                        Stride = 8u * 4u,
+                        DepthStride = 0
+                    };
+                    using var textureData = new TextureData
+                    {
+                        PSubResources = subresource,
+                        NumSubresources = 1,
+                        PContext = immediateContext
+                    };
+                    IRenderDevice_CreateTexture(device, uploadTextureDesc, textureData,
+                        out uploadedTexture);
                 }
                 finally
                 {
@@ -266,7 +278,7 @@ public sealed class DiligentOpenGLTests
             textureDesc.BindFlags = BindFlags.BindRenderTarget | BindFlags.BindShaderResource;
             textureDesc.Usage = Usage.UsageDefault;
             textureDesc.SampleCount = 1;
-            device.CreateTexture(textureDesc, null!, out offscreenTexture);
+            IRenderDevice_CreateTexture(device, textureDesc, null!, out offscreenTexture);
             if (offscreenTexture.IsNull)
                 throw new InvalidOperationException("Failed to create offscreen texture.");
 
@@ -275,14 +287,16 @@ public sealed class DiligentOpenGLTests
             Assert.False(renderTargetView.IsNull);
 
             ITextureView?[] renderTargets = [renderTargetView];
-            immediateContext.SetRenderTargets((uint)renderTargets.Length, renderTargets, null!,
+            IDeviceContext_SetRenderTargets(immediateContext, (uint)renderTargets.Length,
+                renderTargets, null!,
                 ResourceStateTransitionMode.ResourceStateTransitionModeTransition);
 
             var clearColor = new[] { 1.0f, 0.0f, 0.0f, 1.0f };
             var handle = GCHandle.Alloc(clearColor, GCHandleType.Pinned);
             try
             {
-                immediateContext.ClearRenderTarget(renderTargetView, handle.AddrOfPinnedObject(),
+                IDeviceContext_ClearRenderTarget(immediateContext, renderTargetView,
+                    handle.AddrOfPinnedObject(),
                     ResourceStateTransitionMode.ResourceStateTransitionModeTransition);
             }
             finally
@@ -304,7 +318,7 @@ public sealed class DiligentOpenGLTests
             Assert.True(offscreenPixel[2] <= 5);
             Assert.True(offscreenPixel[3] >= 250);
 
-            immediateContext.SetRenderTargets(0, Array.Empty<ITextureView?>(), null!,
+            IDeviceContext_SetRenderTargets(immediateContext, 0, Array.Empty<ITextureView?>(), null!,
                 ResourceStateTransitionMode.ResourceStateTransitionModeNone);
         }
         finally
@@ -349,21 +363,24 @@ public sealed class DiligentOpenGLTests
             stagingDesc.MiscFlags = MiscTextureFlags.MiscTextureFlagNone;
             stagingDesc.SampleCount = 1;
             stagingDesc.Usage = Usage.UsageStaging;
-            device.CreateTexture(stagingDesc, null!, out stagingTexture);
+            IRenderDevice_CreateTexture(device, stagingDesc, null!, out stagingTexture);
             if (stagingTexture.IsNull)
                 throw new InvalidOperationException("Failed to create staging texture.");
 
-            using var copyAttribs = new CopyTextureAttribs(
-                texture,
-                ResourceStateTransitionMode.ResourceStateTransitionModeTransition,
-                stagingTexture,
-                ResourceStateTransitionMode.ResourceStateTransitionModeTransition);
-            immediateContext.CopyTexture(copyAttribs);
-            immediateContext.Flush();
-            immediateContext.WaitForIdle();
+            using var copyAttribs = new CopyTextureAttribs
+            {
+                PSrcTexture = texture,
+                SrcTextureTransitionMode = ResourceStateTransitionMode.ResourceStateTransitionModeTransition,
+                PDstTexture = stagingTexture,
+                DstTextureTransitionMode = ResourceStateTransitionMode.ResourceStateTransitionModeTransition
+            };
+            IDeviceContext_CopyTexture(immediateContext, copyAttribs);
+            IDeviceContext_Flush(immediateContext);
+            IDeviceContext_WaitForIdle(immediateContext);
 
             using var mappedSubresource = new MappedTextureSubresource();
-            immediateContext.MapTextureSubresource(stagingTexture, 0, 0, MapType.MapRead, MapFlags.MapFlagNone, null!,
+            IDeviceContext_MapTextureSubresource(immediateContext, stagingTexture, 0, 0,
+                MapType.MapRead, MapFlags.MapFlagNone, null!,
                 mappedSubresource);
             try
             {
@@ -373,7 +390,7 @@ public sealed class DiligentOpenGLTests
             }
             finally
             {
-                immediateContext.UnmapTextureSubresource(stagingTexture, 0, 0);
+                IDeviceContext_UnmapTextureSubresource(immediateContext, stagingTexture, 0, 0);
             }
         }
         finally
@@ -403,10 +420,10 @@ public sealed class DiligentOpenGLTests
     private static ITextureView GetOrCreateTextureView(ITexture texture, TextureViewType viewType,
         global::RedBolt.Bindings.Diligent.TextureFormat format)
     {
-        var view = texture.GetDefaultView(viewType);
+        var view = ITexture_GetDefaultView(texture, viewType);
         if (view is not null && !view.IsNull)
         {
-            _ = view.AddRef();
+            _ = IObject_AddRef(view);
             return view;
         }
 
@@ -414,7 +431,7 @@ public sealed class DiligentOpenGLTests
         var textureViewDesc = textureViewDescOwner.Desc;
         textureViewDesc.ViewType = viewType;
         textureViewDesc.Format = format;
-        texture.CreateView(textureViewDesc, out var createdView);
+        ITexture_CreateView(texture, textureViewDesc, out var createdView);
         if (createdView.IsNull)
             throw new InvalidOperationException($"Failed to create {viewType}.");
 
@@ -423,13 +440,15 @@ public sealed class DiligentOpenGLTests
 
     private static TextureDescOwner CreateTextureDesc()
     {
-        var apiInfo = DiligentNativeBindings.LoadAndGetEngineFactoryOpenGL().GetAPIInfo();
+        var apiInfo = IEngineFactory_GetAPIInfo(
+            DiligentNativeBindings.DiligentLoadAndGetEngineFactoryOpenGL());
         return new TextureDescOwner((int)apiInfo.TextureDescSize);
     }
 
     private static TextureViewDescOwner CreateTextureViewDesc()
     {
-        var apiInfo = DiligentNativeBindings.LoadAndGetEngineFactoryOpenGL().GetAPIInfo();
+        var apiInfo = IEngineFactory_GetAPIInfo(
+            DiligentNativeBindings.DiligentLoadAndGetEngineFactoryOpenGL());
         return new TextureViewDescOwner((int)apiInfo.TextureViewDescSize);
     }
 
@@ -482,6 +501,6 @@ public sealed class DiligentOpenGLTests
     private static void ReleaseIfNotNull(IObject? value)
     {
         if (value is not null && !value.IsNull)
-            _ = value.Release();
+            _ = IObject_Release(value);
     }
 }

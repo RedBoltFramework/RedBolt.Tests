@@ -182,7 +182,7 @@ public sealed class RenderDeviceTests
         _fixture.InitializeGraphics(parameters);
         try
         {
-            using var description = _fixture.RenderDevice.GetSwapChain()!.GetDesc();
+            using var description = ISwapChain_GetDesc(_fixture.RenderDevice.GetSwapChain()!);
 
             Assert.NotNull(_fixture.RenderDevice.GetFactory());
             Assert.NotNull(_fixture.RenderDevice.GetSDLWindow());
@@ -216,7 +216,7 @@ public sealed class RenderDeviceTests
 
             Assert.Equal(new Vector2i(_fixture.Graphics.Width, _fixture.Graphics.Height),
                 _fixture.RenderDevice.GetWindowSize());
-            using var description = _fixture.RenderDevice.GetSwapChain()!.GetDesc();
+            using var description = ISwapChain_GetDesc(_fixture.RenderDevice.GetSwapChain()!);
             Assert.Equal(new Vector2i((int)description.Width, (int)description.Height),
                 _fixture.RenderDevice.GetSwapChainSize());
         }

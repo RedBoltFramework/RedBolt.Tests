@@ -26,10 +26,10 @@ public sealed class DrawCommandQueueTests
     [Fact]
     public void Vertex_buffer_offsets_use_fixed_width_unsigned_values()
     {
-        var setVertexBuffers = typeof(IDeviceContext).GetMethod("SetVertexBuffers")
-            ?? throw new InvalidOperationException("IDeviceContext.SetVertexBuffers was not found.");
+        var setVertexBuffers = typeof(DiligentNativeBindings).GetMethod("IDeviceContext_SetVertexBuffers")
+            ?? throw new InvalidOperationException("IDeviceContext_SetVertexBuffers was not found.");
 
-        Assert.Equal(typeof(ReadOnlySpan<ulong>), setVertexBuffers.GetParameters()[3].ParameterType);
+        Assert.Equal(typeof(ReadOnlySpan<ulong>), setVertexBuffers.GetParameters()[4].ParameterType);
     }
 
     [GraphicsFact]
