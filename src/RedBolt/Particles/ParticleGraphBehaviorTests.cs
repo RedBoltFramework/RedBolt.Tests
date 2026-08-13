@@ -199,7 +199,7 @@ public sealed class ParticleGraphBehaviorTests
         var references = typeof(RedBolt.PhysicsJolt.Physics).Assembly.GetReferencedAssemblies();
 
         Assert.DoesNotContain(references, reference => reference.Name == "RedBolt.Particles");
-        Assert.Contains(typeof(IPhysicsQueryWorld), typeof(RedBolt.PhysicsJolt.PhysicsWorld).GetInterfaces());
+        Assert.Contains(typeof(IPhysicsWorld), typeof(RedBolt.PhysicsJolt.PhysicsWorld).GetInterfaces());
     }
 
     [Fact]
@@ -451,7 +451,7 @@ public sealed class ParticleGraphBehaviorTests
         using var instance = (BounceInstance)bounce.CreateInstance(layer);
         using var node = new Node();
         var context = new UpdateContext { TimeStep = 0.5f };
-        var physics = new TestPhysicsQueryWorld
+        var physics = new TestPhysicsWorld
         {
             Result = new PhysicsSphereCastResult
             {
@@ -584,11 +584,17 @@ public sealed class ParticleGraphBehaviorTests
         public ParticleGraphSystem System => _system;
     }
 
-    private sealed class TestPhysicsQueryWorld : IPhysicsQueryWorld
+    private sealed class TestPhysicsWorld : IPhysicsWorld
     {
         public Vector3f Gravity { get; set; }
 
+        public bool UpdateEnabled { get; set; }
+
         public PhysicsSphereCastResult Result { get; set; }
+
+        public void Update(float timeStep)
+        {
+        }
 
         public void SphereCast(ref PhysicsSphereCastResult result, Ray ray, float radius, float maxDistance)
         {
