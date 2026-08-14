@@ -2,6 +2,7 @@ namespace RedBolt.Tests;
 
 using RedBolt.Graphics2D;
 using RedBolt.Math;
+using RedBolt.Resource;
 using RedBolt.Scene2D;
 
 [Collection(nameof(GraphicsEngineCollection))]
@@ -17,7 +18,7 @@ public sealed class Graphics2DTests
     }
 
     [Fact]
-    public void Module_registration_matches_split_2d_surface()
+    public void Module_registration_matches_unified_2d_surface()
     {
         Assert.NotNull(_fixture.Context.GetReflection<Renderer2D>());
         Assert.NotNull(_fixture.Context.GetReflection<Sprite2D>());
