@@ -15,6 +15,8 @@ public sealed class Graphics2DTests
         _fixture = fixture;
         Scene2D.RegisterUrho2DLibrary(fixture.Context);
         RbfxTestData.AddResourceDirs(fixture.Resources);
+        fixture.Resources.AddResourceDir(Path.Combine(RbfxTestData.RepositoryRoot, "..", "RedBolt.2D", "bin", "CoreData"));
+        fixture.Resources.AddResourceDir(Path.Combine(RbfxTestData.RepositoryRoot, "..", "RedBolt.2D", "bin", "Data"));
     }
 
     [Fact]

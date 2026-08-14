@@ -13,7 +13,7 @@
              Link="GlobalAliases.cs"
              Visible="false" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/Diligent/RedBolt.Bindings.Diligent.csproj" />
-    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/Box2D/RedBolt.Bindings.Box2D.csproj" />
+    <ProjectReference Include="$(RedBoltPhysicsBox2DRoot)/src/RedBolt/Native/Box2D/RedBolt.Bindings.Box2D.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/Glslang/RedBolt.Bindings.Glslang.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/HarfBuzz/RedBolt.Bindings.HarfBuzz.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/JoltPhysics/RedBolt.Bindings.Jolt.csproj" />
@@ -29,8 +29,8 @@
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Generator/Dependencies/RedBolt.Generator.Dependencies.csproj"
                       GlobalPropertiesToRemove="RedBoltPlatform;RedBoltNativePreset" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/IK/RedBolt.IK.csproj" />
-    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/2D/RedBolt.2D.csproj" />
-    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/PhysicsBox2D/RedBolt.PhysicsBox2D.csproj" />
+    <ProjectReference Include="$(RedBolt2DRoot)/src/RedBolt/2D/RedBolt.2D.csproj" />
+    <ProjectReference Include="$(RedBoltPhysicsBox2DRoot)/src/RedBolt/PhysicsBox2D/RedBolt.PhysicsBox2D.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/PhysicsJolt/RedBolt.PhysicsJolt.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Navigation/RedBolt.Navigation.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Network/RedBolt.Network.csproj" />

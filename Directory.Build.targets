@@ -1,3 +1,5 @@
 <Project>
   <Import Project="$(RedBoltRoot)/src/Directory.Build.targets" />
+  <Import Project="$(RedBolt2DRoot)/src/RedBolt.2D.TestIntegration.targets" />
+  <Import Project="$(RedBoltPhysicsBox2DRoot)/src/RedBolt.PhysicsBox2D.TestIntegration.targets" />
 </Project>
