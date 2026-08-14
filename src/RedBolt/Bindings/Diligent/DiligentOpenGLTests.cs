@@ -37,6 +37,15 @@ public sealed class DiligentOpenGLTests
         Assert.NotNull(deviceContext.GetMethod("DrawIndexed"));
     }
 
+    [Fact]
+    public void Engine_create_info_uses_runtime_api_version()
+    {
+        var factory = DiligentNativeBindings.DiligentLoadAndGetEngineFactoryOpenGL();
+        using var engineCreateInfo = new EngineGLCreateInfo();
+
+        Assert.Equal(IEngineFactory_GetAPIInfo(factory).APIVersion, engineCreateInfo.EngineAPIVersion);
+    }
+
     [DiligentGraphicsFact]
     public void Opengl_smoke_creates_device_and_renders()
     {
