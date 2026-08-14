@@ -73,6 +73,30 @@ public sealed class PhysicsBox2DTests
     }
 
     [Fact]
+    public void Zero_density_dynamic_body_keeps_fallback_mass_and_collision_response()
+    {
+        using var scene = new Scene();
+        var world = scene.CreateComponent<PhysicsWorld2D>();
+
+        var groundNode = scene.CreateChild("Ground");
+        groundNode.CreateComponent<RigidBody2D>();
+        groundNode.CreateComponent<CollisionEdge2D>().SetVertices(new Vector2f(-10.0f, 0.0f), new Vector2f(10.0f, 0.0f));
+
+        var ballNode = scene.CreateChild("Ball");
+        ballNode.SetPosition2D(0.0f, 4.0f);
+        var ballBody = ballNode.CreateComponent<RigidBody2D>();
+        ballBody.BodyType = BodyType2D.Dynamic;
+        ballNode.CreateComponent<CollisionCircle2D>().Radius = 0.5f;
+        ballBody.FixedRotation = true;
+
+        Assert.Equal(1.0f, ballBody.Mass);
+        for (var i = 0; i < 240; ++i)
+            world.Update(1.0f / 60.0f);
+
+        Assert.InRange(ballNode.GetPosition2D().Y, 0.35f, 0.75f);
+    }
+
+    [Fact]
     public void Box2d3_constraint_set_can_be_created_and_released()
     {
         using var scene = new Scene();
