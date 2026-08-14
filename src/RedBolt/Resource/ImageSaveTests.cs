@@ -1,5 +1,7 @@
 namespace RedBolt.Tests;
 
+using RedBolt.Bindings.Sdl;
+using RedBolt.Bindings.Stb;
 using RedBolt.IO;
 using RedBolt.Resource;
 
@@ -74,7 +76,7 @@ public sealed class ImageSaveTests
         }
         finally
         {
-            RedBolt.Bindings.Sdl.SdlNativeBindings.SdlFreeSurface(surface);
+            Sdl.SdlFreeSurface(surface);
         }
     }
 
@@ -131,7 +133,7 @@ public sealed class ImageSaveTests
 
     private static string GetStbiFailureReason()
     {
-        var reason = RedBolt.Bindings.Stb.StbVorbisNativeBindings.StbiFailureReason();
+        var reason = Stb.StbiFailureReason();
         var length = reason.IndexOf((byte)0);
         return System.Text.Encoding.UTF8.GetString(length >= 0 ? reason[..length] : reason);
     }

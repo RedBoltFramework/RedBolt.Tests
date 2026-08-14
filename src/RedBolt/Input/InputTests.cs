@@ -1,6 +1,7 @@
 namespace RedBolt.Tests;
 
 using RedBolt;
+using RedBolt.Bindings.Sdl;
 using RedBolt.Core;
 using RedBolt.Input;
 using RedBolt.Math;
@@ -115,10 +116,10 @@ public sealed class InputTests
         Assert.Equal(Key.A, Input.GetKeyFromName("A"));
         Assert.Equal("1", Input.GetKeyName(Key.Num1));
         Assert.Equal(
-            (Scancode)RedBolt.Bindings.Sdl.SdlNativeBindings.SdlGetScancodeFromKey((int)Key.A),
+            (Scancode)Sdl.SdlGetScancodeFromKey((int)Key.A),
             Input.GetScancodeFromKey(Key.A));
         Assert.Equal(
-            (Key)RedBolt.Bindings.Sdl.SdlNativeBindings.SdlGetKeyFromScancode((RedBolt.Bindings.Sdl.SdlScancode)Scancode.LeftCtrl),
+            (Key)Sdl.SdlGetKeyFromScancode((SdlScancode)Scancode.LeftCtrl),
             Input.GetKeyFromScancode(Scancode.LeftCtrl));
     }
 

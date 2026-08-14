@@ -313,7 +313,7 @@ public sealed class GraphicsResidualCoverageTests
         Assert.NotNull(vertexShader.GetHandle());
         Assert.NotNull(pixelShader.GetHandle());
 
-        var temporaryProgram = DiligentNativeBindings.CreateTemporaryGLProgram(
+        var temporaryProgram = Diligent.CreateTemporaryGLProgram(
             vertexShader.GetHandle()!, pixelShader.GetHandle()!, null!, null!, null!, false);
         try
         {
@@ -325,7 +325,7 @@ public sealed class GraphicsResidualCoverageTests
         }
         finally
         {
-            DiligentNativeBindings.DeleteTemporaryGLProgram(temporaryProgram);
+            Diligent.DeleteTemporaryGLProgram(temporaryProgram);
         }
     }
 

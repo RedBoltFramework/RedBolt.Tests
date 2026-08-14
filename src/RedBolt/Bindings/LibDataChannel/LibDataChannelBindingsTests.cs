@@ -7,26 +7,26 @@ public sealed class LibDataChannelBindingsTests
     [Fact]
     public void Peer_connection_constructs_and_deletes()
     {
-        LibDataChannelNativeBindings.RtcPreload();
+        LibDataChannel.RtcPreload();
         var peerConnection = -1;
         try
         {
             using var configuration = new RtcConfiguration();
-            peerConnection = LibDataChannelNativeBindings.RtcCreatePeerConnection(configuration);
+            peerConnection = LibDataChannel.RtcCreatePeerConnection(configuration);
 
             Assert.True(peerConnection >= 0);
-            Assert.Equal(0, LibDataChannelNativeBindings.RtcClosePeerConnection(peerConnection));
-            Assert.Equal(0, LibDataChannelNativeBindings.RtcDeletePeerConnection(peerConnection));
+            Assert.Equal(0, LibDataChannel.RtcClosePeerConnection(peerConnection));
+            Assert.Equal(0, LibDataChannel.RtcDeletePeerConnection(peerConnection));
             peerConnection = -1;
         }
         finally
         {
             if (peerConnection >= 0)
             {
-                LibDataChannelNativeBindings.RtcClosePeerConnection(peerConnection);
-                LibDataChannelNativeBindings.RtcDeletePeerConnection(peerConnection);
+                LibDataChannel.RtcClosePeerConnection(peerConnection);
+                LibDataChannel.RtcDeletePeerConnection(peerConnection);
             }
-            LibDataChannelNativeBindings.RtcCleanup();
+            LibDataChannel.RtcCleanup();
         }
     }
 }

@@ -144,7 +144,7 @@ public sealed class ShaderProgramReflectionTests
             Assert.NotNull(vertexShader);
             Assert.NotNull(pixelShader);
 
-            var temporaryGlProgram = DiligentNativeBindings.CreateTemporaryGLProgram(
+            var temporaryGlProgram = Diligent.CreateTemporaryGLProgram(
                 vertexShader!.GetHandle()!, pixelShader!.GetHandle()!, null!, null!, null!, false);
             try
             {
@@ -157,7 +157,7 @@ public sealed class ShaderProgramReflectionTests
             }
             finally
             {
-                DiligentNativeBindings.DeleteTemporaryGLProgram(temporaryGlProgram);
+                Diligent.DeleteTemporaryGLProgram(temporaryGlProgram);
             }
         });
     }

@@ -36,7 +36,7 @@ public sealed class RenderDeviceTests
     public void Graphics_test_window_is_hidden()
     {
         var window = SdlWindow.CreateManagedWrapper(_fixture.Input.GetWindowHandle(), ownsHandle: false);
-        var flags = (SdlWindowFlags)SdlNativeBindings.SdlGetWindowFlags(window);
+        var flags = (SdlWindowFlags)Sdl.SdlGetWindowFlags(window);
 
         Assert.True((flags & SdlWindowFlags.SdlWindowHidden) != 0);
         Assert.False((flags & SdlWindowFlags.SdlWindowShown) != 0);

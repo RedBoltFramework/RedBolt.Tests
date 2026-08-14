@@ -147,9 +147,8 @@ crosses into native code. This is useful for:
 
 - forcing file, resource-cache, shader-compiler, render-device, and callback
   wrappers to return errors, nulls, short data, or controlled values;
-- patching generated binding surfaces such as `DiligentNativeBindings`,
-  `GlslangNativeBindings`, `SpirVToolsNativeBindings`,
-  `HarfBuzzNativeBindings`, `JoltNativeBindings`, and `RmlUiNativeBindings`
+- patching generated binding surfaces such as `Diligent`,
+  `Glslang`, `SpirVTools`, `HarfBuzz`, `Jolt`, and `RmlUi`
   to return fake handles, error codes, native structs, diagnostics, or
   callback results;
 - replacing time, frame, random, or environment reads with deterministic

@@ -30,13 +30,13 @@ public sealed class InputSdlEventTests
         using var focusGained = new SdlEvent();
         focusGained.Type = (uint)SdlEventType.SdlWindowevent;
         focusGained.WindowEvent = (byte)SdlWindowEventID.SdlWindoweventFocusGained;
-        Assert.Equal(1, SdlNativeBindings.SdlPushEvent(focusGained));
+        Assert.Equal(1, Sdl.SdlPushEvent(focusGained));
 
         using var keyDown = new SdlEvent();
         keyDown.Type = (uint)SdlEventType.SdlKeydown;
         keyDown.KeyKeysymScancode = SdlScancode.SdlScancodeEscape;
         keyDown.KeyKeysymSym = (int)SdlKeyCode.SdlkEscape;
-        Assert.Equal(1, SdlNativeBindings.SdlPushEvent(keyDown));
+        Assert.Equal(1, Sdl.SdlPushEvent(keyDown));
 
         Input.BeginFrame();
         Input.PollEvents();
@@ -49,7 +49,7 @@ public sealed class InputSdlEventTests
         keyUp.Type = (uint)SdlEventType.SdlKeyup;
         keyUp.KeyKeysymScancode = SdlScancode.SdlScancodeEscape;
         keyUp.KeyKeysymSym = (int)SdlKeyCode.SdlkEscape;
-        Assert.Equal(1, SdlNativeBindings.SdlPushEvent(keyUp));
+        Assert.Equal(1, Sdl.SdlPushEvent(keyUp));
         Input.PollEvents();
     }
 
@@ -86,7 +86,7 @@ public sealed class InputSdlEventTests
         using var resized = new SdlEvent();
         resized.Type = (uint)SdlEventType.SdlWindowevent;
         resized.WindowEvent = (byte)SdlWindowEventID.SdlWindoweventResized;
-        Assert.Equal(1, SdlNativeBindings.SdlPushEvent(resized));
+        Assert.Equal(1, Sdl.SdlPushEvent(resized));
 
         Input.BeginFrame();
         Input.PollEvents();

@@ -123,7 +123,7 @@ public sealed class GraphicsRenderTargetViewTests
             Assert.Equal(outputTarget.MultiSample, RenderTargetView.SwapChainDepthStencil(_fixture.RenderDevice).GetMultiSample());
             if (_fixture.RenderDevice.GetBackend() == RenderBackend.OpenGL)
             {
-                Assert.Equal(0, SdlNativeBindings.SdlGlGetAttribute(SdlGLattr.SdlGlFramebufferSrgbCapable, out var effectiveSrgb));
+                Assert.Equal(0, Sdl.SdlGlGetAttribute(SdlGLattr.SdlGlFramebufferSrgbCapable, out var effectiveSrgb));
                 Assert.Equal(effectiveSrgb != 0, outputTarget.LinearColorSpace);
             }
         }, multiSample: 4);

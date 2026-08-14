@@ -89,11 +89,11 @@ public sealed class JoltMathTypeCompatibilityTests
         try
         {
             var inputAddress = inputHandle.AddrOfPinnedObject();
-            ulong hashBytesDefault = JoltNativeBindings.HashBytes(inputAddress, 0);
-            ulong hashStringDefault = JoltNativeBindings.HashString(emptyString);
-            ulong processorTickCount = JoltNativeBindings.GetProcessorTickCount();
-            HashBytesDelegate hashBytes = JoltNativeBindings.HashBytes;
-            HashStringDelegate hashString = JoltNativeBindings.HashString;
+            ulong hashBytesDefault = Jolt.HashBytes(inputAddress, 0);
+            ulong hashStringDefault = Jolt.HashString(emptyString);
+            ulong processorTickCount = Jolt.GetProcessorTickCount();
+            HashBytesDelegate hashBytes = Jolt.HashBytes;
+            HashStringDelegate hashString = Jolt.HashString;
 
             Assert.Equal(FnvOffsetBasis, hashBytesDefault);
             Assert.Equal(FnvOffsetBasis, hashStringDefault);

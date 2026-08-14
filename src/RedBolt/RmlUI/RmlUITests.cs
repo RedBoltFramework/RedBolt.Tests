@@ -90,7 +90,7 @@ public sealed class RmlUITests : IDisposable
             using var contextName = ui.GetRmlContext().GetName();
             Assert.Equal("managed-rmlui", contextName.ToString());
             Assert.Equal(new Vector2i(512, 512), ui.GetRmlContext().GetDimensions());
-            Assert.IsType<RmlHarfBuzzFontEngine>(RmlUiNativeBindings.GetFontEngineInterface());
+            Assert.IsType<RmlHarfBuzzFontEngine>(RmlUi.GetFontEngineInterface());
             Assert.NotNull(context.GetReflection(typeof(RmlUI).GetClassName()));
 
             using var nativeVariant = new RedBolt.Bindings.RmlUi.Variant();

@@ -40,10 +40,10 @@ public sealed class DiligentOpenGLTests
     [Fact]
     public void Engine_create_info_uses_runtime_api_version()
     {
-        var factory = DiligentNativeBindings.DiligentLoadAndGetEngineFactoryOpenGL();
+        var factory = Diligent.LoadAndGetEngineFactoryOpenGL();
         using var engineCreateInfo = new EngineGLCreateInfo();
 
-        Assert.Equal(IEngineFactory_GetAPIInfo(factory).APIVersion, engineCreateInfo.EngineAPIVersion);
+        Assert.Equal(factory.GetAPIInfo().APIVersion, engineCreateInfo.EngineAPIVersion);
     }
 
     [DiligentGraphicsFact]
@@ -52,7 +52,7 @@ public sealed class DiligentOpenGLTests
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("SDL_VIDEODRIVER")))
             Environment.SetEnvironmentVariable("SDL_VIDEODRIVER", "x11");
 
-        var result = SdlNativeBindings.SdlInit(SdlInitVideo);
+        var result = Sdl.SdlInit(SdlInitVideo);
         if (result != 0)
             throw new InvalidOperationException($"SDL_Init failed with {result}.");
 
@@ -64,29 +64,29 @@ public sealed class DiligentOpenGLTests
 
         try
         {
-            CheckSdlGl(SdlNativeBindings.SdlGlSetAttribute(SdlGLattr.SdlGlContextMajorVersion, 3));
-            CheckSdlGl(SdlNativeBindings.SdlGlSetAttribute(SdlGLattr.SdlGlContextMinorVersion, 3));
-            CheckSdlGl(SdlNativeBindings.SdlGlSetAttribute(SdlGLattr.SdlGlContextProfileMask,
+            CheckSdlGl(Sdl.SdlGlSetAttribute(SdlGLattr.SdlGlContextMajorVersion, 3));
+            CheckSdlGl(Sdl.SdlGlSetAttribute(SdlGLattr.SdlGlContextMinorVersion, 3));
+            CheckSdlGl(Sdl.SdlGlSetAttribute(SdlGLattr.SdlGlContextProfileMask,
                 (int)SdlGLprofile.SdlGlContextProfileCore));
-            CheckSdlGl(SdlNativeBindings.SdlGlSetAttribute(SdlGLattr.SdlGlDoublebuffer, 1));
+            CheckSdlGl(Sdl.SdlGlSetAttribute(SdlGLattr.SdlGlDoublebuffer, 1));
 
             ReadOnlySpan<byte> emptyTitle = [0];
-            window = SdlNativeBindings.SdlCreateWindow(
+            window = Sdl.SdlCreateWindow(
                 emptyTitle, x: 0, y: 0, w: 64, h: 64,
                 flags: (uint)(SdlWindowFlags.SdlWindowOpengl | SdlWindowFlags.SdlWindowHidden));
 
             if (window.IsNull)
                 throw new InvalidOperationException("SDL_CreateWindow returned a null OpenGL window.");
 
-            glContext = SdlNativeBindings.SdlGlCreateContext(window);
+            glContext = Sdl.SdlGlCreateContext(window);
             if (glContext == 0)
                 throw new InvalidOperationException("SDL_GL_CreateContext returned null.");
 
-            CheckSdlGl(SdlNativeBindings.SdlGlMakeCurrent(window, glContext));
-            _ = SdlNativeBindings.SdlGlSetSwapInterval(0);
+            CheckSdlGl(Sdl.SdlGlMakeCurrent(window, glContext));
+            _ = Sdl.SdlGlSetSwapInterval(0);
 
             using var wmInfo = CreateWmInfo();
-            if (SdlNativeBindings.SdlGetWindowWMInfo(window, wmInfo) != SdlBool.SdlTrue)
+            if (Sdl.SdlGetWindowWMInfo(window, wmInfo) != SdlBool.SdlTrue)
                 throw new InvalidOperationException("SDL_GetWindowWMInfo failed.");
 
             using var engineCI = new EngineGLCreateInfo();
@@ -102,7 +102,7 @@ public sealed class DiligentOpenGLTests
 #endif
             using var swapChainDesc = new SwapChainDesc();
 
-            var factory = DiligentNativeBindings.LoadAndGetEngineFactoryOpenGL();
+            var factory = Diligent.LoadAndGetEngineFactoryOpenGL();
             if (factory.IsNull)
                 throw new InvalidOperationException("LoadAndGetEngineFactoryOpenGL returned null.");
 
@@ -144,14 +144,14 @@ public sealed class DiligentOpenGLTests
             if (glContext != 0)
             {
                 if (window is not null && !window.IsNull)
-                    _ = SdlNativeBindings.SdlGlMakeCurrent(window, IntPtr.Zero);
-                SdlNativeBindings.SdlGlDeleteContext(glContext);
+                    _ = Sdl.SdlGlMakeCurrent(window, IntPtr.Zero);
+                Sdl.SdlGlDeleteContext(glContext);
             }
 
             if (window is not null && !window.IsNull)
-                SdlNativeBindings.SdlDestroyWindow(window);
+                Sdl.SdlDestroyWindow(window);
 
-            SdlNativeBindings.SdlQuit();
+            Sdl.SdlQuit();
         }
     }
 
@@ -161,7 +161,7 @@ public sealed class DiligentOpenGLTests
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("SDL_VIDEODRIVER")))
             Environment.SetEnvironmentVariable("SDL_VIDEODRIVER", "x11");
 
-        var result = SdlNativeBindings.SdlInit(SdlInitVideo);
+        var result = Sdl.SdlInit(SdlInitVideo);
         if (result != 0)
             throw new InvalidOperationException($"SDL_Init failed with {result}.");
 
@@ -176,29 +176,29 @@ public sealed class DiligentOpenGLTests
 
         try
         {
-            CheckSdlGl(SdlNativeBindings.SdlGlSetAttribute(SdlGLattr.SdlGlContextMajorVersion, 3));
-            CheckSdlGl(SdlNativeBindings.SdlGlSetAttribute(SdlGLattr.SdlGlContextMinorVersion, 3));
-            CheckSdlGl(SdlNativeBindings.SdlGlSetAttribute(SdlGLattr.SdlGlContextProfileMask,
+            CheckSdlGl(Sdl.SdlGlSetAttribute(SdlGLattr.SdlGlContextMajorVersion, 3));
+            CheckSdlGl(Sdl.SdlGlSetAttribute(SdlGLattr.SdlGlContextMinorVersion, 3));
+            CheckSdlGl(Sdl.SdlGlSetAttribute(SdlGLattr.SdlGlContextProfileMask,
                 (int)SdlGLprofile.SdlGlContextProfileCore));
-            CheckSdlGl(SdlNativeBindings.SdlGlSetAttribute(SdlGLattr.SdlGlDoublebuffer, 1));
+            CheckSdlGl(Sdl.SdlGlSetAttribute(SdlGLattr.SdlGlDoublebuffer, 1));
 
             ReadOnlySpan<byte> emptyTitle = [0];
-            window = SdlNativeBindings.SdlCreateWindow(
+            window = Sdl.SdlCreateWindow(
                 emptyTitle, x: 0, y: 0, w: 64, h: 64,
                 flags: (uint)(SdlWindowFlags.SdlWindowOpengl | SdlWindowFlags.SdlWindowHidden));
 
             if (window.IsNull)
                 throw new InvalidOperationException("SDL_CreateWindow returned a null OpenGL window.");
 
-            glContext = SdlNativeBindings.SdlGlCreateContext(window);
+            glContext = Sdl.SdlGlCreateContext(window);
             if (glContext == 0)
                 throw new InvalidOperationException("SDL_GL_CreateContext returned null.");
 
-            CheckSdlGl(SdlNativeBindings.SdlGlMakeCurrent(window, glContext));
-            _ = SdlNativeBindings.SdlGlSetSwapInterval(0);
+            CheckSdlGl(Sdl.SdlGlMakeCurrent(window, glContext));
+            _ = Sdl.SdlGlSetSwapInterval(0);
 
             using var wmInfo = CreateWmInfo();
-            if (SdlNativeBindings.SdlGetWindowWMInfo(window, wmInfo) != SdlBool.SdlTrue)
+            if (Sdl.SdlGetWindowWMInfo(window, wmInfo) != SdlBool.SdlTrue)
                 throw new InvalidOperationException("SDL_GetWindowWMInfo failed.");
 
             using var engineCI = new EngineGLCreateInfo();
@@ -214,7 +214,7 @@ public sealed class DiligentOpenGLTests
 #endif
             using var swapChainDesc = new SwapChainDesc();
 
-            var factory = DiligentNativeBindings.LoadAndGetEngineFactoryOpenGL();
+            var factory = Diligent.LoadAndGetEngineFactoryOpenGL();
             if (factory.IsNull)
                 throw new InvalidOperationException("LoadAndGetEngineFactoryOpenGL returned null.");
 
@@ -328,14 +328,14 @@ public sealed class DiligentOpenGLTests
             if (glContext != 0)
             {
                 if (window is not null && !window.IsNull)
-                    _ = SdlNativeBindings.SdlGlMakeCurrent(window, IntPtr.Zero);
-                SdlNativeBindings.SdlGlDeleteContext(glContext);
+                    _ = Sdl.SdlGlMakeCurrent(window, IntPtr.Zero);
+                Sdl.SdlGlDeleteContext(glContext);
             }
 
             if (window is not null && !window.IsNull)
-                SdlNativeBindings.SdlDestroyWindow(window);
+                Sdl.SdlDestroyWindow(window);
 
-            SdlNativeBindings.SdlQuit();
+            Sdl.SdlQuit();
         }
     }
 
@@ -394,7 +394,7 @@ public sealed class DiligentOpenGLTests
     private static SdlSysWMinfo CreateWmInfo()
     {
         using var version = new SdlVersion();
-        SdlNativeBindings.SdlGetVersion(version);
+        Sdl.SdlGetVersion(version);
         return new SdlSysWMinfo
         {
             VersionMajor = version.Major,
@@ -432,13 +432,13 @@ public sealed class DiligentOpenGLTests
 
     private static TextureDescOwner CreateTextureDesc()
     {
-        var apiInfo = DiligentNativeBindings.LoadAndGetEngineFactoryOpenGL().GetAPIInfo();
+        var apiInfo = Diligent.LoadAndGetEngineFactoryOpenGL().GetAPIInfo();
         return new TextureDescOwner((int)apiInfo.TextureDescSize);
     }
 
     private static TextureViewDescOwner CreateTextureViewDesc()
     {
-        var apiInfo = DiligentNativeBindings.LoadAndGetEngineFactoryOpenGL().GetAPIInfo();
+        var apiInfo = Diligent.LoadAndGetEngineFactoryOpenGL().GetAPIInfo();
         return new TextureViewDescOwner((int)apiInfo.TextureViewDescSize);
     }
 

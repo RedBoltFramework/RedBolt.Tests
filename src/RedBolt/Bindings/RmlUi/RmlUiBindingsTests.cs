@@ -14,12 +14,12 @@ public sealed class RmlUiBindingsTests
     [Fact]
     public void Shared_string_shape_works_across_binding_modules()
     {
-        RuntimeHelpers.RunModuleConstructor(typeof(RmlUiNativeBindings).Module.ModuleHandle);
+        RuntimeHelpers.RunModuleConstructor(typeof(RmlUi).Module.ModuleHandle);
         RuntimeHelpers.RunModuleConstructor(typeof(Tg.TinyGLTF).Module.ModuleHandle);
 
         using var value = new Std.String("data:application/octet-stream;base64,cmVkYm9sdA==");
 
-        Assert.True(Tg.TinyGltfNativeBindings.IsDataURI(value));
+        Assert.True(Tg.TinyGltf.IsDataURI(value));
         Assert.Equal("data:application/octet-stream;base64,cmVkYm9sdA==", value.ToString());
     }
 
@@ -37,56 +37,56 @@ public sealed class RmlUiBindingsTests
     [Fact]
     public void System_interface_round_trips_managed_director()
     {
-        var original = RmlUiNativeBindings.GetSystemInterface();
+        var original = RmlUi.GetSystemInterface();
         using var systemInterface = new TestSystemInterface();
         try
         {
-            RmlUiNativeBindings.SetSystemInterface(systemInterface);
+            RmlUi.SetSystemInterface(systemInterface);
 
-            var retrieved = RmlUiNativeBindings.GetSystemInterface();
+            var retrieved = RmlUi.GetSystemInterface();
             Assert.NotNull(retrieved);
             Assert.Equal(systemInterface.Handle, retrieved.Handle);
             Assert.Equal(42.5, retrieved.GetElapsedTime());
         }
         finally
         {
-            RmlUiNativeBindings.SetSystemInterface(original);
+            RmlUi.SetSystemInterface(original);
         }
     }
 
     [Fact]
     public void File_interface_round_trips_pointer_width_file_handle()
     {
-        var original = RmlUiNativeBindings.GetFileInterface();
+        var original = RmlUi.GetFileInterface();
         using var fileInterface = new TestFileInterface();
         using var path = new Std.String();
         try
         {
-            RmlUiNativeBindings.SetFileInterface(fileInterface);
+            RmlUi.SetFileInterface(fileInterface);
 
-            var retrieved = RmlUiNativeBindings.GetFileInterface();
+            var retrieved = RmlUi.GetFileInterface();
             Assert.NotNull(retrieved);
             Assert.Equal(fileInterface.Handle, retrieved.Handle);
             Assert.Equal(ExpectedFileHandle, retrieved.Open(path));
         }
         finally
         {
-            RmlUiNativeBindings.SetFileInterface(original);
+            RmlUi.SetFileInterface(original);
         }
     }
 
     [Fact]
     public void Render_interface_compatibility_round_trips_adapted_pointer()
     {
-        var original = RmlUiNativeBindings.GetRenderInterface();
+        var original = RmlUi.GetRenderInterface();
         using var renderInterface = new TestRenderInterface();
         var adaptedInterface = renderInterface.GetAdaptedInterface();
         try
         {
-            RmlUiNativeBindings.SetRenderInterface(adaptedInterface);
+            RmlUi.SetRenderInterface(adaptedInterface);
 
             Assert.NotEqual(nint.Zero, adaptedInterface);
-            Assert.Equal(adaptedInterface, RmlUiNativeBindings.GetRenderInterface());
+            Assert.Equal(adaptedInterface, RmlUi.GetRenderInterface());
             Assert.Equal(8, Marshal.SizeOf<RmlUiLegacyVector2f>());
             Assert.Equal(8, Marshal.SizeOf<RmlUiLegacyVector2i>());
             Assert.Equal(20, Marshal.SizeOf<RmlUiLegacyVertex>());
@@ -94,7 +94,7 @@ public sealed class RmlUiBindingsTests
         }
         finally
         {
-            RmlUiNativeBindings.SetRenderInterface(original);
+            RmlUi.SetRenderInterface(original);
         }
     }
 
@@ -132,10 +132,10 @@ public sealed class RmlUiBindingsTests
     [Fact]
     public void Context_instancer_dispatches_managed_lifecycle()
     {
-        var originalFileInterface = RmlUiNativeBindings.GetFileInterface();
-        var originalFontEngineInterface = RmlUiNativeBindings.GetFontEngineInterface();
-        var originalRenderInterface = RmlUiNativeBindings.GetRenderInterface();
-        var originalSystemInterface = RmlUiNativeBindings.GetSystemInterface();
+        var originalFileInterface = RmlUi.GetFileInterface();
+        var originalFontEngineInterface = RmlUi.GetFontEngineInterface();
+        var originalRenderInterface = RmlUi.GetRenderInterface();
+        var originalSystemInterface = RmlUi.GetSystemInterface();
         using var fileInterface = new TestFileInterface();
         using var fontEngineInterface = new TestFontEngineInterface();
         using var renderInterface = new TestRenderInterface();
@@ -147,15 +147,15 @@ public sealed class RmlUiBindingsTests
         name.Assign("managed-instancer");
         try
         {
-            RmlUiNativeBindings.SetFileInterface(fileInterface);
-            RmlUiNativeBindings.SetFontEngineInterface(fontEngineInterface);
-            RmlUiNativeBindings.SetRenderInterface(renderInterface.GetAdaptedInterface());
-            RmlUiNativeBindings.SetSystemInterface(systemInterface);
-            Assert.True(RmlUiNativeBindings.Initialise());
+            RmlUi.SetFileInterface(fileInterface);
+            RmlUi.SetFontEngineInterface(fontEngineInterface);
+            RmlUi.SetRenderInterface(renderInterface.GetAdaptedInterface());
+            RmlUi.SetSystemInterface(systemInterface);
+            Assert.True(RmlUi.Initialise());
             initialized = true;
             Factory.RegisterContextInstancer(contextInstancer);
 
-            context = RmlUiNativeBindings.CreateContext(
+            context = RmlUi.CreateContext(
                 name,
                 new Vector2i(320, 200),
                 renderInterface.GetAdaptedInterface(),
@@ -166,7 +166,7 @@ public sealed class RmlUiBindingsTests
             Assert.NotEqual(nint.Zero, contextInstancer.RenderManager);
             Assert.NotEqual(nint.Zero, contextInstancer.TextInputHandler);
             Assert.Same(contextInstancer.Context, context);
-            Assert.True(RmlUiNativeBindings.RemoveContext(name));
+            Assert.True(RmlUi.RemoveContext(name));
             context = null;
             Assert.True(contextInstancer.WasReleased);
         }
@@ -174,23 +174,23 @@ public sealed class RmlUiBindingsTests
         {
             Factory.RegisterContextInstancer(null!);
             if (context is not null)
-                RmlUiNativeBindings.RemoveContext(name);
+                RmlUi.RemoveContext(name);
             if (initialized)
-                RmlUiNativeBindings.Shutdown();
-            RmlUiNativeBindings.SetFileInterface(originalFileInterface);
-            RmlUiNativeBindings.SetFontEngineInterface(originalFontEngineInterface);
-            RmlUiNativeBindings.SetRenderInterface(originalRenderInterface);
-            RmlUiNativeBindings.SetSystemInterface(originalSystemInterface);
+                RmlUi.Shutdown();
+            RmlUi.SetFileInterface(originalFileInterface);
+            RmlUi.SetFontEngineInterface(originalFontEngineInterface);
+            RmlUi.SetRenderInterface(originalRenderInterface);
+            RmlUi.SetSystemInterface(originalSystemInterface);
         }
     }
 
     [Fact]
     public void Plugin_dispatches_managed_lifecycle()
     {
-        var originalFileInterface = RmlUiNativeBindings.GetFileInterface();
-        var originalFontEngineInterface = RmlUiNativeBindings.GetFontEngineInterface();
-        var originalRenderInterface = RmlUiNativeBindings.GetRenderInterface();
-        var originalSystemInterface = RmlUiNativeBindings.GetSystemInterface();
+        var originalFileInterface = RmlUi.GetFileInterface();
+        var originalFontEngineInterface = RmlUi.GetFontEngineInterface();
+        var originalRenderInterface = RmlUi.GetRenderInterface();
+        var originalSystemInterface = RmlUi.GetSystemInterface();
         using var fileInterface = new TestFileInterface();
         using var fontEngineInterface = new TestFontEngineInterface();
         using var renderInterface = new TestRenderInterface();
@@ -200,20 +200,20 @@ public sealed class RmlUiBindingsTests
         var registered = false;
         try
         {
-            RmlUiNativeBindings.SetFileInterface(fileInterface);
-            RmlUiNativeBindings.SetFontEngineInterface(fontEngineInterface);
-            RmlUiNativeBindings.SetRenderInterface(renderInterface.GetAdaptedInterface());
-            RmlUiNativeBindings.SetSystemInterface(systemInterface);
-            Assert.True(RmlUiNativeBindings.Initialise());
+            RmlUi.SetFileInterface(fileInterface);
+            RmlUi.SetFontEngineInterface(fontEngineInterface);
+            RmlUi.SetRenderInterface(renderInterface.GetAdaptedInterface());
+            RmlUi.SetSystemInterface(systemInterface);
+            Assert.True(RmlUi.Initialise());
             initialized = true;
 
-            RmlUiNativeBindings.RegisterPlugin(plugin);
+            RmlUi.RegisterPlugin(plugin);
             registered = true;
 
             Assert.True(plugin.IsInitialized);
             Assert.False(plugin.IsShutdown);
 
-            RmlUiNativeBindings.UnregisterPlugin(plugin);
+            RmlUi.UnregisterPlugin(plugin);
             registered = false;
 
             Assert.True(plugin.IsShutdown);
@@ -221,41 +221,41 @@ public sealed class RmlUiBindingsTests
         finally
         {
             if (registered)
-                RmlUiNativeBindings.UnregisterPlugin(plugin);
+                RmlUi.UnregisterPlugin(plugin);
             if (initialized)
-                RmlUiNativeBindings.Shutdown();
-            RmlUiNativeBindings.SetFileInterface(originalFileInterface);
-            RmlUiNativeBindings.SetFontEngineInterface(originalFontEngineInterface);
-            RmlUiNativeBindings.SetRenderInterface(originalRenderInterface);
-            RmlUiNativeBindings.SetSystemInterface(originalSystemInterface);
+                RmlUi.Shutdown();
+            RmlUi.SetFileInterface(originalFileInterface);
+            RmlUi.SetFontEngineInterface(originalFontEngineInterface);
+            RmlUi.SetRenderInterface(originalRenderInterface);
+            RmlUi.SetSystemInterface(originalSystemInterface);
         }
     }
 
     [Fact]
     public void Font_engine_interface_round_trips_managed_director()
     {
-        var original = RmlUiNativeBindings.GetFontEngineInterface();
+        var original = RmlUi.GetFontEngineInterface();
         using var fontEngineInterface = new TestFontEngineInterface();
         try
         {
-            RmlUiNativeBindings.SetFontEngineInterface(fontEngineInterface);
+            RmlUi.SetFontEngineInterface(fontEngineInterface);
 
-            var retrieved = RmlUiNativeBindings.GetFontEngineInterface();
+            var retrieved = RmlUi.GetFontEngineInterface();
             Assert.NotNull(retrieved);
             Assert.Equal(fontEngineInterface.Handle, retrieved.Handle);
         }
         finally
         {
-            RmlUiNativeBindings.SetFontEngineInterface(original);
+            RmlUi.SetFontEngineInterface(original);
         }
     }
 
     [Fact]
     public void HarfBuzz_font_engine_encodes_gpu_textured_rml_document()
     {
-        var originalFileInterface = RmlUiNativeBindings.GetFileInterface();
-        var originalFontEngineInterface = RmlUiNativeBindings.GetFontEngineInterface();
-        var originalRenderInterface = RmlUiNativeBindings.GetRenderInterface();
+        var originalFileInterface = RmlUi.GetFileInterface();
+        var originalFontEngineInterface = RmlUi.GetFontEngineInterface();
+        var originalRenderInterface = RmlUi.GetRenderInterface();
         using var fileInterface = new TestDiskFileInterface();
         using var fontEngineInterface = new RmlHarfBuzzFontEngine();
         using var renderInterface = new TestRenderInterface();
@@ -295,25 +295,25 @@ public sealed class RmlUiBindingsTests
         var initialized = false;
         try
         {
-            RmlUiNativeBindings.SetFileInterface(fileInterface);
-            RmlUiNativeBindings.SetFontEngineInterface(fontEngineInterface);
-            RmlUiNativeBindings.SetRenderInterface(renderInterface.GetAdaptedInterface());
-            Assert.True(RmlUiNativeBindings.Initialise());
+            RmlUi.SetFileInterface(fileInterface);
+            RmlUi.SetFontEngineInterface(fontEngineInterface);
+            RmlUi.SetRenderInterface(renderInterface.GetAdaptedInterface());
+            Assert.True(RmlUi.Initialise());
             initialized = true;
 
-            Assert.True(RmlUiNativeBindings.LoadFontFace(fontPath));
-            context = RmlUiNativeBindings.CreateContext(
+            Assert.True(RmlUi.LoadFontFace(fontPath));
+            context = RmlUi.CreateContext(
                 contextName, new Vector2i(640, 480));
             Assert.NotNull(context);
-            Assert.True(RmlUiNativeBindings.Initialise(context));
-            RmlUiNativeBindings.SetVisible(true);
-            Assert.True(RmlUiNativeBindings.IsVisible());
-            RmlUiNativeBindings.SetVisible(false);
+            Assert.True(RmlUi.Initialise(context));
+            RmlUi.SetVisible(true);
+            Assert.True(RmlUi.IsVisible());
+            RmlUi.SetVisible(false);
             Assert.True(context.Update());
-            Assert.False(RmlUiNativeBindings.IsVisible());
+            Assert.False(RmlUi.IsVisible());
             Factory.ClearStyleSheetCache();
             Factory.ClearTemplateCache();
-            RmlUiNativeBindings.ReleaseTextures();
+            RmlUi.ReleaseTextures();
             var initialDocumentCount = context.GetNumDocuments();
             document = context.LoadDocumentFromMemory(documentSource, sourceUrl);
             Assert.NotNull(document);
@@ -379,8 +379,8 @@ public sealed class RmlUiBindingsTests
             Assert.True(context.Update());
             context.Dispose();
             context = null;
-            Assert.True(RmlUiNativeBindings.RemoveContext(contextName));
-            RmlUiNativeBindings.Shutdown();
+            Assert.True(RmlUi.RemoveContext(contextName));
+            RmlUi.Shutdown();
             initialized = false;
         }
         finally
@@ -393,20 +393,20 @@ public sealed class RmlUiBindingsTests
             }
             context?.Dispose();
             if (context is not null)
-                RmlUiNativeBindings.RemoveContext(contextName);
+                RmlUi.RemoveContext(contextName);
             if (initialized)
-                RmlUiNativeBindings.Shutdown();
-            RmlUiNativeBindings.SetRenderInterface(originalRenderInterface);
-            RmlUiNativeBindings.SetFontEngineInterface(originalFontEngineInterface);
-            RmlUiNativeBindings.SetFileInterface(originalFileInterface);
+                RmlUi.Shutdown();
+            RmlUi.SetRenderInterface(originalRenderInterface);
+            RmlUi.SetFontEngineInterface(originalFontEngineInterface);
+            RmlUi.SetFileInterface(originalFileInterface);
         }
     }
 
     [Fact]
     public void Core_lifecycle_creates_and_updates_context()
     {
-        var originalFontEngineInterface = RmlUiNativeBindings.GetFontEngineInterface();
-        var originalRenderInterface = RmlUiNativeBindings.GetRenderInterface();
+        var originalFontEngineInterface = RmlUi.GetFontEngineInterface();
+        var originalRenderInterface = RmlUi.GetRenderInterface();
         using var fontEngineInterface = new TestFontEngineInterface();
         using var renderInterface = new TestRenderInterface();
         using var name = new Std.String();
@@ -417,13 +417,13 @@ public sealed class RmlUiBindingsTests
         var initialized = false;
         try
         {
-            RmlUiNativeBindings.SetFontEngineInterface(fontEngineInterface);
-            RmlUiNativeBindings.SetRenderInterface(renderInterface.GetAdaptedInterface());
-            Assert.True(RmlUiNativeBindings.Initialise());
+            RmlUi.SetFontEngineInterface(fontEngineInterface);
+            RmlUi.SetRenderInterface(renderInterface.GetAdaptedInterface());
+            Assert.True(RmlUi.Initialise());
             initialized = true;
             Assert.True(fontEngineInterface.IsInitialized);
 
-            context = RmlUiNativeBindings.CreateContext(
+            context = RmlUi.CreateContext(
                 name, new Vector2i(320, 200));
 
             Assert.NotNull(context);
@@ -462,8 +462,8 @@ public sealed class RmlUiBindingsTests
 
             context.Dispose();
             context = null;
-            Assert.True(RmlUiNativeBindings.RemoveContext(name));
-            RmlUiNativeBindings.Shutdown();
+            Assert.True(RmlUi.RemoveContext(name));
+            RmlUi.Shutdown();
             initialized = false;
             Assert.True(fontEngineInterface.IsShutdown);
         }
@@ -472,11 +472,11 @@ public sealed class RmlUiBindingsTests
             context?.Dispose();
             if (initialized)
             {
-                RmlUiNativeBindings.RemoveContext(name);
-                RmlUiNativeBindings.Shutdown();
+                RmlUi.RemoveContext(name);
+                RmlUi.Shutdown();
             }
-            RmlUiNativeBindings.SetFontEngineInterface(originalFontEngineInterface);
-            RmlUiNativeBindings.SetRenderInterface(originalRenderInterface);
+            RmlUi.SetFontEngineInterface(originalFontEngineInterface);
+            RmlUi.SetRenderInterface(originalRenderInterface);
         }
     }
 

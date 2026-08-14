@@ -11,9 +11,9 @@ public sealed class SdlBindingsTests
 
     private static void RequireSdl()
     {
-        if (SdlNativeBindings.SdlInit(0) != 0)
+        if (Sdl.SdlInit(0) != 0)
             throw new InvalidOperationException("SDL native capability could not initialize.");
-        SdlNativeBindings.SdlQuit();
+        Sdl.SdlQuit();
     }
 
     [SdlVideoFact]
@@ -21,16 +21,16 @@ public sealed class SdlBindingsTests
     {
         RequireSdl();
         EnsureDummyVideoDriver();
-        var result = SdlNativeBindings.SdlInit(SdlInitVideo);
+        var result = Sdl.SdlInit(SdlInitVideo);
         try
         {
             Assert.Equal(0, result);
-            var initialized = SdlNativeBindings.SdlWasInit(SdlInitVideo);
+            var initialized = Sdl.SdlWasInit(SdlInitVideo);
             Assert.NotEqual(0u, initialized & SdlInitVideo);
         }
         finally
         {
-            SdlNativeBindings.SdlQuit();
+            Sdl.SdlQuit();
         }
     }
 
@@ -39,19 +39,19 @@ public sealed class SdlBindingsTests
     {
         RequireSdl();
         EnsureDummyVideoDriver();
-        var result = SdlNativeBindings.SdlInit(SdlInitVideo);
+        var result = Sdl.SdlInit(SdlInitVideo);
         Assert.Equal(0, result);
         try
         {
             using var title = PinUtf8(string.Empty);
-            using var window = SdlNativeBindings.SdlCreateWindow(
+            using var window = Sdl.SdlCreateWindow(
                 title.Bytes, x: 0, y: 0, w: 16, h: 16,
                 flags: (uint)SdlWindowFlags.SdlWindowHidden);
             Assert.False(window.IsNull);
         }
         finally
         {
-            SdlNativeBindings.SdlQuit();
+            Sdl.SdlQuit();
         }
     }
 
@@ -60,21 +60,21 @@ public sealed class SdlBindingsTests
     {
         RequireSdl();
         EnsureDummyVideoDriver();
-        var result = SdlNativeBindings.SdlInit(SdlInitVideo);
+        var result = Sdl.SdlInit(SdlInitVideo);
         Assert.Equal(0, result);
         try
         {
             using var title = PinUtf8(string.Empty);
-            using var window = SdlNativeBindings.SdlCreateWindow(
+            using var window = Sdl.SdlCreateWindow(
                 title.Bytes, x: 0, y: 0, w: 16, h: 16,
                 flags: (uint)SdlWindowFlags.SdlWindowHidden);
             Assert.False(window.IsNull);
             using var @event = new SdlEvent();
-            _ = SdlNativeBindings.SdlPollEvent(@event);
+            _ = Sdl.SdlPollEvent(@event);
         }
         finally
         {
-            SdlNativeBindings.SdlQuit();
+            Sdl.SdlQuit();
         }
     }
 
@@ -86,30 +86,30 @@ public sealed class SdlBindingsTests
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("SDL_VIDEODRIVER")))
             Environment.SetEnvironmentVariable("SDL_VIDEODRIVER", "x11");
 
-        var result = SdlNativeBindings.SdlInit(SdlInitVideo);
+        var result = Sdl.SdlInit(SdlInitVideo);
         Assert.Equal(0, result);
 
         SdlWindow? window = null;
         nint glContext = 0;
         try
         {
-            CheckSdlGl(SdlNativeBindings.SdlGlSetAttribute(SdlGLattr.SdlGlContextMajorVersion, 3));
-            CheckSdlGl(SdlNativeBindings.SdlGlSetAttribute(SdlGLattr.SdlGlContextMinorVersion, 3));
-            CheckSdlGl(SdlNativeBindings.SdlGlSetAttribute(SdlGLattr.SdlGlContextProfileMask, (int)SdlGLprofile.SdlGlContextProfileCore));
-            CheckSdlGl(SdlNativeBindings.SdlGlSetAttribute(SdlGLattr.SdlGlDoublebuffer, 1));
+            CheckSdlGl(Sdl.SdlGlSetAttribute(SdlGLattr.SdlGlContextMajorVersion, 3));
+            CheckSdlGl(Sdl.SdlGlSetAttribute(SdlGLattr.SdlGlContextMinorVersion, 3));
+            CheckSdlGl(Sdl.SdlGlSetAttribute(SdlGLattr.SdlGlContextProfileMask, (int)SdlGLprofile.SdlGlContextProfileCore));
+            CheckSdlGl(Sdl.SdlGlSetAttribute(SdlGLattr.SdlGlDoublebuffer, 1));
 
             using var title = PinUtf8("RedBolt Tests");
-            window = SdlNativeBindings.SdlCreateWindow(
+            window = Sdl.SdlCreateWindow(
                 title.Bytes, x: 0, y: 0, w: 16, h: 16,
                 flags: (uint)(SdlWindowFlags.SdlWindowHidden | SdlWindowFlags.SdlWindowOpengl));
             Assert.False(window.IsNull);
 
-            glContext = SdlNativeBindings.SdlGlCreateContext(window);
+            glContext = Sdl.SdlGlCreateContext(window);
             Assert.NotEqual(IntPtr.Zero, glContext);
-            CheckSdlGl(SdlNativeBindings.SdlGlMakeCurrent(window, glContext));
+            CheckSdlGl(Sdl.SdlGlMakeCurrent(window, glContext));
 
             using var proc = PinUtf8("glFinish");
-            var address = SdlNativeBindings.SdlGlGetProcAddress(proc.Bytes);
+            var address = Sdl.SdlGlGetProcAddress(proc.Bytes);
             Assert.NotEqual(IntPtr.Zero, address);
         }
         finally
@@ -117,14 +117,14 @@ public sealed class SdlBindingsTests
             if (glContext != 0)
             {
                 if (window is not null && !window.IsNull)
-                    _ = SdlNativeBindings.SdlGlMakeCurrent(window, IntPtr.Zero);
-                SdlNativeBindings.SdlGlDeleteContext(glContext);
+                    _ = Sdl.SdlGlMakeCurrent(window, IntPtr.Zero);
+                Sdl.SdlGlDeleteContext(glContext);
             }
 
             if (window is not null && !window.IsNull)
-                SdlNativeBindings.SdlDestroyWindow(window);
+                Sdl.SdlDestroyWindow(window);
 
-            SdlNativeBindings.SdlQuit();
+            Sdl.SdlQuit();
         }
     }
 
