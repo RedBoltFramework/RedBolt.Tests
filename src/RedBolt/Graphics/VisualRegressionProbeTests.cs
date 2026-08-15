@@ -127,6 +127,7 @@ public sealed class VisualRegressionProbeTests
     public void Light_probe_group_and_global_illumination_use_tracked_baked_data()
     {
         using var fixture = new VisualRegressionFixture(256, 192);
+        using var glowResources = GlowTestData.MountResourceDirs(fixture.Resources);
         using var scene = VisualRegressionSceneFactory.CreateScene(new Color(0.03f, 0.03f, 0.03f));
         var groupNode = scene.CreateChild("LightProbes");
         groupNode.SetScale(new Vector3f(4.0f, 2.0f, 4.0f));
@@ -169,6 +170,7 @@ public sealed class VisualRegressionProbeTests
     public void Baked_scene_gallery_renders_lightmaps_and_baked_environment_resources()
     {
         using var fixture = new VisualRegressionFixture(256, 192);
+        using var glowResources = GlowTestData.MountResourceDirs(fixture.Resources);
         var sceneResource = fixture.Resources.Get<SceneResource>("Scenes/BakedLightingExample.xml");
         var scene = sceneResource.Scene;
         var cameraNode = scene.CreateChild("VisualCamera");

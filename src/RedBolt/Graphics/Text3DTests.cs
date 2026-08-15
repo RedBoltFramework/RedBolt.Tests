@@ -92,6 +92,7 @@ public sealed class Text3DTests
     [Fact]
     public void Baked_lighting_scene_restores_all_text_components()
     {
+        using var glowResources = GlowTestData.MountResourceDirs(_fixture.Resources);
         var xmlFile = _fixture.Resources.Get<XMLFile>("Scenes/BakedLightingExample.xml");
         using var root = xmlFile.GetRoot();
         using var scene = new Scene();

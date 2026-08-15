@@ -21,6 +21,7 @@ public sealed class IncrementalLightBakerIntegrationTests
         Directory.CreateDirectory(outputDirectory);
 
         using var fixture = new VisualRegressionFixture(64, 64);
+        GlowTestData.AddResourceDirs(fixture.Resources);
         var context = fixture.EngineFixture.Context;
         context.RegisterAssembly(typeof(IncrementalLightBaker).Assembly);
         var virtualFileSystem = context.GetSubsystem<VirtualFileSystem>()!;
@@ -64,6 +65,7 @@ public sealed class IncrementalLightBakerIntegrationTests
     public void Indirect_bake_exercises_bounce_and_emission_scenes()
     {
         using var fixture = new VisualRegressionFixture(64, 64);
+        GlowTestData.AddResourceDirs(fixture.Resources);
         var context = fixture.EngineFixture.Context;
         context.RegisterAssembly(typeof(IncrementalLightBaker).Assembly);
         var virtualFileSystem = context.GetSubsystem<VirtualFileSystem>()!;

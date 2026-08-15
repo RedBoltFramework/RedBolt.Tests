@@ -22,6 +22,7 @@ public sealed class LightBakerVisualTests
         Directory.CreateDirectory(outputDirectory);
 
         using var fixture = new VisualRegressionFixture(320, 180);
+        GlowTestData.AddResourceDirs(fixture.Resources);
         var context = fixture.EngineFixture.Context;
         context.RegisterAssembly(typeof(IncrementalLightBaker).Assembly);
         var virtualFileSystem = context.GetSubsystem<VirtualFileSystem>()!;

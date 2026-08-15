@@ -111,12 +111,14 @@ public sealed class GeneratorContractTests
             ("rmlui", LoadExternalGenerator(
                 "RedBolt.RmlUI", "RedBolt.RmlUI.Generator.Dependencies")),
             ("webp", GeneratorAssembly),
-            ("xatlas", GeneratorAssembly),
+            ("xatlas", LoadExternalGenerator(
+                "RedBolt.Glow", "RedBolt.Glow.Generator.Dependencies")),
             ("glslang", GeneratorAssembly),
             ("spirvcross", GeneratorAssembly),
             ("spirvtools", GeneratorAssembly),
             ("shadercompiler", GeneratorAssembly),
-            ("embree", GeneratorAssembly),
+            ("embree", LoadExternalGenerator(
+                "RedBolt.Glow", "RedBolt.Glow.Generator.Dependencies")),
             ("libdatachannel", LoadExternalGenerator(
                 "RedBolt.Network", "RedBolt.Network.Generator.Dependencies")),
             ("box2d", LoadExternalGenerator(

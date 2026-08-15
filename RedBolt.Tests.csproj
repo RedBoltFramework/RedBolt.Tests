@@ -25,7 +25,9 @@
     <ProjectReference Include="$(RedBoltCSGRoot)/src/RedBolt/CSG/RedBolt.CSG.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/DearImGui/RedBolt.DearImGui.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Editor/RedBolt.Editor.csproj" />
-    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Glow/RedBolt.Glow.csproj" />
+    <ProjectReference Include="$(RedBoltGlowRoot)/src/RedBolt/Glow/RedBolt.Glow.csproj" />
+    <ProjectReference Include="$(RedBoltGlowRoot)/src/RedBolt/Glow.Tools/RedBolt.Glow.Tools.csproj" />
+    <ProjectReference Include="$(RedBoltGlowRoot)/src/RedBolt/Glow.Editor/RedBolt.Glow.Editor.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Generator/Dependencies/RedBolt.Generator.Dependencies.csproj"
                       GlobalPropertiesToRemove="RedBoltPlatform;RedBoltNativePreset" />
     <ProjectReference Include="$(RedBoltPhysicsBox2DRoot)/src/RedBolt/Generator/Dependencies/RedBolt.PhysicsBox2D.Generator.Dependencies.csproj"

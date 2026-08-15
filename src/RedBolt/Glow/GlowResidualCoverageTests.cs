@@ -63,6 +63,7 @@ public sealed class GlowResidualCoverageTests
     [Fact]
     public void Helpers_cover_unknown_components_and_baking_material_texture_defines()
     {
+        using var glowResources = GlowTestData.MountResourceDirs(_fixture.Resources);
         var component = new Component();
         Assert.Throws<ArgumentException>(() => Helpers.SetLightmapIndex(component, 12));
         Assert.Throws<ArgumentException>(() => Helpers.GetLightmapIndex(component));

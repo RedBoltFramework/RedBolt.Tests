@@ -412,6 +412,7 @@ public sealed class GlowAdvancedCoverageTests
     [Fact]
     public void Geometry_buffer_generation_covers_missing_material_and_terrain_paths()
     {
+        using var glowResources = GlowTestData.MountResourceDirs(_fixture.Resources);
         var missingMaterialSettings = new LightmapGeometryBakingSettings
         {
             MaterialName = "GlowTests/MissingBakerMaterial.xml"

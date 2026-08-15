@@ -103,6 +103,7 @@ public sealed class TerrainTests
     public void Legacy_baked_lighting_scene_loads_terrain_attributes()
     {
         var cache = Context.Instance.GetSubsystem<ResourceCache>()!;
+        using var glowResources = GlowTestData.MountResourceDirs(cache);
         var xmlFile = cache.Get<XMLFile>("Scenes/BakedLightingExample.xml");
         using var root = xmlFile.GetRoot();
         using var scene = new Scene();

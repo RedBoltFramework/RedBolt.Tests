@@ -24,6 +24,7 @@ public sealed class StaticModelForLightmapTests
     [Fact]
     public void Initialize_creates_baking_batches_and_geometry_mapping()
     {
+        using var glowResources = GlowTestData.MountResourceDirs(_fixture.Resources);
         var scene = new Scene();
         scene.CreateComponent<Octree>();
         var sourceNode = scene.CreateChild("Source");
