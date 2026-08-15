@@ -42,6 +42,19 @@ public sealed class EditorPluginManagerTests
         Assert.DoesNotContain(manager.Plugins, static plugin => plugin.Name == "Scoped");
     }
 
+    [Fact]
+    public void Failed_plugin_application_rolls_back_registration()
+    {
+        using var manager = new EditorPluginManager();
+        using var target = new Target();
+        manager.Apply(target);
+
+        Assert.Throws<InvalidOperationException>(() => manager.AddScopedPlugin<Target>(
+            "Broken", static _ => throw new InvalidOperationException("Failure")));
+
+        Assert.DoesNotContain(manager.Plugins, static plugin => plugin.Name == "Broken");
+    }
+
     private sealed class CallbackRegistration(Action callback) : IDisposable
     {
         public void Dispose() => callback();

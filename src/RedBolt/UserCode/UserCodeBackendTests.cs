@@ -146,6 +146,30 @@ public sealed class UserCodeBackendTests
     }
 
     [Fact]
+    public void Desktop_assembly_registration_includes_reflected_private_dependencies()
+    {
+        using var backend = new ReloadableAssemblyBackend();
+        var dependencyPath = typeof(RedBolt.UserCode.TestDependency.Dependency).Assembly.Location;
+        using var prepared = backend.Prepare(new DesktopAssemblyInput(
+            typeof(PluginProbe).Assembly.Location,
+            dependencyPaths: [dependencyPath]));
+        Assert.True(prepared.Succeeded, Format(prepared.Diagnostics));
+        var loaded = backend.Commit(prepared);
+        using var context = new Context();
+
+        loaded.Register(context);
+
+        var reflection = context.GetReflection(nameof(RedBolt.UserCode.TestDependency.ReflectedDependency));
+        Assert.NotNull(reflection);
+        Assert.NotSame(typeof(RedBolt.UserCode.TestDependency.ReflectedDependency).Assembly,
+            reflection.ManagedType.Assembly);
+        Assert.Equal("RedBolt.UserCode.TestDependency", reflection.ManagedType.Assembly.GetName().Name);
+
+        loaded.Unregister();
+        Assert.Null(context.GetReflection(nameof(RedBolt.UserCode.TestDependency.ReflectedDependency)));
+    }
+
+    [Fact]
     public void Desktop_assembly_backend_rejects_incompatible_shared_dependency()
     {
         var dependencyAssembly = typeof(RedBolt.UserCode.TestDependency.Dependency).Assembly;

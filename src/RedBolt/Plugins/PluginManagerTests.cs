@@ -1,6 +1,7 @@
 namespace RedBolt.Tests;
 
 using RedBolt.IO;
+using RedBolt.Glow.Editor;
 using RedBolt.IK;
 using RedBolt.IK.Editor;
 using RedBolt.Editor.Core;
@@ -30,6 +31,11 @@ public sealed class PluginManagerTests
         Assert.True(manager.AddStaticPlugin("Second", () => new ProbeApplication("Second")));
         manager.SetPluginsLoaded(["First", "Second"]);
         manager.Commit();
+
+        var first = Assert.IsType<ProbeApplication>(manager.GetPluginApplication("First", true));
+        Assert.Equal(Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "Resources")),
+            first.GetPluginPath("Resources"));
+        Assert.Throws<ArgumentException>(() => first.GetPluginPath(Path.GetPathRoot(AppContext.BaseDirectory)!));
 
         manager.StartApplication();
         manager.Commit();
@@ -61,6 +67,7 @@ public sealed class PluginManagerTests
     public void RmlUI_companion_auto_loads_and_unloads_through_standard_plugin_manager()
     {
         var assemblyPath = typeof(RmlUIEditorPlugin).Assembly.Location;
+        var editorPlugins = RedBolt.Core.Context.Instance.GetSubsystem<EditorPluginManager>()!;
         using (var manager = new PluginManager())
         {
             new ManagedPluginCatalog([Path.GetDirectoryName(assemblyPath)!]).Populate(manager);
@@ -71,9 +78,13 @@ public sealed class PluginManagerTests
             Assert.Empty(manager.LoadedPlugins);
             Assert.NotNull(manager.GetPluginApplication("RedBolt.RmlUI.Editor", true));
             Assert.NotNull(RedBolt.Core.Context.Instance.GetSubsystem<RedBolt.RmlUI.RmlUI>());
+            Assert.Contains(editorPlugins.Plugins, static plugin => plugin.Name == "RmlUI.ReloadFonts");
+            Assert.Contains(editorPlugins.Plugins, static plugin => plugin.Name == "RmlUI.GameView");
         }
 
         Assert.Null(RedBolt.Core.Context.Instance.GetSubsystem<RedBolt.RmlUI.RmlUI>());
+        Assert.DoesNotContain(editorPlugins.Plugins, static plugin => plugin.Name == "RmlUI.ReloadFonts");
+        Assert.DoesNotContain(editorPlugins.Plugins, static plugin => plugin.Name == "RmlUI.GameView");
     }
 
     [Fact]
@@ -104,6 +115,29 @@ public sealed class PluginManagerTests
 
         Assert.DoesNotContain(editorPlugins.Plugins,
             static plugin => plugin.Name == "IK.DefaultRetargetTransformer");
+    }
+
+    [Fact]
+    public void Glow_companion_auto_loads_declarative_editor_extension()
+    {
+        var assemblyPath = typeof(GlowEditorPlugin).Assembly.Location;
+        var editorPlugins = RedBolt.Core.Context.Instance.GetSubsystem<EditorPluginManager>()!;
+        using (var manager = new PluginManager())
+        {
+            new ManagedPluginCatalog([Path.GetDirectoryName(assemblyPath)!]).Populate(manager);
+            manager.Commit();
+
+            var application = Assert.IsAssignableFrom<PluginApplication>(
+                manager.GetPluginApplication("RedBolt.Glow.Editor", true));
+            Assert.Equal(Path.GetFullPath(Path.GetDirectoryName(assemblyPath)!), application.PluginDirectory);
+            Assert.Equal(Path.Combine(application.PluginDirectory, "GlowCoreData"),
+                application.GetPluginPath("GlowCoreData"));
+            Assert.Contains(editorPlugins.Plugins,
+                static plugin => plugin.Name == "Glow.DefaultLightmapUVTransformer");
+        }
+
+        Assert.DoesNotContain(editorPlugins.Plugins,
+            static plugin => plugin.Name == "Glow.DefaultLightmapUVTransformer");
     }
 
     [Fact]
