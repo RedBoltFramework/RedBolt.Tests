@@ -16,13 +16,13 @@
     <ProjectReference Include="$(RedBoltPhysicsBox2DRoot)/src/RedBolt/Native/Box2D/RedBolt.Bindings.Box2D.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/Glslang/RedBolt.Bindings.Glslang.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/HarfBuzz/RedBolt.Bindings.HarfBuzz.csproj" />
-    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/JoltPhysics/RedBolt.Bindings.Jolt.csproj" />
+    <ProjectReference Include="$(RedBoltPhysicsJoltRoot)/src/RedBolt/Native/JoltPhysics/RedBolt.Bindings.Jolt.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/LibDataChannel/RedBolt.Bindings.LibDataChannel.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/RmlUi/RedBolt.Bindings.RmlUi.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/SpirVCross/RedBolt.Bindings.SpirVCross.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/SpirVTools/RedBolt.Bindings.SpirVTools.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Core/RedBolt.Core.csproj" />
-    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/CSG/RedBolt.CSG.csproj" />
+    <ProjectReference Include="$(RedBoltCSGRoot)/src/RedBolt/CSG/RedBolt.CSG.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/DearImGui/RedBolt.DearImGui.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Editor/RedBolt.Editor.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Glow/RedBolt.Glow.csproj" />
@@ -31,7 +31,8 @@
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/IK/RedBolt.IK.csproj" />
     <ProjectReference Include="$(RedBolt2DRoot)/src/RedBolt/2D/RedBolt.2D.csproj" />
     <ProjectReference Include="$(RedBoltPhysicsBox2DRoot)/src/RedBolt/PhysicsBox2D/RedBolt.PhysicsBox2D.csproj" />
-    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/PhysicsJolt/RedBolt.PhysicsJolt.csproj" />
+    <ProjectReference Include="$(RedBoltPhysicsJoltRoot)/src/RedBolt/PhysicsJolt/RedBolt.PhysicsJolt.csproj" />
+    <ProjectReference Include="$(RedBoltPhysicsJoltRoot)/src/RedBolt/PhysicsJolt.Network/RedBolt.PhysicsJolt.Network.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Navigation/RedBolt.Navigation.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Network/RedBolt.Network.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Particles/RedBolt.Particles.csproj" />

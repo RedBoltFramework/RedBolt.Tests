@@ -3,6 +3,8 @@
     <RedBoltRoot Condition="'$(RedBoltRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../RedBolt'))</RedBoltRoot>
     <RedBolt2DRoot Condition="'$(RedBolt2DRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../RedBolt.2D'))</RedBolt2DRoot>
     <RedBoltPhysicsBox2DRoot Condition="'$(RedBoltPhysicsBox2DRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../RedBolt.PhysicsBox2D'))</RedBoltPhysicsBox2DRoot>
+    <RedBoltCSGRoot Condition="'$(RedBoltCSGRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../RedBolt.CSG'))</RedBoltCSGRoot>
+    <RedBoltPhysicsJoltRoot Condition="'$(RedBoltPhysicsJoltRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../RedBolt.PhysicsJolt'))</RedBoltPhysicsJoltRoot>
   </PropertyGroup>
 
   <Import Project="$(RedBoltRoot)/src/Directory.Build.props" />

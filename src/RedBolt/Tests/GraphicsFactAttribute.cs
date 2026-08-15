@@ -66,7 +66,7 @@ internal static class NativeBindingCapability
             {
                 "Sdl", "Diligent", "DearImGui", "Stb", "Lz4", "HarfBuzz", "RmlUi",
                 "WebP", "XAtlas", "Embree", "Glslang", "SpirVCross", "SpirVTools",
-                "ShaderCompiler", "Jolt"
+                "ShaderCompiler", "Box2D", "Jolt"
             };
 
             foreach (var moduleName in moduleNames)
@@ -79,20 +79,39 @@ internal static class NativeBindingCapability
                 }
             }
 
+            var nativeSearchDirectories =
+                AppContext.GetData("NATIVE_DLL_SEARCH_DIRECTORIES") as string ?? string.Empty;
+            var nativeLibraryPatterns = OperatingSystem.IsWindows()
+                ? new[] { "RedBolt.Native.*.dll" }
+                : OperatingSystem.IsMacOS()
+                    ? new[] { "libRedBolt.Native.*.dylib" }
+                    : new[] { "libRedBolt.Native.*.so" };
+            foreach (var directory in nativeSearchDirectories.Split(
+                         Path.PathSeparator,
+                         StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            foreach (var pattern in nativeLibraryPatterns)
+            {
+                if (!Directory.Exists(directory))
+                    continue;
+                foreach (var candidate in Directory.EnumerateFiles(directory, pattern))
+                {
+                    if (System.Runtime.InteropServices.NativeLibrary.TryLoad(candidate, out var handle))
+                    {
+                        System.Runtime.InteropServices.NativeLibrary.Free(handle);
+                        return true;
+                    }
+                }
+            }
+
             var nativeRoot = Path.Combine(RbfxTestData.BuildRoot, "native");
             var runtimeIds = new[]
             {
                 System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier,
                 "linux-x64", "linux-arm64", "win-x64", "win-arm64", "osx-x64", "osx-arm64"
             };
-            var libraryNames = OperatingSystem.IsWindows()
-                ? new[] { "RedBolt.Native.*.dll" }
-                : OperatingSystem.IsMacOS()
-                    ? new[] { "libRedBolt.Native.*.dylib" }
-                    : new[] { "libRedBolt.Native.*.so" };
 
             foreach (var runtimeId in runtimeIds.Distinct(StringComparer.OrdinalIgnoreCase))
-            foreach (var libraryName in libraryNames)
+            foreach (var libraryName in nativeLibraryPatterns)
             {
                 var runtimeNativeDirectory = Path.Combine(
                     nativeRoot, runtimeId, "runtime", RbfxTestData.BuildConfiguration);

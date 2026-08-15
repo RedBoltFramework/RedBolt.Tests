@@ -590,9 +590,20 @@ public sealed class ParticleGraphBehaviorTests
 
         public bool UpdateEnabled { get; set; }
 
+        public bool ManualUpdate { get; set; }
+
+        public bool Interpolation { get; set; }
+
+        public int Fps { get; set; } = 60;
+
         public PhysicsSphereCastResult Result { get; set; }
 
         public void Update(float timeStep)
+        {
+        }
+
+        public void CustomUpdate(uint numSteps, float fixedTimeStep, float overtime,
+            long? networkFrame = null, uint synchronizedStepOffset = 0)
         {
         }
 
