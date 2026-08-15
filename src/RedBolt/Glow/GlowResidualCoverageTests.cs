@@ -64,10 +64,10 @@ public sealed class GlowResidualCoverageTests
     public void Helpers_cover_unknown_components_and_baking_material_texture_defines()
     {
         var component = new Component();
-        Assert.ThrowsAny<Exception>(() => Helpers.SetLightmapIndex(component, 12));
-        Assert.ThrowsAny<Exception>(() => Helpers.GetLightmapIndex(component));
-        Assert.ThrowsAny<Exception>(() => Helpers.SetLightmapScaleOffset(component, Vector4f.One));
-        Assert.ThrowsAny<Exception>(() => Helpers.GetLightmapScaleOffset(component));
+        Assert.Throws<ArgumentException>(() => Helpers.SetLightmapIndex(component, 12));
+        Assert.Throws<ArgumentException>(() => Helpers.GetLightmapIndex(component));
+        Assert.Throws<ArgumentException>(() => Helpers.SetLightmapScaleOffset(component, Vector4f.One));
+        Assert.Throws<ArgumentException>(() => Helpers.GetLightmapScaleOffset(component));
 
         using var sourceMaterial = new Material();
         using var diffuse = new Texture2D();

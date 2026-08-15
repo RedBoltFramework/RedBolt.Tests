@@ -1,10 +1,17 @@
 namespace RedBolt.Tests;
 
+using System.Runtime.CompilerServices;
+
 using RedBolt;
 using RedBolt.Resource;
 
 internal static class RbfxTestData
 {
+    private readonly record struct AddedResourceDirs(bool CoreData, bool Data);
+
+    private static readonly object ResourceDirScopesLock = new();
+    private static readonly ConditionalWeakTable<ResourceCache, Stack<AddedResourceDirs>> ResourceDirScopes = new();
+
     public static string RepositoryRoot => Path.GetFullPath(
         Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
 
@@ -26,19 +33,33 @@ internal static class RbfxTestData
         Path.Combine(BuildRoot, "bin", BuildConfiguration, TargetPlatform, category, fileName);
 
     public static string GetHostAppFile(string category, string fileName) =>
-        Path.Combine(BuildRoot, "bin", BuildConfiguration, "host", category, fileName);
+        Path.Combine(BuildRoot, "bin", BuildConfiguration, "host", category, TargetPlatform, fileName);
 
     public static void AddResourceDirs(ResourceCache resources)
     {
         ArgumentNullException.ThrowIfNull(resources);
-        resources.AddResourceDir(CoreData);
-        resources.AddResourceDir(Data);
+        lock (ResourceDirScopesLock)
+        {
+            var added = new AddedResourceDirs(
+                resources.AddResourceDir(CoreData),
+                resources.AddResourceDir(Data));
+            ResourceDirScopes.GetOrCreateValue(resources).Push(added);
+        }
     }
 
     public static void RemoveResourceDirs(ResourceCache resources)
     {
         ArgumentNullException.ThrowIfNull(resources);
-        resources.RemoveResourceDir(Data);
-        resources.RemoveResourceDir(CoreData);
+        lock (ResourceDirScopesLock)
+        {
+            if (!ResourceDirScopes.TryGetValue(resources, out var scopes) || scopes.Count == 0)
+                throw new InvalidOperationException("Resource directory scope was not added.");
+
+            var added = scopes.Pop();
+            if (added.Data)
+                resources.RemoveResourceDir(Data);
+            if (added.CoreData)
+                resources.RemoveResourceDir(CoreData);
+        }
     }
 }

@@ -30,7 +30,11 @@ public sealed class ConsoleTests
             Assert.False(console.IsAutoVisibleOnError());
             Assert.Equal(512u, console.GetNumHistoryRows());
             Assert.False(console.GetLevelVisible(LogLevel.Trace));
+#if DEBUG
             Assert.True(console.GetLevelVisible(LogLevel.Debug));
+#else
+            Assert.False(console.GetLevelVisible(LogLevel.Debug));
+#endif
             Assert.True(console.GetLevelVisible(LogLevel.Info));
             Assert.True(console.GetLevelVisible(LogLevel.Warning));
             Assert.True(console.GetLevelVisible(LogLevel.Error));

@@ -65,7 +65,7 @@ public sealed class VariantSplineResidualCoverageTests
             VariantType.VariantCurve,
             VariantType.CString
         })
-            Assert.ThrowsAny<Exception>(() => VariantTypeUtility.GetVariantTypeSize(unsupported));
+            Assert.Throws<ArgumentOutOfRangeException>(() => VariantTypeUtility.GetVariantTypeSize(unsupported));
     }
 
     [Fact]

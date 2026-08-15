@@ -1,7 +1,5 @@
 namespace RedBolt.Tests;
 
-using System.Reflection;
-
 using RedBolt.Core;
 using RedBolt.Engine;
 using RedBolt.Logging;
@@ -11,9 +9,6 @@ using IOEvents = RedBolt.IO.IOEvents;
 [Collection(nameof(HeadlessEngineCollection))]
 public sealed class LogSinkTests
 {
-    private static readonly MethodInfo SetMainThreadMethod = typeof(WorkQueue).GetMethod(
-        "SetMainThread", BindingFlags.NonPublic | BindingFlags.Static)!;
-
     [Fact]
     public void Open_rotates_existing_files_in_numbered_order()
     {
@@ -237,7 +232,7 @@ public sealed class LogSinkTests
 
     private static void WithLog(Action<Log> action)
     {
-        SetMainThreadMethod.Invoke(null, null);
+        using var mainThreadScope = new WorkQueue();
         var previous = Context.Instance;
         var context = new Context(new RuntimeServices([]));
         Context.SetInstance(context);

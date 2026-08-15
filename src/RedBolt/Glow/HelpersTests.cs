@@ -1,7 +1,5 @@
 namespace RedBolt.Tests;
 
-using System.Diagnostics;
-
 using RedBolt.Glow;
 using RedBolt.Graphics;
 using RedBolt.Math;
@@ -94,20 +92,10 @@ public sealed class HelpersTests
     }
 
     [Fact]
-    public void Unknown_lightmap_component_getters_return_defaults_after_debug_assertion()
+    public void Unknown_lightmap_component_getters_are_rejected()
     {
-        var listeners = Trace.Listeners.Cast<TraceListener>().ToArray();
-        Trace.Listeners.Clear();
-        try
-        {
-            var component = new Component();
-            Assert.Equal(0, Helpers.GetLightmapIndex(component));
-            Assert.Equal(Vector4f.Zero, Helpers.GetLightmapScaleOffset(component));
-        }
-        finally
-        {
-            foreach (var listener in listeners)
-                Trace.Listeners.Add(listener);
-        }
+        var component = new Component();
+        Assert.Throws<ArgumentException>(() => Helpers.GetLightmapIndex(component));
+        Assert.Throws<ArgumentException>(() => Helpers.GetLightmapScaleOffset(component));
     }
 }

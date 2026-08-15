@@ -1,5 +1,7 @@
 namespace RedBolt.Tests;
 
+using System.Reflection;
+
 using RedBolt;
 using RedBolt.Core;
 using RedBolt.Engine;
@@ -39,6 +41,46 @@ public sealed class WorkQueueTests
         Assert.NotNull(workQueue);
         Assert.IsType<WorkQueue>(workQueue);
         Assert.Same(_fixture.Engine.Context, workQueue.Context);
+    }
+
+    [Fact]
+    public void Test_runner_establishes_the_engine_main_thread_for_each_test_case()
+    {
+        Assert.True(MainThreadTestFramework.MainThreadBoundaryCount > 0);
+        Assert.True(WorkQueue.IsMainThread());
+    }
+
+    [Fact]
+    public void Nested_work_queues_activate_and_restore_the_previous_queue()
+    {
+        var activeQueueField = typeof(WorkQueue).GetField(
+            "_workQueue", BindingFlags.NonPublic | BindingFlags.Static)!;
+        var outerQueue = GetWorkQueue();
+        var outerThreadCount = WorkQueue.GetThreadIndexCount();
+        var first = new WorkQueue();
+        var second = new WorkQueue();
+
+        try
+        {
+            Assert.Same(second, activeQueueField.GetValue(null));
+            Assert.Equal(1, WorkQueue.GetThreadIndexCount());
+
+            first.Dispose();
+            Assert.Same(second, activeQueueField.GetValue(null));
+        }
+        finally
+        {
+            first.Dispose();
+            second.Dispose();
+        }
+
+        Assert.Same(outerQueue, activeQueueField.GetValue(null));
+        Assert.Equal(outerThreadCount, WorkQueue.GetThreadIndexCount());
+
+        var executed = false;
+        outerQueue.PostTask(() => executed = true, TaskPriority.Immediate);
+        outerQueue.CompleteAll();
+        Assert.True(executed);
     }
 
     [Fact]

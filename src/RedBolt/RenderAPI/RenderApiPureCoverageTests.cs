@@ -105,7 +105,7 @@ public sealed class RenderApiPureCoverageTests
     [Fact]
     public void Raw_buffer_rejects_dynamic_uav_and_initial_data_combinations()
     {
-        Assert.ThrowsAny<Exception>(() =>
+        Assert.Throws<ArgumentException>(() =>
             new RawBuffer(
                 new RawBufferParams(
                     BufferType.Vertex,
@@ -114,7 +114,7 @@ public sealed class RenderApiPureCoverageTests
                     BufferFlag.Dynamic | BufferFlag.BindUnorderedAccess),
                 flags: DeviceObjectFlag.Headless));
 
-        Assert.ThrowsAny<Exception>(() =>
+        Assert.Throws<ArgumentException>(() =>
             new RawBuffer(
                 new RawBufferParams(BufferType.Vertex, 16, 4, BufferFlag.Dynamic),
                 new byte[16],

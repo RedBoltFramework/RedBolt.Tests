@@ -10,6 +10,37 @@ using RedBolt.IO;
 public sealed class ResourceCacheGuardTests
 {
     [Fact]
+    public void Effective_resource_directory_uses_the_last_matching_mount()
+    {
+        using var scope = new TestArtifactScope(nameof(Effective_resource_directory_uses_the_last_matching_mount));
+        var fallbackCoreData = Path.Combine(scope.DirectoryPath, "fallback", "CoreData");
+        var explicitCoreData = Path.Combine(scope.DirectoryPath, "explicit", "CoreData");
+        Directory.CreateDirectory(fallbackCoreData);
+        Directory.CreateDirectory(explicitCoreData);
+
+        var previousContext = Context.Instance;
+        using var context = new Context();
+        Context.SetInstance(context);
+        try
+        {
+            var virtualFileSystem = new VirtualFileSystem();
+            context.RegisterSubsystem(virtualFileSystem);
+            virtualFileSystem.MountDir(fallbackCoreData);
+            virtualFileSystem.MountDir(explicitCoreData);
+
+            using var guard = new ResourceCacheGuard();
+
+            Assert.Equal(
+                Path.GetFullPath(explicitCoreData).Replace('\\', '/').TrimEnd('/') + "/",
+                guard.CoreData);
+        }
+        finally
+        {
+            Context.SetInstance(previousContext);
+        }
+    }
+
+    [Fact]
     public void Dispose_replaces_project_mounts_with_original_mounts_in_order()
     {
         var rootPath = Path.Combine(Path.GetTempPath(), "RedBoltResourceCacheGuard-" + Guid.NewGuid().ToString("N"));

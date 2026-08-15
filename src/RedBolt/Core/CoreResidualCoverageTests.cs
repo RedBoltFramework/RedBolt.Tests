@@ -1,7 +1,6 @@
 namespace RedBolt.Tests;
 
 using System.Collections;
-using System.Diagnostics;
 using System.Reflection;
 
 using RedBolt;
@@ -249,9 +248,9 @@ public sealed class CoreResidualCoverageTests
     [Fact]
     public void Work_queue_external_and_multithreaded_paths_cover_wrappers_and_budget()
     {
+        using var queue = new WorkQueue();
         typeof(WorkQueue).GetMethod("SetMainThread", BindingFlags.Static | BindingFlags.NonPublic)!
             .Invoke(null, null);
-        using var queue = new WorkQueue();
         queue.Initialize(1);
 
         var mainIndex = (int)InvokePrivate(queue, "GetThreadIndexImpl");
@@ -373,17 +372,8 @@ public sealed class CoreResidualCoverageTests
         invalid.Dispose();
         other.Dispose();
 
-        var listeners = Trace.Listeners.Cast<TraceListener>().ToArray();
-        Trace.Listeners.Clear();
-        try
-        {
-            Assert.Equal(0, VariantTypeUtility.GetVariantTypeSize(unchecked((VariantType)999)));
-        }
-        finally
-        {
-            foreach (var listener in listeners)
-                Trace.Listeners.Add(listener);
-        }
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            VariantTypeUtility.GetVariantTypeSize(unchecked((VariantType)999)));
     }
 
     [Fact]

@@ -33,7 +33,7 @@ public class HeadlessEngineFixture : IDisposable
             Headless = true,
             LogQuiet = true,
             ResourcePaths = "CoreData;Data",
-            ResourcePrefixPaths = ".;..",
+            ResourcePrefixPaths = RbfxTestData.Root,
             WindowMaximize = false,
             WindowWidth = 1280,
             WindowHeight = 720

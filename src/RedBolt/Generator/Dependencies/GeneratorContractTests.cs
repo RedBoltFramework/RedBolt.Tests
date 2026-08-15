@@ -10,6 +10,13 @@ public sealed class GeneratorContractTests
         ?? Assembly.LoadFrom(RbfxTestData.GetAppFile(
             "tools", "RedBolt.Generator.Dependencies.dll"));
 
+    private static Assembly LoadExternalGenerator(string repositoryName, string assemblyName) =>
+        AppDomain.CurrentDomain.GetAssemblies()
+            .FirstOrDefault(assembly => assembly.GetName().Name == assemblyName)
+        ?? Assembly.LoadFrom(Path.Combine(
+            RbfxTestData.RepositoryRoot, "..", repositoryName, "build", "bin",
+            RbfxTestData.BuildConfiguration, "host", "tools", assemblyName + ".dll"));
+
     [Fact]
     public void Generator_options_normalize_paths_and_keep_repeated_options()
     {
@@ -92,17 +99,35 @@ public sealed class GeneratorContractTests
     [Fact]
     public void Generator_program_creates_and_closes_log_on_each_supported_surface_error()
     {
-        var surfaces = new[]
+        var surfaces = new (string Surface, Assembly Generator)[]
         {
-            "sdl", "diligent", "dearimgui", "stb", "lz4", "harfbuzz", "rmlui",
-            "webp", "xatlas", "glslang", "spirvcross", "spirvtools", "shadercompiler", "jolt", "embree"
+            ("sdl", GeneratorAssembly),
+            ("diligent", GeneratorAssembly),
+            ("dearimgui", GeneratorAssembly),
+            ("stb", GeneratorAssembly),
+            ("tinygltf", GeneratorAssembly),
+            ("lz4", GeneratorAssembly),
+            ("harfbuzz", GeneratorAssembly),
+            ("rmlui", GeneratorAssembly),
+            ("webp", GeneratorAssembly),
+            ("xatlas", GeneratorAssembly),
+            ("glslang", GeneratorAssembly),
+            ("spirvcross", GeneratorAssembly),
+            ("spirvtools", GeneratorAssembly),
+            ("shadercompiler", GeneratorAssembly),
+            ("embree", GeneratorAssembly),
+            ("libdatachannel", GeneratorAssembly),
+            ("box2d", LoadExternalGenerator(
+                "RedBolt.PhysicsBox2D", "RedBolt.PhysicsBox2D.Generator.Dependencies")),
+            ("jolt", LoadExternalGenerator(
+                "RedBolt.PhysicsJolt", "RedBolt.PhysicsJolt.Generator.Dependencies"))
         };
 
-        foreach (var surface in surfaces)
+        foreach (var (surface, generator) in surfaces)
         {
             using var artifacts = new TestArtifactScope($"{nameof(Generator_program_creates_and_closes_log_on_each_supported_surface_error)}-{surface}");
             var logPath = Path.Combine(artifacts.DirectoryPath, "logs", "generator.log");
-            var result = InvokeProgram(
+            var result = InvokeProgram(generator,
                 [
                     "--surface", surface.ToUpperInvariant(),
                     "--header", Path.Combine(artifacts.DirectoryPath, "missing.hpp"),
@@ -118,7 +143,7 @@ public sealed class GeneratorContractTests
                 ]);
 
             Assert.Equal(1, result.ExitCode);
-            Assert.Contains("Usage: RedBolt.Generator.Dependencies", result.Error);
+            Assert.Contains("Usage:", result.Error);
             Assert.True(File.Exists(logPath), $"No log was created for {surface}.");
             Assert.NotEmpty(File.ReadAllText(logPath));
 
@@ -126,7 +151,10 @@ public sealed class GeneratorContractTests
         }
     }
 
-    private static (int ExitCode, string Output, string Error) InvokeProgram(string[] args)
+    private static (int ExitCode, string Output, string Error) InvokeProgram(string[] args) =>
+        InvokeProgram(GeneratorAssembly, args);
+
+    private static (int ExitCode, string Output, string Error) InvokeProgram(Assembly generatorAssembly, string[] args)
     {
         lock (ProgramLock)
         {
@@ -138,7 +166,7 @@ public sealed class GeneratorContractTests
             Console.SetError(error);
             try
             {
-                var exitCode = (int)GeneratorAssembly.EntryPoint!.Invoke(null, [args])!;
+                var exitCode = (int)generatorAssembly.EntryPoint!.Invoke(null, [args])!;
                 return (exitCode, output.ToString(), error.ToString());
             }
             finally

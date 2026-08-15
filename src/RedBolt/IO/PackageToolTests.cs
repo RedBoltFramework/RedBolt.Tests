@@ -8,6 +8,17 @@ using RedBolt.IO;
 public sealed class PackageToolTests
 {
     [Fact]
+    public void Host_tool_dependency_manifest_uses_only_the_SDL_wrapper()
+    {
+        var dependencyFile = RbfxTestData.GetHostAppFile(
+            "tools", "RedBolt.PackageTool.deps.json");
+        var dependencies = System.IO.File.ReadAllText(dependencyFile);
+
+        Assert.Contains("RedBolt.Native.Sdl", dependencies, StringComparison.Ordinal);
+        Assert.DoesNotContain("SDL2", dependencies, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Invalid_archive_is_rejected_without_entries()
     {
         using var scope = new TestArtifactScope(nameof(Invalid_archive_is_rejected_without_entries));

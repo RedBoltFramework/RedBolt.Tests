@@ -66,6 +66,19 @@ public sealed class FoundationTests
     {
         WithProject((project, _) =>
         {
+            var virtualFileSystem = _fixture.Context.GetSubsystem<RedBolt.IO.VirtualFileSystem>()!;
+            var mountedDirectories = Enumerable.Range(0, checked((int)virtualFileSystem.NumMountPoints()))
+                .Select(index => virtualFileSystem.GetMountPoint(checked((uint)index))!)
+                .OfType<RedBolt.IO.MountedDirectory>()
+                .ToArray();
+            Assert.DoesNotContain(mountedDirectories, mountPoint =>
+                mountPoint.GetDirectory() == Path.GetPathRoot(mountPoint.GetDirectory()));
+            var configMountPoint = Assert.Single(
+                mountedDirectories.Where(mountPoint => mountPoint.AcceptsScheme("conf")));
+            Assert.Equal(
+                Path.TrimEndingDirectorySeparator(_fixture.Engine.GetAppPreferencesDir()),
+                Path.TrimEndingDirectorySeparator(configMountPoint.GetDirectory()));
+
             using var tab = new HierarchyBrowserTab();
             using var source = new TestHierarchyBrowserSource(tab);
 

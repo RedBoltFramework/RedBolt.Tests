@@ -1,7 +1,5 @@
 namespace RedBolt.Tests;
 
-using System.Reflection;
-
 using RedBolt;
 using RedBolt.Core;
 using RedBolt.Engine;
@@ -11,9 +9,6 @@ using RedBolt.Logging;
 [Collection(nameof(HeadlessEngineCollection))]
 public sealed class LogTests
 {
-    private static readonly MethodInfo SetMainThreadMethod = typeof(WorkQueue).GetMethod(
-        "SetMainThread", BindingFlags.NonPublic | BindingFlags.Static)!;
-
     private sealed class EventReceiver : RedObject
     {
     }
@@ -65,7 +60,7 @@ public sealed class LogTests
     [Fact]
     public void Main_thread_log_sends_log_message_event()
     {
-        SetMainThreadMethod.Invoke(null, null);
+        using var mainThreadScope = new WorkQueue();
         var log = _fixture.Engine.GetSubsystem<Log>()!;
         using var receiver = new EventReceiver();
         var message = $"main-log-event-{Guid.NewGuid():N}";
@@ -108,7 +103,7 @@ public sealed class LogTests
     [Fact]
     public void Worker_thread_log_sends_log_message_event_on_engine_end_frame()
     {
-        SetMainThreadMethod.Invoke(null, null);
+        using var mainThreadScope = new WorkQueue();
         var log = _fixture.Engine.GetSubsystem<Log>()!;
         using var receiver = new EventReceiver();
         var message = $"worker-log-event-{Guid.NewGuid():N}";
