@@ -46,7 +46,7 @@ public sealed class EditorApplicationTests
         Assert.Equal("CoreData;EditorData", parameters.ResourcePaths);
         Assert.Equal(string.Empty, parameters.ResourceRootFile);
         Assert.False(parameters.EngineAutoLoadScripts);
-        Assert.False(parameters.ReloadPlugins);
+        Assert.True(parameters.ReloadPlugins);
         Assert.True(parameters.Profile);
         Assert.NotEqual(0u, parameters.SystemUIFlags & (1u << 14));
         if (!string.Equals(Environment.GetEnvironmentVariable("XDG_SESSION_TYPE"), "wayland", StringComparison.Ordinal))
@@ -176,7 +176,7 @@ public sealed class EditorApplicationTests
             Assert.True(application.StopCalled);
             Assert.True(application.HasConsole);
             Assert.True(application.HasDebugHud);
-            Assert.True(application.HasRmlUI);
+            Assert.False(application.HasRmlUI);
             Assert.True(application.HasSystemUI);
             Assert.True(application.HasDefaultFont);
             Assert.True(application.HasProjectSettingsHandler);
@@ -310,9 +310,9 @@ public sealed class EditorApplicationTests
             parameters.LogName = string.Empty;
             parameters.LogQuiet = true;
             parameters.RenderBackend = RenderBackend.OpenGL;
-            parameters.ResourcePrefixPaths = string.Join(';',
-                Path.Combine(_repositoryRoot, "bin"),
-                Path.GetFullPath(Path.Combine(_repositoryRoot, "..", "rbfx", "bin")));
+            parameters.ResourcePrefixPaths = Path.GetFullPath(Path.Combine(
+                _repositoryRoot, "build", "bin",
+                RbfxTestData.BuildConfiguration, RbfxTestData.TargetPlatform));
             parameters.TimeOut = _droppedProjectPath is null ? 0 : 10;
             parameters.WindowHidden = true;
             parameters.WindowMaximize = false;

@@ -21,6 +21,32 @@ public sealed class EditorPluginManagerTests
         Assert.Equal(["First", "Second"], calls);
     }
 
+    [Fact]
+    public void Scoped_plugins_apply_to_existing_targets_and_unapply_on_removal()
+    {
+        using var manager = new EditorPluginManager();
+        using var target = new Target();
+        manager.Apply(target);
+        var applied = 0;
+        var removed = 0;
+
+        var registration = manager.AddScopedPlugin<Target>("Scoped", _ =>
+        {
+            ++applied;
+            return new CallbackRegistration(() => ++removed);
+        });
+
+        Assert.Equal(1, applied);
+        registration.Dispose();
+        Assert.Equal(1, removed);
+        Assert.DoesNotContain(manager.Plugins, static plugin => plugin.Name == "Scoped");
+    }
+
+    private sealed class CallbackRegistration(Action callback) : IDisposable
+    {
+        public void Dispose() => callback();
+    }
+
     private sealed class Target : RedObject
     {
     }

@@ -4,6 +4,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Core/RedBolt.Core.csproj" />
+    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/Diligent/RedBolt.Bindings.Diligent.csproj" />
     <ProjectReference Include="../UserCodeDependency/RedBolt.UserCode.TestDependency.csproj" />
+    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Generator/Reflection/RedBolt.Generator.Reflection.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      GlobalPropertiesToRemove="RedBoltPlatform;RedBoltNativePreset" />
   </ItemGroup>
 </Project>

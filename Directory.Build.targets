@@ -4,6 +4,11 @@
   <Import Project="$(RedBoltPhysicsBox2DRoot)/src/RedBolt.PhysicsBox2D.TestIntegration.targets" />
   <Import Project="$(RedBoltCSGRoot)/src/RedBolt.CSG.TestIntegration.targets" />
   <Import Project="$(RedBoltPhysicsJoltRoot)/src/RedBolt.PhysicsJolt.TestIntegration.targets" />
+  <Import Project="$(RedBoltActionsRoot)/src/RedBolt.Actions.TestIntegration.targets" />
+  <Import Project="$(RedBoltParticlesRoot)/src/RedBolt.Particles.TestIntegration.targets" />
+  <Import Project="$(RedBoltNavigationRoot)/src/RedBolt.Navigation.TestIntegration.targets" />
+  <Import Project="$(RedBoltNetworkRoot)/src/RedBolt.Network.TestIntegration.targets" />
+  <Import Project="$(RedBoltRmlUIRoot)/src/RedBolt.RmlUI.TestIntegration.targets" />
 
   <ItemGroup Condition="('$(RedBoltPlatform)' == 'linux-x64' or '$(RedBoltPlatform)' == 'win-x64') and '$(IsTestProject)' == 'true'">
     <!--
@@ -19,6 +24,13 @@
     <AdditionalProbingPath Include="$(RedBoltCSGRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/core" />
     <AdditionalProbingPath Include="$(RedBoltPhysicsJoltRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/core" />
     <AdditionalProbingPath Include="$(RedBoltPhysicsJoltRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/extern" />
+    <AdditionalProbingPath Include="$(RedBoltActionsRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/core" />
+    <AdditionalProbingPath Include="$(RedBoltParticlesRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/core" />
+    <AdditionalProbingPath Include="$(RedBoltNavigationRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/core" />
+    <AdditionalProbingPath Include="$(RedBoltNetworkRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/core" />
+    <AdditionalProbingPath Include="$(RedBoltNetworkRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/extern" />
+    <AdditionalProbingPath Include="$(RedBoltRmlUIRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/core" />
+    <AdditionalProbingPath Include="$(RedBoltRmlUIRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/extern" />
     <AdditionalProbingPath Include="$(RedBoltCoreOutputDir)" />
     <AdditionalProbingPath Include="$(RedBoltExternOutputDir)" />
     <AdditionalProbingPath Include="$(RedBoltToolsOutputDir)" />
@@ -28,5 +40,9 @@
     <AdditionalProbingPath Include="$(RedBoltPhysicsBox2DRoot)/build/bin/$(Configuration)/host/tools" />
     <AdditionalProbingPath Include="$(RedBoltPhysicsJoltRoot)/build/bin/$(Configuration)/host/extern" />
     <AdditionalProbingPath Include="$(RedBoltPhysicsJoltRoot)/build/bin/$(Configuration)/host/tools" />
+    <AdditionalProbingPath Include="$(RedBoltNetworkRoot)/build/bin/$(Configuration)/host/extern" />
+    <AdditionalProbingPath Include="$(RedBoltNetworkRoot)/build/bin/$(Configuration)/host/tools" />
+    <AdditionalProbingPath Include="$(RedBoltRmlUIRoot)/build/bin/$(Configuration)/host/extern" />
+    <AdditionalProbingPath Include="$(RedBoltRmlUIRoot)/build/bin/$(Configuration)/host/tools" />
   </ItemGroup>
 </Project>

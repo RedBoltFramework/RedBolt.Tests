@@ -64,6 +64,7 @@ public sealed class GameViewTabTests
             foreach (var resource in preservedResources)
                 _fixture.Resources.AddManualResource(resource);
             tab = new GameViewTab();
+            tab.RenderTargetChanged += (_, target) => rmlUI.SetRenderTarget(target);
             var backbuffer = GetPrivateField<CustomBackbufferTexture>(tab, "_backbuffer");
             var renderer = _fixture.Context.GetSubsystem<Renderer>()!;
             var engine = _fixture.Context.GetSubsystem<EngineSubsystem>()!;
@@ -211,6 +212,13 @@ public sealed class GameViewTabTests
 
     private static T GetPrivateField<T>(object instance, string name)
     {
-        return (T)instance.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(instance)!;
+        for (var type = instance.GetType(); type is not null; type = type.BaseType)
+        {
+            var field = type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic);
+            if (field is not null)
+                return (T)field.GetValue(instance)!;
+        }
+
+        throw new MissingFieldException(instance.GetType().FullName, name);
     }
 }

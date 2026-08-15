@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Actions/RedBolt.Actions.csproj" />
+    <ProjectReference Include="$(RedBoltActionsRoot)/src/RedBolt/Actions/RedBolt.Actions.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Audio/RedBolt.Audio.csproj" />
     <Compile Include="$(RedBoltRoot)/src/RedBolt/Core/GlobalAliases.cs"
              Link="GlobalAliases.cs"
@@ -17,8 +17,8 @@
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/Glslang/RedBolt.Bindings.Glslang.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/HarfBuzz/RedBolt.Bindings.HarfBuzz.csproj" />
     <ProjectReference Include="$(RedBoltPhysicsJoltRoot)/src/RedBolt/Native/JoltPhysics/RedBolt.Bindings.Jolt.csproj" />
-    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/LibDataChannel/RedBolt.Bindings.LibDataChannel.csproj" />
-    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/RmlUi/RedBolt.Bindings.RmlUi.csproj" />
+    <ProjectReference Include="$(RedBoltNetworkRoot)/src/RedBolt/Native/LibDataChannel/RedBolt.Bindings.LibDataChannel.csproj" />
+    <ProjectReference Include="$(RedBoltRmlUIRoot)/src/RedBolt/Native/RmlUi/RedBolt.Bindings.RmlUi.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/SpirVCross/RedBolt.Bindings.SpirVCross.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/SpirVTools/RedBolt.Bindings.SpirVTools.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Core/RedBolt.Core.csproj" />
@@ -43,10 +43,21 @@
                       Private="false"
                       PrivateAssets="all"
                       GlobalPropertiesToRemove="RedBoltPlatform;RedBoltNativePreset" />
-    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Navigation/RedBolt.Navigation.csproj" />
-    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Network/RedBolt.Network.csproj" />
-    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Particles/RedBolt.Particles.csproj" />
-    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/RmlUI/RedBolt.RmlUI.csproj" />
+    <ProjectReference Include="$(RedBoltNavigationRoot)/src/RedBolt/Navigation/RedBolt.Navigation.csproj" />
+    <ProjectReference Include="$(RedBoltNetworkRoot)/src/RedBolt/Network/RedBolt.Network.csproj" />
+    <ProjectReference Include="$(RedBoltParticlesRoot)/src/RedBolt/Particles/RedBolt.Particles.csproj" />
+    <ProjectReference Include="$(RedBoltRmlUIRoot)/src/RedBolt/RmlUI/RedBolt.RmlUI.csproj" />
+    <ProjectReference Include="$(RedBoltRmlUIRoot)/src/RedBolt/RmlUI.Editor/RedBolt.RmlUI.Editor.csproj" />
+    <ProjectReference Include="$(RedBoltNetworkRoot)/src/RedBolt/Generator/Dependencies/RedBolt.Network.Generator.Dependencies.csproj"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      PrivateAssets="all"
+                      GlobalPropertiesToRemove="RedBoltPlatform;RedBoltNativePreset" />
+    <ProjectReference Include="$(RedBoltRmlUIRoot)/src/RedBolt/Generator/Dependencies/RedBolt.RmlUI.Generator.Dependencies.csproj"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      PrivateAssets="all"
+                      GlobalPropertiesToRemove="RedBoltPlatform;RedBoltNativePreset" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Tools/PackageTool/RedBolt.PackageTool.csproj"
                       ReferenceOutputAssembly="false"
                       Private="false"

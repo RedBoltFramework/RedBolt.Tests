@@ -5,6 +5,11 @@
     <RedBoltPhysicsBox2DRoot Condition="'$(RedBoltPhysicsBox2DRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../RedBolt.PhysicsBox2D'))</RedBoltPhysicsBox2DRoot>
     <RedBoltCSGRoot Condition="'$(RedBoltCSGRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../RedBolt.CSG'))</RedBoltCSGRoot>
     <RedBoltPhysicsJoltRoot Condition="'$(RedBoltPhysicsJoltRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../RedBolt.PhysicsJolt'))</RedBoltPhysicsJoltRoot>
+    <RedBoltActionsRoot Condition="'$(RedBoltActionsRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../RedBolt.Actions'))</RedBoltActionsRoot>
+    <RedBoltParticlesRoot Condition="'$(RedBoltParticlesRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../RedBolt.Particles'))</RedBoltParticlesRoot>
+    <RedBoltNavigationRoot Condition="'$(RedBoltNavigationRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../RedBolt.Navigation'))</RedBoltNavigationRoot>
+    <RedBoltNetworkRoot Condition="'$(RedBoltNetworkRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../RedBolt.Network'))</RedBoltNetworkRoot>
+    <RedBoltRmlUIRoot Condition="'$(RedBoltRmlUIRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../RedBolt.RmlUI'))</RedBoltRmlUIRoot>
   </PropertyGroup>
 
   <Import Project="$(RedBoltRoot)/src/Directory.Build.props" />

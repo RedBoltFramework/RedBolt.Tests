@@ -108,7 +108,8 @@ public sealed class GeneratorContractTests
             ("tinygltf", GeneratorAssembly),
             ("lz4", GeneratorAssembly),
             ("harfbuzz", GeneratorAssembly),
-            ("rmlui", GeneratorAssembly),
+            ("rmlui", LoadExternalGenerator(
+                "RedBolt.RmlUI", "RedBolt.RmlUI.Generator.Dependencies")),
             ("webp", GeneratorAssembly),
             ("xatlas", GeneratorAssembly),
             ("glslang", GeneratorAssembly),
@@ -116,7 +117,8 @@ public sealed class GeneratorContractTests
             ("spirvtools", GeneratorAssembly),
             ("shadercompiler", GeneratorAssembly),
             ("embree", GeneratorAssembly),
-            ("libdatachannel", GeneratorAssembly),
+            ("libdatachannel", LoadExternalGenerator(
+                "RedBolt.Network", "RedBolt.Network.Generator.Dependencies")),
             ("box2d", LoadExternalGenerator(
                 "RedBolt.PhysicsBox2D", "RedBolt.PhysicsBox2D.Generator.Dependencies")),
             ("jolt", LoadExternalGenerator(
