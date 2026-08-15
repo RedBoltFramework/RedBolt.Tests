@@ -33,7 +33,9 @@
                       Private="false"
                       PrivateAssets="all"
                       GlobalPropertiesToRemove="RedBoltPlatform;RedBoltNativePreset" />
-    <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/IK/RedBolt.IK.csproj" />
+    <ProjectReference Include="$(RedBoltIKRoot)/src/RedBolt/IK/RedBolt.IK.csproj" />
+    <ProjectReference Include="$(RedBoltIKRoot)/src/RedBolt/IK.Tools/RedBolt.IK.Tools.csproj" />
+    <ProjectReference Include="$(RedBoltIKRoot)/src/RedBolt/IK.Editor/RedBolt.IK.Editor.csproj" />
     <ProjectReference Include="$(RedBolt2DRoot)/src/RedBolt/2D/RedBolt.2D.csproj" />
     <ProjectReference Include="$(RedBoltPhysicsBox2DRoot)/src/RedBolt/PhysicsBox2D/RedBolt.PhysicsBox2D.csproj" />
     <ProjectReference Include="$(RedBoltPhysicsJoltRoot)/src/RedBolt/PhysicsJolt/RedBolt.PhysicsJolt.csproj" />

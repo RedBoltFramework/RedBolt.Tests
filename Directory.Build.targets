@@ -9,6 +9,7 @@
   <Import Project="$(RedBoltNavigationRoot)/src/RedBolt.Navigation.TestIntegration.targets" />
   <Import Project="$(RedBoltNetworkRoot)/src/RedBolt.Network.TestIntegration.targets" />
   <Import Project="$(RedBoltRmlUIRoot)/src/RedBolt.RmlUI.TestIntegration.targets" />
+  <Import Project="$(RedBoltIKRoot)/src/RedBolt.IK.TestIntegration.targets" />
 
   <ItemGroup Condition="('$(RedBoltPlatform)' == 'linux-x64' or '$(RedBoltPlatform)' == 'win-x64') and '$(IsTestProject)' == 'true'">
     <!--
@@ -31,6 +32,7 @@
     <AdditionalProbingPath Include="$(RedBoltNetworkRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/extern" />
     <AdditionalProbingPath Include="$(RedBoltRmlUIRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/core" />
     <AdditionalProbingPath Include="$(RedBoltRmlUIRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/extern" />
+    <AdditionalProbingPath Include="$(RedBoltIKRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/core" />
     <AdditionalProbingPath Include="$(RedBoltCoreOutputDir)" />
     <AdditionalProbingPath Include="$(RedBoltExternOutputDir)" />
     <AdditionalProbingPath Include="$(RedBoltToolsOutputDir)" />

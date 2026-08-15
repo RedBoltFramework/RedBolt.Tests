@@ -10,6 +10,7 @@
     <RedBoltNavigationRoot Condition="'$(RedBoltNavigationRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../RedBolt.Navigation'))</RedBoltNavigationRoot>
     <RedBoltNetworkRoot Condition="'$(RedBoltNetworkRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../RedBolt.Network'))</RedBoltNetworkRoot>
     <RedBoltRmlUIRoot Condition="'$(RedBoltRmlUIRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../RedBolt.RmlUI'))</RedBoltRmlUIRoot>
+    <RedBoltIKRoot Condition="'$(RedBoltIKRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../RedBolt.IK'))</RedBoltIKRoot>
   </PropertyGroup>
 
   <Import Project="$(RedBoltRoot)/src/Directory.Build.props" />

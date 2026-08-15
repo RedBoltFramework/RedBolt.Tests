@@ -1,7 +1,14 @@
 namespace RedBolt.Tests;
 
 using RedBolt.IO;
+using RedBolt.IK;
+using RedBolt.IK.Editor;
+using RedBolt.Editor.Core;
+using RedBolt.Editor.Project;
+using RedBolt.Engine;
 using RedBolt.Plugins;
+using RedBolt.Resource;
+using RedBolt.Utility;
 using RedBolt.RmlUI.Editor;
 using RedBolt.UserCode.Desktop;
 using File = global::System.IO.File;
@@ -11,7 +18,7 @@ public sealed class PluginManagerTests
 {
     public PluginManagerTests(HeadlessEngineFixture fixture)
     {
-        _ = fixture;
+        _fixture = fixture;
     }
 
     [Fact]
@@ -46,25 +53,101 @@ public sealed class PluginManagerTests
             static candidate => candidate.Name == "RedBolt.RmlUI.Editor");
 
         Assert.Equal(PluginReloadPolicy.ProcessResident, descriptor.ReloadPolicy);
+        Assert.True(descriptor.AutoLoad);
         Assert.Equal(Path.GetFullPath(assemblyPath), descriptor.AssemblyPath);
     }
 
     [NativeBindingFact]
-    public void RmlUI_companion_loads_and_unloads_through_standard_plugin_manager()
+    public void RmlUI_companion_auto_loads_and_unloads_through_standard_plugin_manager()
     {
         var assemblyPath = typeof(RmlUIEditorPlugin).Assembly.Location;
-        using var manager = new PluginManager();
-        new ManagedPluginCatalog([Path.GetDirectoryName(assemblyPath)!]).Populate(manager);
-        Assert.Contains("RedBolt.RmlUI.Editor", manager.EnumerateAvailablePlugins());
+        using (var manager = new PluginManager())
+        {
+            new ManagedPluginCatalog([Path.GetDirectoryName(assemblyPath)!]).Populate(manager);
+            Assert.Contains("RedBolt.RmlUI.Editor", manager.EnumerateAvailablePlugins());
+            Assert.True(manager.IsPluginAutoLoaded("RedBolt.RmlUI.Editor"));
 
-        manager.SetPluginsLoaded(["RedBolt.RmlUI.Editor"]);
-        manager.Commit();
-        Assert.NotNull(manager.GetPluginApplication("RedBolt.RmlUI.Editor", true));
-        Assert.NotNull(RedBolt.Core.Context.Instance.GetSubsystem<RedBolt.RmlUI.RmlUI>());
+            manager.Commit();
+            Assert.Empty(manager.LoadedPlugins);
+            Assert.NotNull(manager.GetPluginApplication("RedBolt.RmlUI.Editor", true));
+            Assert.NotNull(RedBolt.Core.Context.Instance.GetSubsystem<RedBolt.RmlUI.RmlUI>());
+        }
 
-        manager.SetPluginsLoaded([]);
-        manager.Commit();
         Assert.Null(RedBolt.Core.Context.Instance.GetSubsystem<RedBolt.RmlUI.RmlUI>());
+    }
+
+    [Fact]
+    public void IK_companion_auto_loads_runtime_and_retargeting_reflection()
+    {
+        var assemblyPath = typeof(IKEditorPlugin).Assembly.Location;
+        var editorPlugins = RedBolt.Core.Context.Instance.GetSubsystem<EditorPluginManager>()!;
+        using (var manager = new PluginManager())
+        {
+            var catalog = new ManagedPluginCatalog([Path.GetDirectoryName(assemblyPath)!]);
+            var descriptor = Assert.Single(catalog.Scan(),
+                static candidate => candidate.Name == "RedBolt.IK.Editor");
+            Assert.True(descriptor.AutoLoad);
+            Assert.Equal(PluginReloadPolicy.ProcessResident, descriptor.ReloadPolicy);
+
+            catalog.Populate(manager);
+            manager.Commit();
+
+            Assert.Empty(manager.LoadedPlugins);
+            Assert.NotNull(manager.GetPluginApplication("RedBolt.IK.Editor", true));
+            Assert.Contains(editorPlugins.Plugins,
+                static plugin => plugin.Name == "IK.DefaultRetargetTransformer");
+            using var solver = Assert.IsType<IKSolver>(
+                RedBolt.Core.Context.Instance.CreateObject(nameof(IKSolver)));
+            using var transformer = Assert.IsType<RedBolt.Utility.RetargetAnimationsTransformer>(
+                RedBolt.Core.Context.Instance.CreateObject(nameof(RedBolt.Utility.RetargetAnimationsTransformer)));
+        }
+
+        Assert.DoesNotContain(editorPlugins.Plugins,
+            static plugin => plugin.Name == "IK.DefaultRetargetTransformer");
+    }
+
+    [Fact]
+    public void IK_companion_contributes_retargeting_to_default_asset_pipeline()
+    {
+        var projectPath = Path.Combine(Path.GetTempPath(), "RedBoltIKPlugin-" + Guid.NewGuid().ToString("N"));
+        var dataPath = Path.Combine(projectPath, "Data");
+        var settingsPath = Path.Combine(projectPath, "Settings.json");
+        Directory.CreateDirectory(dataPath);
+        File.WriteAllText(Path.Combine(projectPath, "Project.json"), "{}");
+        File.WriteAllText(Path.Combine(projectPath, "Cache.json"), "{}");
+        File.WriteAllText(Path.Combine(projectPath, "ui.ini"), string.Empty);
+        File.WriteAllText(settingsPath, "{}");
+        using (var pipeline = new AssetPipeline())
+            Assert.True(pipeline.SaveFile(new FileIdentifier(Path.Combine(dataPath, "Default.assetpipeline"))));
+
+        var engine = _fixture.Context.GetSubsystem<Engine>()!;
+        var previousPluginPaths = engine.Parameters.PluginPaths;
+        var preservedResources = _fixture.Resources.AllResources.Values.ToArray();
+        Project? project = null;
+        try
+        {
+            engine.Parameters.PluginPaths = Path.GetDirectoryName(typeof(IKEditorPlugin).Assembly.Location)!;
+            project = new Project(projectPath, settingsPath, ProjectFlag.SingleProcess);
+
+            using var pipeline = new AssetPipeline();
+            Assert.True(pipeline.LoadFile(new FileIdentifier(Path.Combine(dataPath, "Default.assetpipeline"))));
+            Assert.Contains(pipeline.GetTransformers(),
+                static transformer => transformer is RedBolt.Utility.RetargetAnimationsTransformer);
+            Assert.Empty(project.PluginManager.LoadedPlugins);
+        }
+        finally
+        {
+            engine.Parameters.PluginPaths = previousPluginPaths;
+            if (project is not null)
+            {
+                project.Destroy();
+                _fixture.Context.RemoveSubsystem<Project>();
+                project.Dispose();
+            }
+            foreach (var resource in preservedResources)
+                _fixture.Resources.AddManualResource(resource);
+            Directory.Delete(projectPath, true);
+        }
     }
 
     [Fact]
@@ -118,4 +201,6 @@ public sealed class PluginManagerTests
 
         protected override void Suspend(Archive archive) { }
     }
+
+    private readonly HeadlessEngineFixture _fixture;
 }
