@@ -1,3 +1,5 @@
+<!-- Copyright (c) 2026 RedBolt and contributors. -->
+
 # RedBolt.Tests
 
 This repository contains the RedBolt test suite. Clone it next to the RedBolt

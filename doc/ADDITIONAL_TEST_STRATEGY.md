@@ -1,3 +1,5 @@
+<!-- Copyright (c) 2026 RedBolt and contributors. -->
+
 # Additional test strategy
 
 This document extends the subsystem class plans in

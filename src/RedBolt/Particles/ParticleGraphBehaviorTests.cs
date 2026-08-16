@@ -1,3 +1,4 @@
+// Copyright (c) 2026 RedBolt and contributors.
 //
 // Copyright (c) 2021 the rbfx project.
 //

@@ -1,3 +1,4 @@
+// Copyright (c) 2026 RedBolt and contributors.
 using System.Globalization;
 using System.Xml;
 using System.Xml.Linq;

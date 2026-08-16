@@ -1,3 +1,4 @@
+// Copyright (c) 2026 RedBolt and contributors.
 namespace RedBolt.Tests;
 
 using System.Collections.Concurrent;
