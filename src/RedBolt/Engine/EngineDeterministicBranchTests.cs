@@ -56,7 +56,7 @@ public sealed class EngineDeterministicBranchTests
     {
         using var engine = new Engine();
 
-        engine.DumpProfiler();
+        engine.Context.GetSubsystem<Profiler>()!.DumpData();
         engine.Render();
 
         Assert.Throws<InvalidOperationException>(() => engine.Update());

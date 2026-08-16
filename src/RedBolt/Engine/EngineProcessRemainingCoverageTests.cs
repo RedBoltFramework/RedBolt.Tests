@@ -21,7 +21,7 @@ public sealed class EngineProcessRemainingCoverageTests
         Assert.Throws<InvalidOperationException>(() => engine.RunFrame());
         Assert.Throws<InvalidOperationException>(() => engine.Update());
 
-        engine.DumpProfiler();
+        engine.Context.GetSubsystem<Profiler>()!.DumpData();
         engine.Render();
     }
 
@@ -62,7 +62,7 @@ public sealed class EngineProcessRemainingCoverageTests
     {
         using var engine = CreateHeadlessEngine();
 
-        engine.DumpProfiler();
+        engine.Context.GetSubsystem<Profiler>()!.DumpData();
         engine.DumpResources();
         engine.DumpResources(dumpFileName: true);
         engine.DumpMemory();
