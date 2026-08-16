@@ -56,15 +56,15 @@ public class ProfilerTests
     [Fact]
     public void Profiler_collects_hierarchical_time_and_allocations()
     {
-        var profiler = new Profiler { Enabled = true };
+        using var profiler = new Profiler { Enabled = true };
 
         profiler.BeginFrame();
-        using (profiler.Profile("Update"))
+        using (Profiler.Profile("Update"))
         {
-            using (profiler.Profile("LogicUpdate"))
+            using (Profiler.Profile("LogicUpdate"))
                 GC.KeepAlive(Allocate(4096));
         }
-        using (profiler.Profile("ApplyFrameLimit"))
+        using (Profiler.Profile("ApplyFrameLimit"))
             Thread.SpinWait(1000);
         profiler.EndFrame();
 
@@ -83,12 +83,12 @@ public class ProfilerTests
     [Fact]
     public void Profiler_rolls_frame_interval_and_total_values()
     {
-        var profiler = new Profiler { Enabled = true };
+        using var profiler = new Profiler { Enabled = true };
 
         for (var i = 0; i < 2; ++i)
         {
             profiler.BeginFrame();
-            using (profiler.Profile("Block"))
+            using (Profiler.Profile("Block"))
                 GC.KeepAlive(Allocate(128));
             profiler.EndFrame();
         }
@@ -110,9 +110,9 @@ public class ProfilerTests
     [Fact]
     public void Disabled_and_worker_thread_scopes_are_ignored()
     {
-        var profiler = new Profiler();
+        using var profiler = new Profiler();
         profiler.BeginFrame();
-        using (profiler.Profile("Disabled"))
+        using (Profiler.Profile("Disabled"))
             GC.KeepAlive(Allocate(64));
         profiler.EndFrame();
         Assert.Empty(profiler.RootBlock.Children);
@@ -120,7 +120,7 @@ public class ProfilerTests
         profiler.Enabled = true;
         var thread = new Thread(() =>
         {
-            using (profiler.Profile("Worker"))
+            using (Profiler.Profile("Worker"))
                 GC.KeepAlive(Allocate(64));
         });
         thread.Start();
