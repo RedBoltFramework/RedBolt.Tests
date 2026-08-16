@@ -18,6 +18,7 @@
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/Glslang/RedBolt.Bindings.Glslang.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/HarfBuzz/RedBolt.Bindings.HarfBuzz.csproj" />
     <ProjectReference Include="$(RedBoltPhysicsJoltRoot)/src/RedBolt/Native/JoltPhysics/RedBolt.Bindings.Jolt.csproj" />
+    <ProjectReference Include="$(RedBoltXRRoot)/src/RedBolt/Native/OpenXR/RedBolt.Bindings.OpenXR.csproj" />
     <ProjectReference Include="$(RedBoltNetworkRoot)/src/RedBolt/Native/LibDataChannel/RedBolt.Bindings.LibDataChannel.csproj" />
     <ProjectReference Include="$(RedBoltRmlUIRoot)/src/RedBolt/Native/RmlUi/RedBolt.Bindings.RmlUi.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Native/SpirVCross/RedBolt.Bindings.SpirVCross.csproj" />
@@ -51,6 +52,7 @@
     <ProjectReference Include="$(RedBoltNavigationRoot)/src/RedBolt/Navigation/RedBolt.Navigation.csproj" />
     <ProjectReference Include="$(RedBoltNetworkRoot)/src/RedBolt/Network/RedBolt.Network.csproj" />
     <ProjectReference Include="$(RedBoltParticlesRoot)/src/RedBolt/Particles/RedBolt.Particles.csproj" />
+    <ProjectReference Include="$(RedBoltXRRoot)/src/RedBolt/XR/RedBolt.XR.csproj" />
     <ProjectReference Include="$(RedBoltRmlUIRoot)/src/RedBolt/RmlUI/RedBolt.RmlUI.csproj" />
     <ProjectReference Include="$(RedBoltRmlUIRoot)/src/RedBolt/RmlUI.Editor/RedBolt.RmlUI.Editor.csproj" />
     <ProjectReference Include="$(RedBoltNetworkRoot)/src/RedBolt/Generator/Dependencies/RedBolt.Network.Generator.Dependencies.csproj"

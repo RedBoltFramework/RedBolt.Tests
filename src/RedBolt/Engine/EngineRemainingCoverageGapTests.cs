@@ -45,7 +45,7 @@ public sealed class EngineRemainingCoverageGapTests
         Assert.Equal(1, callbackCount);
         engine.Update();
         engine.Render();
-        engine.Context.GetSubsystem<Profiler>()!.DumpData();
+        // engine.Context.GetSubsystem<Profiler>()!.DumpData();
         engine.DumpResources();
         engine.DumpResources(true);
         engine.DumpMemory();

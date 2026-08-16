@@ -12,6 +12,7 @@
   <Import Project="$(RedBoltRmlUIRoot)/src/RedBolt.RmlUI.TestIntegration.targets" />
   <Import Project="$(RedBoltIKRoot)/src/RedBolt.IK.TestIntegration.targets" />
   <Import Project="$(RedBoltGlowRoot)/src/RedBolt.Glow.TestIntegration.targets" />
+  <Import Project="$(RedBoltXRRoot)/src/RedBolt.XR.TestIntegration.targets" />
 
   <ItemGroup Condition="('$(RedBoltPlatform)' == 'linux-x64' or '$(RedBoltPlatform)' == 'win-x64') and '$(IsTestProject)' == 'true'">
     <!--
