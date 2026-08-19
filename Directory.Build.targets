@@ -15,43 +15,15 @@
   <Import Project="$(RedBoltXRRoot)/src/RedBolt.XR.TestIntegration.targets" />
 
   <ItemGroup Condition="('$(RedBoltPlatform)' == 'linux-x64' or '$(RedBoltPlatform)' == 'win-x64') and '$(IsTestProject)' == 'true'">
-    <!--
-      External modules used to live in the base repository, so an incremental
-      workspace may still contain obsolete copies below the base output root.
-      Resolve sibling outputs first to make incremental and clean builds use
-      the same managed assemblies and native runtime assets.
-    -->
     <AdditionalProbingPath Remove="@(AdditionalProbingPath)" />
-    <AdditionalProbingPath Include="$(RedBolt2DRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/core" />
-    <AdditionalProbingPath Include="$(RedBoltPhysicsBox2DRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/core" />
-    <AdditionalProbingPath Include="$(RedBoltPhysicsBox2DRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/extern" />
-    <AdditionalProbingPath Include="$(RedBoltCSGRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/core" />
-    <AdditionalProbingPath Include="$(RedBoltPhysicsJoltRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/core" />
-    <AdditionalProbingPath Include="$(RedBoltPhysicsJoltRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/extern" />
-    <AdditionalProbingPath Include="$(RedBoltActionsRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/core" />
-    <AdditionalProbingPath Include="$(RedBoltParticlesRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/core" />
-    <AdditionalProbingPath Include="$(RedBoltNavigationRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/core" />
-    <AdditionalProbingPath Include="$(RedBoltNetworkRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/core" />
-    <AdditionalProbingPath Include="$(RedBoltNetworkRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/extern" />
-    <AdditionalProbingPath Include="$(RedBoltRmlUIRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/core" />
-    <AdditionalProbingPath Include="$(RedBoltRmlUIRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/extern" />
-    <AdditionalProbingPath Include="$(RedBoltIKRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/core" />
-    <AdditionalProbingPath Include="$(RedBoltGlowRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/core" />
-    <AdditionalProbingPath Include="$(RedBoltGlowRoot)/build/bin/$(Configuration)/$(RedBoltPlatform)/extern" />
+    <AdditionalProbingPath Include="$(RedBoltBuildRoot)/bin/$(Configuration)/$(RedBoltPlatform)/core" />
+    <AdditionalProbingPath Include="$(RedBoltBuildRoot)/bin/$(Configuration)/$(RedBoltPlatform)/extern" />
     <AdditionalProbingPath Include="$(RedBoltCoreOutputDir)" />
     <AdditionalProbingPath Include="$(RedBoltExternOutputDir)" />
     <AdditionalProbingPath Include="$(RedBoltToolsOutputDir)" />
     <AdditionalProbingPath Include="$(RedBoltHostExternOutputDir)" />
     <AdditionalProbingPath Include="$(RedBoltHostToolsOutputDir)" />
-    <AdditionalProbingPath Include="$(RedBoltPhysicsBox2DRoot)/build/bin/$(Configuration)/host/extern" />
-    <AdditionalProbingPath Include="$(RedBoltPhysicsBox2DRoot)/build/bin/$(Configuration)/host/tools" />
-    <AdditionalProbingPath Include="$(RedBoltPhysicsJoltRoot)/build/bin/$(Configuration)/host/extern" />
-    <AdditionalProbingPath Include="$(RedBoltPhysicsJoltRoot)/build/bin/$(Configuration)/host/tools" />
-    <AdditionalProbingPath Include="$(RedBoltNetworkRoot)/build/bin/$(Configuration)/host/extern" />
-    <AdditionalProbingPath Include="$(RedBoltNetworkRoot)/build/bin/$(Configuration)/host/tools" />
-    <AdditionalProbingPath Include="$(RedBoltRmlUIRoot)/build/bin/$(Configuration)/host/extern" />
-    <AdditionalProbingPath Include="$(RedBoltRmlUIRoot)/build/bin/$(Configuration)/host/tools" />
-    <AdditionalProbingPath Include="$(RedBoltGlowRoot)/build/bin/$(Configuration)/host/extern" />
-    <AdditionalProbingPath Include="$(RedBoltGlowRoot)/build/bin/$(Configuration)/host/tools" />
+    <AdditionalProbingPath Include="$(RedBoltBuildRoot)/bin/$(Configuration)/host/extern" />
+    <AdditionalProbingPath Include="$(RedBoltBuildRoot)/bin/$(Configuration)/host/tools" />
   </ItemGroup>
 </Project>
