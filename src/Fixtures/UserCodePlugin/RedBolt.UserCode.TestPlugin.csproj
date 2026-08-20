@@ -11,6 +11,6 @@
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Generator/Reflection/RedBolt.Generator.Reflection.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false"
-                      GlobalPropertiesToRemove="RedBoltPlatform;RedBoltNativePreset" />
+                      GlobalPropertiesToRemove="RedBoltPlatform" />
   </ItemGroup>
 </Project>

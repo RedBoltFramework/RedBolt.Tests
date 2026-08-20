@@ -31,12 +31,12 @@
     <ProjectReference Include="$(RedBoltGlowRoot)/src/RedBolt/Glow.Tools/RedBolt.Glow.Tools.csproj" />
     <ProjectReference Include="$(RedBoltGlowRoot)/src/RedBolt/Glow.Editor/RedBolt.Glow.Editor.csproj" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Generator/Dependencies/RedBolt.Generator.Dependencies.csproj"
-                      GlobalPropertiesToRemove="RedBoltPlatform;RedBoltNativePreset" />
+                      GlobalPropertiesToRemove="RedBoltPlatform" />
     <ProjectReference Include="$(RedBoltPhysicsBox2DRoot)/src/RedBolt/Generator/Dependencies/RedBolt.PhysicsBox2D.Generator.Dependencies.csproj"
                       ReferenceOutputAssembly="false"
                       Private="false"
                       PrivateAssets="all"
-                      GlobalPropertiesToRemove="RedBoltPlatform;RedBoltNativePreset" />
+                      GlobalPropertiesToRemove="RedBoltPlatform" />
     <ProjectReference Include="$(RedBoltIKRoot)/src/RedBolt/IK/RedBolt.IK.csproj" />
     <ProjectReference Include="$(RedBoltIKRoot)/src/RedBolt/IK.Tools/RedBolt.IK.Tools.csproj" />
     <ProjectReference Include="$(RedBoltIKRoot)/src/RedBolt/IK.Editor/RedBolt.IK.Editor.csproj" />
@@ -48,7 +48,7 @@
                       ReferenceOutputAssembly="false"
                       Private="false"
                       PrivateAssets="all"
-                      GlobalPropertiesToRemove="RedBoltPlatform;RedBoltNativePreset" />
+                      GlobalPropertiesToRemove="RedBoltPlatform" />
     <ProjectReference Include="$(RedBoltNavigationRoot)/src/RedBolt/Navigation/RedBolt.Navigation.csproj" />
     <ProjectReference Include="$(RedBoltNetworkRoot)/src/RedBolt/Network/RedBolt.Network.csproj" />
     <ProjectReference Include="$(RedBoltParticlesRoot)/src/RedBolt/Particles/RedBolt.Particles.csproj" />
@@ -59,12 +59,12 @@
                       ReferenceOutputAssembly="false"
                       Private="false"
                       PrivateAssets="all"
-                      GlobalPropertiesToRemove="RedBoltPlatform;RedBoltNativePreset" />
+                      GlobalPropertiesToRemove="RedBoltPlatform" />
     <ProjectReference Include="$(RedBoltRmlUIRoot)/src/RedBolt/Generator/Dependencies/RedBolt.RmlUI.Generator.Dependencies.csproj"
                       ReferenceOutputAssembly="false"
                       Private="false"
                       PrivateAssets="all"
-                      GlobalPropertiesToRemove="RedBoltPlatform;RedBoltNativePreset" />
+                      GlobalPropertiesToRemove="RedBoltPlatform" />
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Tools/PackageTool/RedBolt.PackageTool.csproj"
                       ReferenceOutputAssembly="false"
                       Private="false"
@@ -75,7 +75,7 @@
     <ProjectReference Include="$(RedBoltRoot)/src/RedBolt/Generator/Reflection/RedBolt.Generator.Reflection.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false"
-                      GlobalPropertiesToRemove="RedBoltPlatform;RedBoltNativePreset" />
+                      GlobalPropertiesToRemove="RedBoltPlatform" />
   </ItemGroup>
 
   <ItemGroup>

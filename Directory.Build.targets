@@ -1,6 +1,11 @@
 <!-- Copyright (c) 2026 RedBolt and contributors. -->
 <Project>
   <Import Project="$(RedBoltRoot)/src/Directory.Build.targets" />
+  <!--
+    Import every module's test integration so the test suite can exercise all modules. Each module's
+    TestIntegration.targets registers itself (with its native flag) and is guarded internally so the
+    shared logic is only imported once.
+  -->
   <Import Project="$(RedBolt2DRoot)/src/RedBolt.2D.TestIntegration.targets" />
   <Import Project="$(RedBoltPhysicsBox2DRoot)/src/RedBolt.PhysicsBox2D.TestIntegration.targets" />
   <Import Project="$(RedBoltCSGRoot)/src/RedBolt.CSG.TestIntegration.targets" />
@@ -14,6 +19,7 @@
   <Import Project="$(RedBoltGlowRoot)/src/RedBolt.Glow.TestIntegration.targets" />
   <Import Project="$(RedBoltXRRoot)/src/RedBolt.XR.TestIntegration.targets" />
 
+  <!-- Test projects probe every shared output bucket so they can run against the built modules. -->
   <ItemGroup Condition="('$(RedBoltPlatform)' == 'linux-x64' or '$(RedBoltPlatform)' == 'win-x64') and '$(IsTestProject)' == 'true'">
     <AdditionalProbingPath Remove="@(AdditionalProbingPath)" />
     <AdditionalProbingPath Include="$(RedBoltBuildRoot)/bin/$(Configuration)/$(RedBoltPlatform)/core" />

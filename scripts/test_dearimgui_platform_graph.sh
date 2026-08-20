@@ -13,13 +13,11 @@ trap 'rm -f -- "$browser_items" "$linux_items"' EXIT
 dotnet msbuild "$project" \
     -p:Configuration=Debug \
     -p:RedBoltPlatform=browser-wasm \
-    -p:RedBoltNativePreset=browser-wasm \
     -getItem:ProjectReference,Compile > "$browser_items"
 
 dotnet msbuild "$project" \
     -p:Configuration=Debug \
     -p:RedBoltPlatform=linux-x64 \
-    -p:RedBoltNativePreset=linux-x64 \
     -getItem:ProjectReference,Compile > "$linux_items"
 
 if grep -Fq '"Identity": "../Utility/RedBolt.Utility.csproj"' "$browser_items" ||
