@@ -42,6 +42,29 @@ public sealed class AudioTests
     }
 
     [Fact]
+    public void Sound_source_tolerates_missing_audio_subsystem()
+    {
+        var previousContext = Context.Instance;
+        using var context = new Context();
+        Context.SetInstance(context);
+
+        try
+        {
+            using var source = new SoundSource();
+            using var sound = new Sound();
+
+            source.Play(sound);
+            source.Update(1.0f);
+
+            Assert.False(source.IsPlaying());
+        }
+        finally
+        {
+            Context.SetInstance(previousContext);
+        }
+    }
+
+    [Fact]
     public void Sound_source_starts_from_the_first_sample()
     {
         var scene = new Scene();
