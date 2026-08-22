@@ -8,6 +8,7 @@ using RedBolt.Bindings.DearImGui;
 using RedBolt.Graphics;
 using RedBolt.Input;
 using RedBolt.Math;
+using RedBolt.Utility;
 
 using DearImGuiSubsystem = RedBolt.DearImGui.DearImGui;
 
@@ -62,7 +63,7 @@ public sealed class DearImGuiFontTests
                 io.FontDefault = font;
             _fixture.Context.SendEvent<InputEvents.InputEndEvent>();
             using (var drawList = ImGui.GetForegroundDrawList())
-                drawList.AddText(new Vector2f(4.0f, 4.0f), 0xffffffff, "\uf015"u8);
+                drawList.AddText(new Vector2f(4.0f, 4.0f), 0xffffffff, Icons.HouseU8);
             _fixture.Context.SendEvent<GraphicsEvents.EndRenderingEvent>();
             using var drawData = ImGui.GetDrawData();
             Assert.True(drawData.TotalVtxCount >= 4);

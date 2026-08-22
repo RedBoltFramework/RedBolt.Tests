@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 
 using RedBolt.Bindings.DearImGui;
+using RedBolt.Container;
 using RedBolt.Core;
 using RedBolt.Editor.Core;
 using RedBolt.Editor.Foundation;
@@ -16,6 +17,7 @@ using RedBolt.IO;
 using RedBolt.Math;
 using RedBolt.Resource;
 using RedBolt.SystemUI;
+using RedBolt.Utility;
 
 using DearImGuiSubsystem = RedBolt.DearImGui.DearImGui;
 using File = global::System.IO.File;
@@ -213,6 +215,8 @@ public sealed class MaterialInspectorTests
         virtualFileSystem.MountAlias("res:CoreData", completeCoreDataMount);
     }
 
+    private static readonly CString _forceSaveLabel = new($"{Icons.FloppyDisk} Force Save");
+
     private static void RenderInspectorFrame(MaterialInspector inspector, Activation activation)
     {
         var frameStarted = false;
@@ -238,7 +242,7 @@ public sealed class MaterialInspectorTests
                 ImGui.ActivateItemByID(ImGui.GetID(ReadOnlySpan<byte>.Empty));
             }
             else if (activation == Activation.ForceSave)
-                ImGui.ActivateItemByID(ImGui.GetID("\uf0c7 Force Save"u8));
+                ImGui.ActivateItemByID(ImGui.GetID(_forceSaveLabel));
         }
         finally
         {

@@ -16,6 +16,7 @@ using RedBolt.Math;
 using RedBolt.RenderPipeline;
 using RedBolt.Resource;
 using RedBolt.SystemUI;
+using RedBolt.Utility;
 
 using DearImGuiSubsystem = RedBolt.DearImGui.DearImGui;
 using File = global::System.IO.File;
@@ -245,6 +246,10 @@ public sealed class RenderPathInspectorTests
         }
     }
 
+    private static readonly CString _movePassDownLabel = new($"{Icons.ArrowDown}##MovePassDown");
+    private static readonly CString _removePassLabel = new($"{Icons.TrashCan}##RemovePass");
+    private static readonly CString _addPassLabel = new($"{Icons.SquarePlus} Add Pass");
+
     private static void RenderInspectorFrame(
         RenderPathInspector inspector, SerializableInspectorWidget? widget, Activation activation)
     {
@@ -270,13 +275,13 @@ public sealed class RenderPathInspectorTests
                 if (activation == Activation.OpenHeader)
                     ImGui.ActivateItemByID(ImGui.GetID("First"u8));
                 else if (activation == Activation.MoveDown)
-                    ImGui.ActivateItemByID(ImGui.GetID("\uf063##MovePassDown"u8));
+                    ImGui.ActivateItemByID(ImGui.GetID(_movePassDownLabel));
                 else if (activation == Activation.Remove)
-                    ImGui.ActivateItemByID(ImGui.GetID("\uf2ed##RemovePass"u8));
+                    ImGui.ActivateItemByID(ImGui.GetID(_removePassLabel));
             }
             else if (activation == Activation.AddPass)
             {
-                ImGui.ActivateItemByID(ImGui.GetID("\uf0fe Add Pass"u8));
+                ImGui.ActivateItemByID(ImGui.GetID(_addPassLabel));
             }
             else if (activation == Activation.SelectTestPass)
             {

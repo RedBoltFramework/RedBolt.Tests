@@ -3,11 +3,13 @@ namespace RedBolt.Tests;
 
 using RedBolt.Bindings.DearImGui;
 using RedBolt.Bindings.RmlUi;
+using RedBolt.Container;
 using RedBolt.DearImGui;
 using RedBolt.Graphics;
 using RedBolt.Input;
 using RedBolt.Math;
 using RedBolt.RenderAPI;
+using RedBolt.Utility;
 
 using DearImGuiSubsystem = RedBolt.DearImGui.DearImGui;
 using RmlUISubsystem = RedBolt.RmlUI.RmlUI;
@@ -15,6 +17,9 @@ using RmlUISubsystem = RedBolt.RmlUI.RmlUI;
 [Collection(nameof(GraphicsLifecycleCollection))]
 public sealed class VisualRegressionGpuTextTests
 {
+    private static readonly CString _gpuTextLabel = new(
+        $"office affine | fi fl | {Icons.House} {Icons.Gear}");
+
     [VisualFact]
     public void DearImGui_harfbuzz_gpu_text_and_white_pixel_primitives_render()
     {
@@ -55,7 +60,7 @@ public sealed class VisualRegressionGpuTextTests
                     | ImGuiWindowFlags.ImGuiWindowFlagsNoMove
                     | ImGuiWindowFlags.ImGuiWindowFlagsNoCollapse);
                 ImGui.TextUnformatted("Software: right | Hardware: right"u8);
-                ImGui.TextUnformatted("office affine | fi fl | \uf015 \uf013"u8);
+                ImGui.TextUnformatted(_gpuTextLabel);
                 var cursor = ImGui.GetCursorScreenPos();
                 ImGui.GetWindowDrawList().AddRectFilled(
                     cursor, cursor + new Vector2f(120.0f, 12.0f), 0xffd06020);

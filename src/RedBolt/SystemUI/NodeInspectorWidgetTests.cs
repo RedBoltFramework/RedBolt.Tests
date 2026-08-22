@@ -5,10 +5,12 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 
 using RedBolt.Bindings.DearImGui;
+using RedBolt.Container;
 using RedBolt.Core;
 using RedBolt.Math;
 using RedBolt.Scene;
 using RedBolt.SystemUI;
+using RedBolt.Utility;
 
 [Reflected("Tests")]
 public partial class NodeInspectorSharedTestComponent : Component
@@ -200,6 +202,8 @@ public sealed class NodeInspectorWidgetTests
         }
     }
 
+    private static readonly CString _removeComponentLabel = new($"{Icons.TrashCan}##RemoveComponent");
+
     private static void RenderWidgetFrame(
         NodeInspectorWidget widget, Component? component, Activation activation)
     {
@@ -231,7 +235,7 @@ public sealed class NodeInspectorWidgetTests
                 }
                 else if (activation == Activation.Remove)
                 {
-                    ImGui.ActivateItemByID(ImGui.GetID("\uf2ed##RemoveComponent"u8));
+                    ImGui.ActivateItemByID(ImGui.GetID(_removeComponentLabel));
                 }
             }
         }

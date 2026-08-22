@@ -218,6 +218,10 @@ public sealed class MaterialInspectorWidgetTests
         }
     }
 
+    private static readonly CString _resetCameraLabel = new($"{Icons.ArrowsLeftRightToLine}##ResetCamera");
+    private static readonly CString _toggleSkyboxLabel = new($"{Icons.Cloud}##ToggleSkybox");
+    private static readonly CString _forceSaveLabel = new($"{Icons.FloppyDisk} Force Save");
+
     private static void Activate(Activation activation)
     {
         switch (activation)
@@ -225,26 +229,26 @@ public sealed class MaterialInspectorWidgetTests
         case Activation.None:
             break;
         case Activation.ResetCamera:
-            ImGui.ActivateItemByID(ImGui.GetID("\ue4ba"u8));
+            ImGui.ActivateItemByID(ImGui.GetID(_resetCameraLabel));
             break;
         case Activation.ToggleSkybox:
-            ImGui.ActivateItemByID(ImGui.GetID("\uf0c2"u8));
+            ImGui.ActivateItemByID(ImGui.GetID(_toggleSkyboxLabel));
             break;
         case Activation.ForceSave:
-            ImGui.ActivateItemByID(ImGui.GetID("\uf0c7 Force Save"u8));
+            ImGui.ActivateItemByID(ImGui.GetID(_forceSaveLabel));
             break;
         case Activation.MergeTechniques:
             using (new IdScopeGuard("RenderTechniques"u8))
-                ImGui.ActivateItemByID(ImGui.GetID("\uf387"u8));
+                ImGui.ActivateItemByID(ImGui.GetID(Icons.CodeMergeU8));
             break;
         case Activation.RemoveTechnique:
             using (new IdScopeGuard("RenderTechniques"u8))
             using (new IdScopeGuard(0))
-                ImGui.ActivateItemByID(ImGui.GetID("\uf2ed"u8));
+                ImGui.ActivateItemByID(ImGui.GetID(Icons.TrashCanU8));
             break;
         case Activation.AddTechnique:
             using (new IdScopeGuard("RenderTechniques"u8))
-                ImGui.ActivateItemByID(ImGui.GetID("\uf0fe"u8));
+                ImGui.ActivateItemByID(ImGui.GetID(Icons.SquarePlusU8));
             break;
         case Activation.ToggleAlphaToCoverage:
             using (new IdScopeGuard("RenderProperties"u8))
@@ -254,21 +258,21 @@ public sealed class MaterialInspectorWidgetTests
         case Activation.RemoveAlbedoTexture:
             using (new IdScopeGuard("RenderTextures"u8))
             using (new IdScopeGuard("Albedo"u8))
-                ImGui.ActivateItemByID(ImGui.GetID("\uf2ed"u8));
+                ImGui.ActivateItemByID(ImGui.GetID(Icons.TrashCanU8));
             break;
         case Activation.RemoveCustomTexture:
             using (new IdScopeGuard("RenderTextures"u8))
             using (new IdScopeGuard("CustomMap"u8))
-                ImGui.ActivateItemByID(ImGui.GetID("\uf2ed"u8));
+                ImGui.ActivateItemByID(ImGui.GetID(Icons.TrashCanU8));
             break;
         case Activation.RemoveShaderParameter:
             using (new IdScopeGuard("RenderShaderParameters"u8))
             using (new IdScopeGuard("TestParameter"u8))
-                ImGui.ActivateItemByID(ImGui.GetID("\uf2ed"u8));
+                ImGui.ActivateItemByID(ImGui.GetID(Icons.TrashCanU8));
             break;
         case Activation.AddShaderParameter:
             using (new IdScopeGuard("RenderShaderParameters"u8))
-                ImGui.ActivateItemByID(ImGui.GetID("\uf0fe"u8));
+                ImGui.ActivateItemByID(ImGui.GetID(Icons.SquarePlusU8));
             break;
         }
     }

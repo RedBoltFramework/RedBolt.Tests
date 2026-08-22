@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 
 using RedBolt.Bindings.DearImGui;
+using RedBolt.Container;
 using RedBolt.Core;
 using RedBolt.Editor.Core;
 using RedBolt.Editor.Foundation;
@@ -15,6 +16,7 @@ using RedBolt.IO;
 using RedBolt.Math;
 using RedBolt.Scene;
 using RedBolt.SystemUI;
+using RedBolt.Utility;
 
 using DearImGuiSubsystem = RedBolt.DearImGui.DearImGui;
 using File = global::System.IO.File;
@@ -231,6 +233,8 @@ public sealed class NodeComponentInspectorTests
         }
     }
 
+    private static readonly CString _removeComponentLabel = new($"{Icons.TrashCan}##RemoveComponent");
+
     private static void RenderInspectorFrame(
         NodeComponentInspector inspector, Component? component, Activation activation)
     {
@@ -260,7 +264,7 @@ public sealed class NodeComponentInspectorTests
                 }
                 else if (activation == Activation.Remove)
                 {
-                    ImGui.ActivateItemByID(ImGui.GetID("\uf2ed##RemoveComponent"u8));
+                    ImGui.ActivateItemByID(ImGui.GetID(_removeComponentLabel));
                 }
             }
         }

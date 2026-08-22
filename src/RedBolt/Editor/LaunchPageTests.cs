@@ -4,12 +4,14 @@ namespace RedBolt.Tests;
 using System.Linq;
 
 using RedBolt.Bindings.DearImGui;
+using RedBolt.Container;
 using RedBolt.Core;
 using RedBolt.Editor.Foundation;
 using RedBolt.Editor.Project;
 using RedBolt.IO;
 using RedBolt.Math;
 using RedBolt.SystemUI;
+using RedBolt.Utility;
 
 using File = global::System.IO.File;
 
@@ -100,6 +102,9 @@ public sealed class LaunchPageTests
         }
     }
 
+    private static readonly CString _addConfigurationLabel = new(
+        $"{Icons.SquarePlus} Add new launch configuration");
+
     private static void RenderPageFrame(LaunchPage page, Activation activation)
     {
         var frameStarted = false;
@@ -116,11 +121,11 @@ public sealed class LaunchPageTests
             page.RenderSettings();
 
             if (activation == Activation.Add)
-                ImGui.ActivateItemByID(ImGui.GetID("\uf0fe Add new launch configuration"u8));
+                ImGui.ActivateItemByID(ImGui.GetID(_addConfigurationLabel));
             else if (activation == Activation.RemoveSecond)
             {
                 using var guard = new IdScopeGuard(1);
-                ImGui.ActivateItemByID(ImGui.GetID("\uf2ed"u8));
+                ImGui.ActivateItemByID(ImGui.GetID(Icons.TrashCanU8));
             }
         }
         finally

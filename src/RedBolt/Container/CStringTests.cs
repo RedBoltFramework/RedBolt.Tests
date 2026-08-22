@@ -79,6 +79,19 @@ public sealed class CStringTests
     }
 
     [Fact]
+    public void Implicit_conversion_to_utf8_span()
+    {
+        using var value = new CString("høla");
+
+        ReadOnlySpan<byte> bytes = value;
+
+        Assert.Equal(value.ByteLength, bytes.Length);
+        Assert.DoesNotContain((byte)0, bytes.ToArray());
+        Assert.Equal((byte)0, value.Bytes[^1]);
+        Assert.Equal(Encoding.UTF8.GetBytes("høla"), bytes.ToArray());
+    }
+
+    [Fact]
     public void Equals_string_and_cstring_semantics()
     {
         var first = new CString("abc");

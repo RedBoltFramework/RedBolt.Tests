@@ -289,6 +289,12 @@ public sealed class AssetPipelineInspectorTests
         }
     }
 
+    private static readonly CString _removeTransformerLabel = new($"{Icons.TrashCan}##RemoveTransformer");
+    private static readonly CString _updateAssetsLabel = new($"{Icons.ArrowsRotate} Update Assets");
+    private static readonly CString _applyLabel = new($"{Icons.SquareCheck} Apply");
+    private static readonly CString _discardLabel = new($"{Icons.SquareXmark} Discard");
+    private static readonly CString _addTransformerLabel = new($"{Icons.SquarePlus} Add Transformer");
+
     private static void RenderInspectorFrame(
         AssetPipelineInspector inspector, SerializableInspectorWidget? widget, Activation activation)
     {
@@ -311,23 +317,23 @@ public sealed class AssetPipelineInspectorTests
             if (widget is not null && activation == Activation.Remove)
             {
                 using var guard = new IdScopeGuard(RuntimeHelpers.GetHashCode(widget));
-                ImGui.ActivateItemByID(ImGui.GetID("\uf2ed##RemoveTransformer"u8));
+                ImGui.ActivateItemByID(ImGui.GetID(_removeTransformerLabel));
             }
             else if (activation == Activation.UpdateAssets)
             {
-                ImGui.ActivateItemByID(ImGui.GetID("\uf021 Update Assets"u8));
+                ImGui.ActivateItemByID(ImGui.GetID(_updateAssetsLabel));
             }
             else if (activation == Activation.Apply)
             {
-                ImGui.ActivateItemByID(ImGui.GetID("\uf14a Apply"u8));
+                ImGui.ActivateItemByID(ImGui.GetID(_applyLabel));
             }
             else if (activation == Activation.Discard)
             {
-                ImGui.ActivateItemByID(ImGui.GetID("\uf2d3 Discard"u8));
+                ImGui.ActivateItemByID(ImGui.GetID(_discardLabel));
             }
             else if (activation == Activation.AddTransformer)
             {
-                ImGui.ActivateItemByID(ImGui.GetID("\uf0fe Add Transformer"u8));
+                ImGui.ActivateItemByID(ImGui.GetID(_addTransformerLabel));
             }
             else if (activation == Activation.SelectTestTransformer)
             {
