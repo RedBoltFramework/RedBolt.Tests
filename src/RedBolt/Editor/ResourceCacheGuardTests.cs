@@ -8,6 +8,7 @@ using RedBolt.Core;
 using RedBolt.Editor.Project;
 using RedBolt.IO;
 
+[Collection(nameof(ApplicationLifecycleCollection))]
 public sealed class ResourceCacheGuardTests
 {
     [Fact]
@@ -38,6 +39,39 @@ public sealed class ResourceCacheGuardTests
             Assert.Equal(
                 Path.GetFullPath(explicitCoreData).Replace('\\', '/').TrimEnd('/') + "/",
                 guard.CoreData);
+        }
+        finally
+        {
+            Context.SetInstance(previousContext);
+        }
+    }
+
+    [Fact]
+    public void Resource_directories_exclude_the_resource_root_data_alias()
+    {
+        using var scope = new TestArtifactScope(nameof(Resource_directories_exclude_the_resource_root_data_alias));
+        var dataPath = Path.Combine(scope.DirectoryPath, "Data");
+        var moduleDataPath = Path.Combine(scope.DirectoryPath, "Data.Module");
+        Directory.CreateDirectory(dataPath);
+        Directory.CreateDirectory(moduleDataPath);
+
+        var previousContext = Context.Instance;
+        using var context = new Context();
+        Context.SetInstance(context);
+        try
+        {
+            var virtualFileSystem = new VirtualFileSystem();
+            context.RegisterSubsystem(virtualFileSystem);
+            virtualFileSystem.MountAliasRoot();
+            var dataMount = virtualFileSystem.MountDir(dataPath);
+            virtualFileSystem.MountAlias("res:Data", dataMount);
+            virtualFileSystem.MountDir(moduleDataPath);
+
+            using var guard = new ResourceCacheGuard();
+
+            Assert.Equal([
+                Path.GetFullPath(moduleDataPath).Replace('\\', '/').TrimEnd('/') + "/",
+            ], guard.ResourceDirectories);
         }
         finally
         {

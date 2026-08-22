@@ -46,7 +46,7 @@ public sealed class EditorApplicationTests
         Assert.Equal(0, parameters.WindowHeight);
         Assert.Equal("{exeDir}/../core", parameters.PluginPaths);
         Assert.Equal("CoreData;EditorData", parameters.ResourcePaths);
-        Assert.Equal("ResourceRoot.ini", parameters.ResourceRootFile);
+        Assert.Equal(string.Empty, parameters.ResourceRootFile);
         Assert.False(parameters.EngineAutoLoadScripts);
         Assert.True(parameters.ReloadPlugins);
         Assert.True(parameters.Profile);
