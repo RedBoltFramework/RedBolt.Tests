@@ -156,6 +156,66 @@ public sealed class CsgBspTests
     }
 
     [Fact]
+    public void Model_conversion_uses_geometry_draw_range_for_positions_and_uvs()
+    {
+        var elements = new VertexElement[]
+        {
+            new(VertexElementType.Vector3, VertexElementSemantic.Position),
+            new(VertexElementType.Vector2, VertexElementSemantic.TexCoord),
+        };
+        using var vertexBuffer = new VertexBuffer(DeviceObjectFlag.Headless);
+        vertexBuffer.SetShadowed(true);
+        Assert.True(vertexBuffer.SetSize(6, elements));
+        vertexBuffer.SetUnpackedData(
+        [
+            new Vector4f(10, 0, 0, 1), new Vector4f(10, 0, 0, 0),
+            new Vector4f(11, 0, 0, 1), new Vector4f(11, 0, 0, 0),
+            new Vector4f(10, 1, 0, 1), new Vector4f(10, 1, 0, 0),
+            new Vector4f(0, 0, 0, 1), new Vector4f(0, 0, 0, 0),
+            new Vector4f(1, 0, 0, 1), new Vector4f(1, 0, 0, 0),
+            new Vector4f(0, 1, 0, 1), new Vector4f(0, 1, 0, 0),
+        ]);
+
+        using var indexBuffer = new IndexBuffer(DeviceObjectFlag.Headless);
+        indexBuffer.SetShadowed(true);
+        Assert.True(indexBuffer.SetSize(6));
+        indexBuffer.SetUnpackedData([0, 1, 2, 3, 4, 5]);
+
+        using var geometry = new Geometry();
+        geometry.SetVertexBuffer(0, vertexBuffer);
+        geometry.SetIndexBuffer(indexBuffer);
+        Assert.True(geometry.SetDrawRange(PrimitiveType.TriangleList, 3, 3, 3, 3));
+
+        using var sourceModel = new Model();
+        Assert.True(sourceModel.SetVertexBuffers([vertexBuffer]));
+        Assert.True(sourceModel.SetIndexBuffers([indexBuffer]));
+        sourceModel.SetNumGeometries(1);
+        Assert.True(sourceModel.SetGeometry(0, 0, geometry));
+
+        var polygon = Assert.Single(Csg.BuildPolygonsFromModel(sourceModel, Matrix3x4.Identity));
+
+        Assert.Equal(Vector3f.Zero, polygon.Vertices[0].GetPosition());
+        Assert.Equal(new Vector4f(1, 0, 0, 0), polygon.Vertices[1].Uv[0]);
+        Assert.Equal(new Vector4f(0, 1, 0, 0), polygon.Vertices[2].Uv[0]);
+    }
+
+    [Fact]
+    public void Difference_between_overlapping_boxes_keeps_cut_surface()
+    {
+        var box = Assert.IsType<Model>(_fixture.Resources.Get<Model>("Models/Box.mdl"));
+        var bspA = Csg.BuildBspFromModel(box, Matrix3x4.Identity, 0);
+        var bspB = Csg.BuildBspFromModel(box,
+            Matrix3x4.FromTranslation(new Vector3f(0.5f, 0.5f, 0.5f)), 1);
+
+        var result = Csg.BooleanOperation(bspA, bspB, CsgOperation.DifferenceAB);
+
+        Assert.NotEmpty(result);
+        Assert.Contains(result, polygon => polygon.Shared >> 16 == 1);
+        var triangulated = Csg.TriangulatePolygons(result);
+        Assert.Contains(triangulated.Geometries, geometry => geometry.Shared >> 16 == 1);
+    }
+
+    [Fact]
     public void Generated_registration_and_brush_state_match_component_workflow()
     {
         var componentReflection = _fixture.Context.GetReflection<CsgComponent>();
@@ -165,7 +225,8 @@ public sealed class CsgBspTests
         Assert.NotNull(componentReflection);
         Assert.NotNull(brushReflection);
         Assert.NotNull(rootReflection);
-        Assert.NotNull(brushReflection.GetAttribute("Operation"));
+        var operationAttribute = Assert.IsType<AttributeInfo>(brushReflection.GetAttribute("Operation"));
+        Assert.Equal(["Union", "DifferenceAB", "Intersection"], operationAttribute.EnumNames);
         Assert.NotNull(brushReflection.GetAttribute("Model"));
         Assert.NotNull(rootReflection.GetAttribute("Deferred Delay Sec"));
         Assert.NotNull(rootReflection.GetAttribute("Epsilon"));
