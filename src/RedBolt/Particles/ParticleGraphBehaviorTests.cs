@@ -73,6 +73,32 @@ public sealed class ParticleGraphBehaviorTests
     }
 
     [Fact]
+    public void ParticleGraphReaderRegistersDefaultSystemAndRejectsMissingNodes()
+    {
+        var previousContext = Context.Instance;
+        var context = new Context();
+        Context.SetInstance(context);
+        try
+        {
+            using var serialized = new Graph();
+            serialized.Create("Constant");
+            using var graph = new ParticleGraph();
+
+            Assert.True(graph.LoadGraph(serialized));
+            Assert.NotNull(context.GetSubsystem<ParticleGraphSystem>());
+
+            using var reader = new ParticleGraphReader(graph, serialized);
+
+            Assert.Equal(ParticleGraph.InvalidNodeIndex, reader.ReadNode(uint.MaxValue));
+        }
+        finally
+        {
+            context.Dispose();
+            Context.SetInstance(previousContext);
+        }
+    }
+
+    [Fact]
     public void SimpleParticleGraphInitializesVectorAttribute()
     {
         using var scope = new ParticleGraphTestScope();
