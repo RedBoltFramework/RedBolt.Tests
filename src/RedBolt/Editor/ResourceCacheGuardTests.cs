@@ -31,6 +31,10 @@ public sealed class ResourceCacheGuardTests
 
             using var guard = new ResourceCacheGuard();
 
+            Assert.Equal([
+                Path.GetFullPath(fallbackCoreData).Replace('\\', '/').TrimEnd('/') + "/",
+                Path.GetFullPath(explicitCoreData).Replace('\\', '/').TrimEnd('/') + "/",
+            ], guard.ResourceDirectories);
             Assert.Equal(
                 Path.GetFullPath(explicitCoreData).Replace('\\', '/').TrimEnd('/') + "/",
                 guard.CoreData);

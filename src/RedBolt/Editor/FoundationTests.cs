@@ -104,6 +104,37 @@ public sealed class FoundationTests
         });
     }
 
+    [Fact]
+    public void Project_preserves_and_watches_module_resource_directories()
+    {
+        var modulePath = Path.Combine(
+            Path.GetTempPath(), "RedBoltModuleResources-" + Guid.NewGuid().ToString("N"), "Data.Glow");
+        Directory.CreateDirectory(modulePath);
+        var virtualFileSystem = _fixture.Context.GetSubsystem<RedBolt.IO.VirtualFileSystem>()!;
+        var originalMount = virtualFileSystem.MountDir(modulePath);
+        try
+        {
+            WithProject((_, _) =>
+            {
+                var mountedDirectory = Assert.Single(
+                    Enumerable.Range(0, checked((int)virtualFileSystem.NumMountPoints()))
+                        .Select(index => virtualFileSystem.GetMountPoint(checked((uint)index))!)
+                        .OfType<RedBolt.IO.MountedDirectory>()
+                        .Where(mountPoint => string.Equals(
+                            Path.TrimEndingDirectorySeparator(mountPoint.GetDirectory()),
+                            Path.GetFullPath(modulePath), StringComparison.Ordinal)));
+
+                Assert.True(mountedDirectory.IsWatching());
+            });
+        }
+        finally
+        {
+            virtualFileSystem.Unmount(originalMount);
+            originalMount.Dispose();
+            Directory.Delete(Path.GetDirectoryName(modulePath)!, true);
+        }
+    }
+
     [NativeBindingFact]
     public void Inspector_tab_connects_registered_addons_on_activation_and_forwards_behavior()
     {

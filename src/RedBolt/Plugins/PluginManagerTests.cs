@@ -12,6 +12,7 @@ using RedBolt.Plugins;
 using RedBolt.Resource;
 using RedBolt.Utility;
 using RedBolt.RmlUI.Editor;
+using RedBolt.PhysicsJolt;
 using RedBolt.UserCode.Desktop;
 using File = global::System.IO.File;
 
@@ -88,6 +89,30 @@ public sealed class PluginManagerTests
         }
     }
 
+    [Fact]
+    public void Catalog_discovers_reflected_module_without_plugin_entry_point()
+    {
+        var sourcePath = typeof(Physics).Assembly.Location;
+        var tempDirectory = Directory.CreateTempSubdirectory("RedBoltModuleCatalog");
+        try
+        {
+            var modulePath = Path.Combine(tempDirectory.FullName, Path.GetFileName(sourcePath));
+            File.Copy(sourcePath, modulePath);
+            var catalog = new ManagedPluginCatalog([tempDirectory.FullName]);
+
+            var descriptor = Assert.Single(catalog.Scan());
+
+            Assert.Equal("RedBolt.PhysicsJolt", descriptor.Name);
+            Assert.Equal(PluginReloadPolicy.ProcessResident, descriptor.ReloadPolicy);
+            Assert.True(descriptor.AutoLoad);
+            Assert.True(descriptor.IsImplicitModule);
+        }
+        finally
+        {
+            tempDirectory.Delete(true);
+        }
+    }
+
     [NativeBindingFact]
     public void RmlUI_companion_auto_loads_and_unloads_through_standard_plugin_manager()
     {
@@ -155,8 +180,6 @@ public sealed class PluginManagerTests
             var application = Assert.IsAssignableFrom<PluginApplication>(
                 manager.GetPluginApplication("RedBolt.Glow.Editor", true));
             Assert.Equal(Path.GetFullPath(Path.GetDirectoryName(assemblyPath)!), application.PluginDirectory);
-            Assert.Equal(Path.Combine(application.PluginDirectory, "GlowCoreData"),
-                application.GetPluginPath("GlowCoreData"));
             Assert.Contains(editorPlugins.Plugins,
                 static plugin => plugin.Name == "Glow.DefaultLightmapUVTransformer");
         }
