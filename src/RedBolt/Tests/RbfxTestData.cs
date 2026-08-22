@@ -18,7 +18,7 @@ internal static class RbfxTestData
 
     public static string BuildRoot => Path.Combine(RepositoryRoot, "build");
 
-    public static string Root => Path.Combine(RepositoryRoot, "bin");
+    public static string Root => Path.Combine(RepositoryRoot, "RedBolt", "bin");
 
     public static string CoreData => Path.Combine(Root, "CoreData");
 
