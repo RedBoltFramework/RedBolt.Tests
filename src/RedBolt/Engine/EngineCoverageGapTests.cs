@@ -225,7 +225,7 @@ public sealed class EngineCoverageGapTests
             "--mix-rate=48000", "--prefix-paths=prefix-a;prefix-b", "--resource-paths=Data;CoreData",
             "--resource-packages=packages", "--autoload-paths=Autoload", "--config-name=Config.json",
             "--tq=0", "--tf=nearest-anisotropic", "--af=0", "--touch", "--timeout=9",
-            "--plugins=One;Two", "--main=One", "--log-shader-sources", "--discard-shader-cache",
+            "--plugins=One;Two", "--plugin-paths={exeDir}/plugins", "--main=One", "--log-shader-sources", "--discard-shader-cache",
             "--no-save-shader-cache", "--xr", "--profile", "--no-profile", "--vulkan",
             "--app-name=Coverage", "--organization=RedBolt", "--preferences-dir=/tmp/prefs",
             "--window-title=Coverage Window", "--window-icon=icon.png", "--maximize",
@@ -272,6 +272,7 @@ public sealed class EngineCoverageGapTests
         Assert.True(parameters.TouchEmulation);
         Assert.Equal(9, parameters.TimeOut);
         Assert.Equal("One;Two", parameters.Plugins);
+        Assert.Equal("{exeDir}/plugins", parameters.PluginPaths);
         Assert.Equal("One", parameters.MainPlugin);
         Assert.True(parameters.ShaderLogSources);
         Assert.True(parameters.DiscardShaderCache);

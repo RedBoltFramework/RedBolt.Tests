@@ -64,6 +64,30 @@ public sealed class PluginManagerTests
         Assert.Equal(Path.GetFullPath(assemblyPath), descriptor.AssemblyPath);
     }
 
+    [Fact]
+    public void Catalog_expands_executable_directory_in_plugin_paths()
+    {
+        var sourcePath = typeof(RedBolt.UserCode.TestPlugin.TestPluginApplication).Assembly.Location;
+        var directoryName = "plugin-path-" + Guid.NewGuid().ToString("N");
+        var pluginDirectory = Path.Combine(AppContext.BaseDirectory, directoryName);
+        Directory.CreateDirectory(pluginDirectory);
+        try
+        {
+            var pluginPath = Path.Combine(pluginDirectory, Path.GetFileName(sourcePath));
+            File.Copy(sourcePath, pluginPath);
+            var catalog = new ManagedPluginCatalog([$"{{exeDir}}/{directoryName}"]);
+
+            var descriptor = Assert.Single(catalog.Scan());
+
+            Assert.Equal("RedBolt.Test.Reloadable", descriptor.Name);
+            Assert.Equal(Path.GetFullPath(pluginPath), descriptor.AssemblyPath);
+        }
+        finally
+        {
+            Directory.Delete(pluginDirectory, true);
+        }
+    }
+
     [NativeBindingFact]
     public void RmlUI_companion_auto_loads_and_unloads_through_standard_plugin_manager()
     {

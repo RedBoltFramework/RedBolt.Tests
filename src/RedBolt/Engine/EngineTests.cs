@@ -102,6 +102,7 @@ public sealed class EngineTests
         Assert.True(parameters.Borderless);
         Assert.Equal("conf://Urho3D.log", parameters.LogName);
         Assert.Equal("Urho3D Rebel Fork", parameters.OrganizationName);
+        Assert.Equal(string.Empty, parameters.PluginPaths);
         Assert.Equal("conf://psocache.bin", parameters.PsoCache);
         Assert.Null(parameters.RenderBackend);
         Assert.Equal("CoreData;Cache;Data", parameters.ResourcePaths);
@@ -375,7 +376,8 @@ public sealed class EngineTests
         var resourceDirectory = Path.Combine(executableDirectory, $"resource-root-{suffix}");
         Directory.CreateDirectory(resourceDirectory);
         System.IO.File.WriteAllText(Path.Combine(resourceDirectory, "marker.txt"), "resource root");
-        System.IO.File.WriteAllText(resourceRootFile, $"# Comment{Environment.NewLine}Core = {Path.GetFileName(resourceDirectory)}{Environment.NewLine}");
+        System.IO.File.WriteAllText(resourceRootFile,
+            $"# Comment{Environment.NewLine}Core = {{exeDir}}/{Path.GetFileName(resourceDirectory)}{Environment.NewLine}");
 
         try
         {

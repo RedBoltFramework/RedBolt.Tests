@@ -44,6 +44,7 @@ public sealed class EditorApplicationTests
         Assert.True(parameters.WindowMaximize);
         Assert.Equal(0, parameters.WindowWidth);
         Assert.Equal(0, parameters.WindowHeight);
+        Assert.Equal("{exeDir}/../core", parameters.PluginPaths);
         Assert.Equal("CoreData;EditorData", parameters.ResourcePaths);
         Assert.Equal(string.Empty, parameters.ResourceRootFile);
         Assert.False(parameters.EngineAutoLoadScripts);
