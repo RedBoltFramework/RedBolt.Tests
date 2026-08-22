@@ -41,7 +41,9 @@ public sealed class Graphics2DTests
         var sheet = Assert.IsType<SpriteSheet2D>(_fixture.Resources.Get<SpriteSheet2D>("Urho2D/Orc/Orc.xml"));
         Assert.NotNull(sheet.Texture);
         Assert.True(sheet.SpriteMapping.Count >= 10, $"Sprite sheet contained {sheet.SpriteMapping.Count} sprites.");
-        Assert.NotNull(sheet.GetSprite("orc_0004_body"));
+        var body = Assert.IsType<Sprite2D>(sheet.GetSprite("orc_0004_body"));
+        Assert.Equal(new IntRect(0, 0, 178, 290), body.Rectangle);
+        Assert.Same(sheet, body.SpriteSheet);
     }
 
     [Fact]
