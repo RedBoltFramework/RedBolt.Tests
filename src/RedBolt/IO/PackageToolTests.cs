@@ -85,8 +85,8 @@ public sealed class PackageToolTests
     {
         var temporaryDirectory = Path.Combine(
             Path.GetTempPath(), $"redbolt-package-tool-{Guid.NewGuid():N}");
-        var sourceDirectory = Path.Combine(temporaryDirectory, "Data");
-        var packagePath = Path.Combine(temporaryDirectory, "Data.pak");
+        var sourceDirectory = Path.Combine(temporaryDirectory, "SampleData");
+        var packagePath = Path.Combine(temporaryDirectory, "SampleData.pak");
         var firstContent = Encoding.UTF8.GetBytes("first package entry");
         var secondContent = Encoding.UTF8.GetBytes(new string('x', 65536));
 

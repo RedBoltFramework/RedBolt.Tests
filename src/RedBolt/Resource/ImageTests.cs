@@ -189,7 +189,7 @@ public sealed class ImageTests
     public void Compressed_block_flips_are_reversible()
     {
         var image = new Image();
-        Assert.True(image.LoadFile(new FileIdentifier(Path.Combine(RbfxTestData.Data, "Textures", "StoneDiffuse.dds"))));
+        Assert.True(image.LoadFile(new FileIdentifier(Path.Combine(RbfxTestData.SampleData, "Textures", "StoneDiffuse.dds"))));
         var original = image.GetData().ToArray();
 
         Assert.True(image.FlipHorizontal());
@@ -324,7 +324,7 @@ public sealed class ImageTests
     {
         var image = new Image();
 
-        Assert.True(image.LoadFile(new FileIdentifier(Path.Combine(RbfxTestData.Data, "Textures", "StoneDiffuse.dds"))));
+        Assert.True(image.LoadFile(new FileIdentifier(Path.Combine(RbfxTestData.SampleData, "Textures", "StoneDiffuse.dds"))));
         Assert.True(image.IsCompressed());
         Assert.Equal(TextureFormat.TexFormatBc1Unorm, image.CompressedFormat);
         Assert.Equal(TextureFormat.TexFormatBc1Unorm, image.GetCompressedFormat());
@@ -352,7 +352,7 @@ public sealed class ImageTests
         var image = new Image();
 
         Assert.True(image.LoadFile(new FileIdentifier(Path.Combine(
-            RbfxTestData.Data, "Textures", "Formats", "PTC2.dds"))));
+            RbfxTestData.SampleData, "Textures", "Formats", "PTC2.dds"))));
         Assert.Equal(EmulatedTextureFormat.PvrtcRgba2Bpp, image.CompressedFormat);
         Assert.Equal(7, image.NumCompressedLevels);
 

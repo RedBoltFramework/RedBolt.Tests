@@ -33,7 +33,7 @@ public class HeadlessEngineFixture : IDisposable
             ApplicationName = "RedBolt.Tests",
             Headless = true,
             LogQuiet = true,
-            ResourcePaths = "CoreData;Data",
+            ResourcePaths = "CoreData;SampleData",
             ResourcePrefixPaths = RbfxTestData.Root,
             WindowMaximize = false,
             WindowWidth = 1280,

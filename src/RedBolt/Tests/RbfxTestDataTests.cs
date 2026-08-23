@@ -20,14 +20,14 @@ public sealed class RbfxTestDataTests
             context.RegisterSubsystem(virtualFileSystem);
             context.RegisterSubsystem(resources);
             Assert.True(resources.AddResourceDir(RbfxTestData.CoreData));
-            Assert.True(resources.AddResourceDir(RbfxTestData.Data));
+            Assert.True(resources.AddResourceDir(RbfxTestData.SampleData));
             var originalMountCount = virtualFileSystem.NumMountPoints();
 
             RbfxTestData.AddResourceDirs(resources);
             RbfxTestData.RemoveResourceDirs(resources);
 
             Assert.Contains(RbfxTestData.CoreData, resources.GetResourceDirs());
-            Assert.Contains(RbfxTestData.Data, resources.GetResourceDirs());
+            Assert.Contains(RbfxTestData.SampleData, resources.GetResourceDirs());
             Assert.Equal(originalMountCount, virtualFileSystem.NumMountPoints());
         }
         finally

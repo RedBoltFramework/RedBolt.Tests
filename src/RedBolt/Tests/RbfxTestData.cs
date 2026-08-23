@@ -8,7 +8,7 @@ using RedBolt.Resource;
 
 internal static class RbfxTestData
 {
-    private readonly record struct AddedResourceDirs(bool CoreData, bool Data);
+    private readonly record struct AddedResourceDirs(bool CoreData, bool SampleData);
 
     private static readonly object ResourceDirScopesLock = new();
     private static readonly ConditionalWeakTable<ResourceCache, Stack<AddedResourceDirs>> ResourceDirScopes = new();
@@ -22,7 +22,7 @@ internal static class RbfxTestData
 
     public static string CoreData => Path.Combine(Root, "CoreData");
 
-    public static string Data => Path.Combine(Root, "Data");
+    public static string SampleData => Path.Combine(Root, "SampleData");
 
     public static string EditorData => Path.Combine(Root, "EditorData");
 
@@ -43,7 +43,7 @@ internal static class RbfxTestData
         {
             var added = new AddedResourceDirs(
                 resources.AddResourceDir(CoreData),
-                resources.AddResourceDir(Data));
+                resources.AddResourceDir(SampleData));
             ResourceDirScopes.GetOrCreateValue(resources).Push(added);
         }
     }
@@ -57,8 +57,8 @@ internal static class RbfxTestData
                 throw new InvalidOperationException("Resource directory scope was not added.");
 
             var added = scopes.Pop();
-            if (added.Data)
-                resources.RemoveResourceDir(Data);
+            if (added.SampleData)
+                resources.RemoveResourceDir(SampleData);
             if (added.CoreData)
                 resources.RemoveResourceDir(CoreData);
         }

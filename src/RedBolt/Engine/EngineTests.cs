@@ -90,7 +90,7 @@ public sealed class EngineTests
         Assert.True(virtualFileSystem!.Exists(new FileIdentifier(
             "alias", "res:CoreData:/Techniques/BasicVColUnlitAlpha.xml")));
         Assert.True(virtualFileSystem.Exists(new FileIdentifier(
-            "alias", "res:Data:/Scenes/SimpleScene.scene")));
+            "alias", "res:SampleData:/Scenes/SimpleScene.scene")));
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public sealed class EngineTests
         Assert.Equal(string.Empty, parameters.PluginPaths);
         Assert.Equal("conf://psocache.bin", parameters.PsoCache);
         Assert.Null(parameters.RenderBackend);
-        Assert.Equal("CoreData;Cache;Data", parameters.ResourcePaths);
+        Assert.Equal("CoreData;Cache;SampleData", parameters.ResourcePaths);
         Assert.Equal("conf://ShaderCache", parameters.ShaderCacheDir);
         Assert.Equal("{\"gpuDescriptorHeapSize_cvb_srv_uav\":32768,\"gpuDescriptorHeapDynamicSize_cvb_srv_uav\":24576}", parameters.TweakD3D12);
         Assert.Equal("{\"dynamicHeapSize\":33554432}", parameters.TweakVulkan);
@@ -329,7 +329,7 @@ public sealed class EngineTests
     {
         var resourceRoot = Path.Combine(Path.GetTempPath(), $"redbolt-engine-paths-{Guid.NewGuid():N}");
         var coreData = Path.Combine(resourceRoot, "CoreData");
-        var data = Path.Combine(resourceRoot, "Data");
+        var data = Path.Combine(resourceRoot, "SampleData");
         Directory.CreateDirectory(coreData);
         Directory.CreateDirectory(data);
 
@@ -341,7 +341,7 @@ public sealed class EngineTests
                 Headless = true,
                 ResourceRootFile = string.Empty,
                 ResourcePrefixPaths = resourceRoot,
-                ResourcePaths = "CoreData;Data"
+                ResourcePaths = "CoreData;SampleData"
             });
 
             var resources = engine.Value.Context.GetSubsystem<ResourceCache>();

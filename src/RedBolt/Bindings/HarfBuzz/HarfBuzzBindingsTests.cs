@@ -11,7 +11,7 @@ public sealed class HarfBuzzBindingsTests
     [Fact]
     public unsafe void Gpu_draw_encodes_and_recycles_an_aligned_glyph_blob()
     {
-        var fontPath = Path.Combine(RbfxTestData.Data, "Fonts", "Anonymous Pro.ttf");
+        var fontPath = Path.Combine(RbfxTestData.SampleData, "Fonts", "Anonymous Pro.ttf");
         var blob = HarfBuzz.HbBlobCreateFromFileOrFail(fontPath);
         var face = HarfBuzz.HbFaceCreateOrFail(blob, 0);
         var font = HarfBuzz.HbFontCreate(face);
@@ -69,7 +69,7 @@ public sealed class HarfBuzzBindingsTests
     [Fact]
     public void Raster_draw_produces_a8_glyph_image()
     {
-        var fontPath = Path.Combine(RbfxTestData.Data, "Fonts", "Anonymous Pro.ttf");
+        var fontPath = Path.Combine(RbfxTestData.SampleData, "Fonts", "Anonymous Pro.ttf");
         Assert.True(File.Exists(fontPath));
 
         var blob = HarfBuzz.HbBlobCreateFromFileOrFail(fontPath);

@@ -182,7 +182,7 @@ public sealed class AudioTests
     [Fact]
     public void Ogg_vorbis_stream_decodes_pcm()
     {
-        var path = Path.Combine(RbfxTestData.Data, "Music", "Ninja Gods.ogg");
+        var path = Path.Combine(RbfxTestData.SampleData, "Music", "Ninja Gods.ogg");
         Assert.True(System.IO.File.Exists(path));
 
         var sound = new Sound();

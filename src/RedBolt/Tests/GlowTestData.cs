@@ -12,18 +12,18 @@ internal static class GlowTestData
 
     public static string CoreData { get; } = Path.Combine(Root, "bin", "CoreData");
 
-    public static string Data { get; } = Path.Combine(Root, "bin", "Data");
+    public static string SampleData { get; } = Path.Combine(Root, "bin", "SampleData.Glow");
 
     public static void AddResourceDirs(ResourceCache resources)
     {
         resources.AddResourceDir(CoreData);
-        resources.AddResourceDir(Data);
+        resources.AddResourceDir(SampleData);
     }
 
     public static IDisposable MountResourceDirs(ResourceCache resources)
     {
         var coreDataAdded = resources.AddResourceDir(CoreData);
-        var dataAdded = resources.AddResourceDir(Data);
+        var dataAdded = resources.AddResourceDir(SampleData);
         return new ResourceDirectoryScope(resources, coreDataAdded, dataAdded);
     }
 
@@ -33,7 +33,7 @@ internal static class GlowTestData
         public void Dispose()
         {
             if (dataAdded)
-                resources.RemoveResourceDir(Data);
+                resources.RemoveResourceDir(SampleData);
             if (coreDataAdded)
                 resources.RemoveResourceDir(CoreData);
         }

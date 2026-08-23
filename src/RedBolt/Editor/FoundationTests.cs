@@ -108,7 +108,7 @@ public sealed class FoundationTests
     public void Project_preserves_and_watches_module_resource_directories()
     {
         var modulePath = Path.Combine(
-            Path.GetTempPath(), "RedBoltModuleResources-" + Guid.NewGuid().ToString("N"), "Data.Glow");
+            Path.GetTempPath(), "RedBoltModuleResources-" + Guid.NewGuid().ToString("N"), "SampleData.Glow");
         Directory.CreateDirectory(modulePath);
         var virtualFileSystem = _fixture.Context.GetSubsystem<RedBolt.IO.VirtualFileSystem>()!;
         var originalMount = virtualFileSystem.MountDir(modulePath);

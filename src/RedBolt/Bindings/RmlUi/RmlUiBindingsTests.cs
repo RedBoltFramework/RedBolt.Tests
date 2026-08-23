@@ -271,7 +271,7 @@ public sealed class RmlUiBindingsTests
         using var topValue = new Std.String();
         using var mousePassthroughName = new Std.String();
         using var componentPointerName = new Std.String();
-        fontPath.Assign(Path.Combine(RbfxTestData.Data, "Fonts", "Anonymous Pro.ttf"));
+        fontPath.Assign(Path.Combine(RbfxTestData.SampleData, "Fonts", "Anonymous Pro.ttf"));
         contextName.Assign("RedBolt.Tests.RmlUiBindings.HarfBuzz");
         documentSource.Assign("""
             <rml>
