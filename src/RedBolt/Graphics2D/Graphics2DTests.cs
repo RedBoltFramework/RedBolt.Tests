@@ -138,6 +138,27 @@ public sealed class Graphics2DTests
         Assert.True(floorSprite.OrderInLayer < wallSprite.OrderInLayer);
     }
 
+    [Fact]
+    public void Isometric_background_renders_behind_depth_sorted_dungeon_assets()
+    {
+        var tmx = Assert.IsType<TmxFile2D>(
+            _fixture.Resources.Get<TmxFile2D>("Urho2D/Tilesets/IsometricDemo/dungeon.tmx"));
+        using var scene = new global::RedBolt.Scene.Scene();
+        var tileMap = scene.CreateChild("TileMap").CreateComponent<TileMap2D>();
+        tileMap.TmxFile = tmx;
+
+        var floor = Assert.IsType<TileMapLayer2D>(tileMap.GetLayer("Floor"));
+        var walls = Assert.IsType<TileMapLayer2D>(tileMap.GetLayer("Walls"));
+        var floorSprite = Assert.IsType<StaticSprite2D>(floor.GetTileNode(0, 0)?.GetComponent<StaticSprite2D>());
+        var backWallSprite = Assert.IsType<StaticSprite2D>(walls.GetTileNode(0, 0)?.GetComponent<StaticSprite2D>());
+        var frontWallSprite = Assert.IsType<StaticSprite2D>(walls.GetTileNode(0, 1)?.GetComponent<StaticSprite2D>());
+
+        Assert.Equal(short.MinValue, floorSprite.Layer);
+        Assert.True(floorSprite.Layer < backWallSprite.Layer);
+        Assert.True(backWallSprite.Layer < frontWallSprite.Layer);
+        Assert.Equal(backWallSprite.OrderInLayer, frontWallSprite.OrderInLayer);
+    }
+
     [Theory]
     [InlineData(Orientation2D.Orthogonal, 2.0f, 1.76f)]
     [InlineData(Orientation2D.Isometric, 2.24f, 2.32f)]
