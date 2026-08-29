@@ -2,6 +2,8 @@
 namespace RedBolt.Tests;
 
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 using RedBolt.Container;
 using RedBolt.Input;
@@ -15,6 +17,47 @@ public sealed class InputStateCoverageTests
     public InputStateCoverageTests(HeadlessEngineFixture fixture)
     {
         _fixture = fixture;
+    }
+
+    [Fact]
+    public void Touch_controls_emulate_pointer_and_directional_keys()
+    {
+        var input = _fixture.Input;
+        var type = typeof(Input);
+        var touches = Assert.IsType<Dictionary<int, TouchState>>(
+            type.GetField("_touches", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(input));
+        var primaryTouch = type.GetField("_primaryTouchId", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var movementTouch = type.GetField("_movementTouchId", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var touchMovement = type.GetField("_touchMovement", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var touchPress = type.GetField("_touchPress", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+        try
+        {
+            touches[7] = new TouchState { TouchID = 7, Position = new Vector2i(120, 80) };
+            primaryTouch.SetValue(input, 7);
+            movementTouch.SetValue(input, 7);
+            touchMovement.SetValue(input, new Vector2f(-0.75f, -0.5f));
+            touchPress.SetValue(input, true);
+
+            Assert.Equal(new Vector2i(120, 80), input.GetMousePosition());
+            Assert.True(input.GetMouseButtonDown(MouseButton.Left));
+            Assert.True(input.GetMouseButtonPress(MouseButton.Left));
+            Assert.True(input.GetKeyDown(Key.W));
+            Assert.True(input.GetKeyDown(Key.A));
+            Assert.True(input.GetScancodeDown(Scancode.W));
+            Assert.True(input.GetScancodeDown(Scancode.A));
+            Assert.False(input.GetKeyDown(Key.S));
+            Assert.False(input.GetKeyDown(Key.D));
+            Assert.True(input.HasTouchMovement());
+        }
+        finally
+        {
+            touches.Clear();
+            primaryTouch.SetValue(input, null);
+            movementTouch.SetValue(input, null);
+            touchMovement.SetValue(input, Vector2f.Zero);
+            touchPress.SetValue(input, false);
+        }
     }
 
     [Fact]

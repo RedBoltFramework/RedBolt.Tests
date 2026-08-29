@@ -129,6 +129,40 @@ public sealed class PhysicsBox2DTests
     }
 
     [Fact]
+    public void Rope_constraint_is_slack_below_its_maximum_length()
+    {
+        using var scene = new Scene();
+        var world = scene.CreateComponent<PhysicsWorld2D>();
+        world.Gravity = Vector2f.Zero;
+
+        var anchor = scene.CreateChild("Anchor");
+        anchor.CreateComponent<RigidBody2D>();
+        var payload = scene.CreateChild("Payload");
+        payload.SetPosition2D(3.0f, 0.0f);
+        var payloadBody = payload.CreateComponent<RigidBody2D>();
+        payloadBody.BodyType = BodyType2D.Dynamic;
+        var shape = payload.CreateComponent<CollisionCircle2D>();
+        shape.Radius = 0.25f;
+        shape.Density = 1.0f;
+
+        var rope = anchor.CreateComponent<ConstraintRope2D>();
+        rope.OtherBody = payloadBody;
+        rope.OwnerBodyAnchor = Vector2f.Zero;
+        rope.OtherBodyAnchor = payload.GetPosition2D();
+        rope.MaxLength = 3.0f;
+
+        payloadBody.LinearVelocity = new Vector2f(-2.0f, 0.0f);
+        for (var i = 0; i < 30; ++i)
+            world.Update(1.0f / 60.0f);
+        Assert.InRange(payload.GetPosition2D().X, 1.8f, 2.2f);
+
+        payloadBody.LinearVelocity = new Vector2f(20.0f, 0.0f);
+        for (var i = 0; i < 60; ++i)
+            world.Update(1.0f / 60.0f);
+        Assert.InRange(payload.GetPosition2D().X, 2.8f, 3.1f);
+    }
+
+    [Fact]
     public void Update_contact_can_disable_solver_response()
     {
         using var scene = new Scene();

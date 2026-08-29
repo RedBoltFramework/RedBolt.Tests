@@ -134,6 +134,14 @@ public sealed class CustomGeometryTests
     }
 
     [Fact]
+    public void Indexed_material_rejects_negative_index()
+    {
+        var custom = new Scene().CreateChild("Custom").CreateComponent<CustomGeometry>();
+
+        Assert.False(custom.SetMaterial(-1, Resources.Get<Material>("Materials/FirstCube")));
+    }
+
+    [Fact]
     public void Occluder_triangle_count_respects_geometry_and_material()
     {
         var custom = new Scene().CreateChild("Custom").CreateComponent<CustomGeometry>();

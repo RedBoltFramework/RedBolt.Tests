@@ -30,7 +30,7 @@ public sealed class StaticModelTests
         Assert.False(typeof(StaticModel).IsSealed);
         Assert.False(typeof(ICloneable).IsAssignableFrom(typeof(StaticModel)));
         Assert.True(typeof(StaticModel).GetMethod(nameof(StaticModel.SetMaterial), [typeof(Material)])!.IsVirtual);
-        Assert.True(typeof(StaticModel).GetMethod(nameof(StaticModel.SetMaterial), [typeof(uint), typeof(Material)])!.IsVirtual);
+        Assert.True(typeof(StaticModel).GetMethod(nameof(StaticModel.SetMaterial), [typeof(int), typeof(Material)])!.IsVirtual);
         Assert.True(typeof(StaticModel).GetMethod(nameof(StaticModel.GetMaterial), Type.EmptyTypes)!.IsVirtual);
         Assert.True(typeof(StaticModel).GetMethod(nameof(StaticModel.GetMaterial), [typeof(uint)])!.IsVirtual);
     }
@@ -63,6 +63,15 @@ public sealed class StaticModelTests
         cube.SetMaterial(material);
         Assert.Same(model, cube.GetModel());
         Assert.Same(material, cube.GetMaterial());
+    }
+
+    [Fact]
+    public void Indexed_material_rejects_negative_index()
+    {
+        var cube = new Scene().CreateChild("Cube").CreateComponent<StaticModel>();
+        cube.SetModel(Resources.Get<Model>("Models/ProceduralBox"));
+
+        Assert.False(cube.SetMaterial(-1, Resources.Get<Material>("Materials/FirstCube")));
     }
 
     [Fact]

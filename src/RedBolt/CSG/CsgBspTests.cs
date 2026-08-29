@@ -236,6 +236,12 @@ public sealed class CsgBspTests
         var root = scene.CreateChild("Root").CreateComponent<CsgRoot>();
         var brush = root.Node.CreateChild("Brush").CreateComponent<CsgBrush>();
 
+        Assert.True(root.AutoApplyResults);
+        Assert.False(root.HasPendingResult);
+        Assert.Equal(0u, root.PendingResultRevision);
+        Assert.False(root.ApplyPendingResult());
+        root.AutoApplyResults = false;
+
         brush.Operation = CsgOperation.DifferenceAB;
         Assert.True(brush.IsDirty);
         brush.ClearDirty();
