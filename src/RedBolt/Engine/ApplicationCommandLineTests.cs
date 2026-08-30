@@ -20,6 +20,7 @@ public sealed class ApplicationCommandLineTests
             "--windowed",
             "--width=1234",
             "--height=567",
+            "--mouse-emulation",
             "--touch",
             "--timeout=7",
             "--screenshot-on-exit=/tmp/redbolt-test.png",
@@ -46,6 +47,7 @@ public sealed class ApplicationCommandLineTests
         Assert.Equal(4096u, application.ObservedParameters.LogMaxSize);
         Assert.Equal(1234, application.ObservedParameters.WindowWidth);
         Assert.Equal(567, application.ObservedParameters.WindowHeight);
+        Assert.True(application.ObservedParameters.MouseEmulation);
         Assert.True(application.ObservedParameters.TouchEmulation);
         Assert.Equal(7, application.ObservedParameters.TimeOut);
         Assert.Equal("/tmp/redbolt-test.png", application.ObservedParameters.ScreenshotOnExit);
@@ -116,6 +118,7 @@ public sealed class ApplicationCommandLineTests
                 LogLevel = Engine.Parameters.LogLevel,
                 LogRotateBySize = Engine.Parameters.LogRotateBySize,
                 LogRotateOnOpen = Engine.Parameters.LogRotateOnOpen,
+                MouseEmulation = Engine.Parameters.MouseEmulation,
                 ScreenshotCount = Engine.Parameters.ScreenshotCount,
                 ScreenshotFrameDelay = Engine.Parameters.ScreenshotFrameDelay,
                 ScreenshotOnExit = Engine.Parameters.ScreenshotOnExit,

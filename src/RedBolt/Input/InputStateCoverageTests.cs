@@ -205,6 +205,13 @@ public sealed class InputStateCoverageTests
         Assert.True(input.GetTouchEmulation());
         input.SetTouchEmulation(false);
         Assert.False(input.GetTouchEmulation());
+        input.SetMouseEmulation(true);
+        Assert.True(input.GetMouseEmulation());
+        Assert.False(input.GetTouchEmulation());
+        input.SetTouchEmulation(true);
+        Assert.True(input.GetTouchEmulation());
+        Assert.False(input.GetMouseEmulation());
+        input.SetTouchEmulation(false);
         input.CenterMousePosition();
         input.Shutdown();
     }

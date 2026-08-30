@@ -378,6 +378,7 @@ public sealed class EngineCoverageGapTests
         engine.SetParameter(EngineParameter.ExternalWindow, 17);
         engine.SetParameter(EngineParameter.Headless, "true");
         engine.SetParameter(EngineParameter.TextureAnisotropy, "8");
+        engine.SetParameter(EngineParameter.MouseEmulation, true);
         engine.SetParameter(EngineParameter.TouchEmulation, true);
         engine.SetParameter(EngineParameter.ApplicationName, 123);
         engine.SetParameter(EngineParameter.WindowPositionX, null);
@@ -392,6 +393,7 @@ public sealed class EngineCoverageGapTests
         Assert.Equal((nint)17, engine.GetParameter(EngineParameter.ExternalWindow));
         Assert.True((bool)engine.GetParameter(EngineParameter.Headless)!);
         Assert.Equal(8, engine.GetParameter(EngineParameter.TextureAnisotropy));
+        Assert.True((bool)engine.GetParameter(EngineParameter.MouseEmulation)!);
         Assert.True((bool)engine.GetParameter(EngineParameter.TouchEmulation)!);
         Assert.Equal("123", engine.GetParameter(EngineParameter.ApplicationName));
         Assert.Null(engine.GetParameter(EngineParameter.WindowPositionX));
