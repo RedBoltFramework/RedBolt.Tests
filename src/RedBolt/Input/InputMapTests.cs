@@ -95,8 +95,6 @@ public sealed class InputMapTests
     [Fact]
     public void Controller_axis_hat_screen_evaluation_works()
     {
-        // Controller/hat/screen input evaluation requires initialized Input,
-        // which is not available in headless mode.
         var map = new InputMap { Name = "Input/Smoke" };
         map.MapControllerButton("Dash", ControllerButton.B);
         map.MapControllerAxis("Throttle", ControllerAxis.TriggerRight, 0.0f, 1.0f);
@@ -115,6 +113,7 @@ public sealed class InputMapTests
             Assert.Single(map.GetMappingByHash(new StringHash("Throttle")).ControllerAxes);
             Assert.Single(map.GetMapping("PadUp").ControllerHats);
             Assert.Single(map.GetMapping("TouchFire").ScreenButtons);
+            Assert.True(MathDefs.Equals(map.Evaluate("TouchFire"), 1.0f));
         }
         finally
         {
