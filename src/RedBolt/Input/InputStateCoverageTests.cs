@@ -20,6 +20,27 @@ public sealed class InputStateCoverageTests
     }
 
     [Fact]
+    public void Active_input_device_follows_meaningful_control_input()
+    {
+        var input = _fixture.Input;
+        input.Shutdown();
+
+        Assert.Equal(InputDeviceType.KeyboardMouse, input.ActiveInputDevice);
+        input.SetControllerAxis(ControllerAxis.LeftX, 0.1f);
+        Assert.Equal(InputDeviceType.KeyboardMouse, input.ActiveInputDevice);
+        input.SetControllerAxis(ControllerAxis.LeftX, 0.5f);
+        Assert.Equal(InputDeviceType.Joystick, input.ActiveInputDevice);
+
+        input.SetScreenButton("Jump", true);
+        Assert.Equal(InputDeviceType.Joystick, input.ActiveInputDevice);
+        input.SetKey(Key.W, Scancode.W, true);
+        Assert.Equal(InputDeviceType.KeyboardMouse, input.ActiveInputDevice);
+
+        input.SetKey(Key.W, Scancode.W, false);
+        input.SetScreenButton("Jump", false);
+    }
+
+    [Fact]
     public void Touch_state_does_not_synthesize_keyboard_or_mouse_input()
     {
         var input = _fixture.Input;

@@ -216,8 +216,7 @@ public sealed class InputCoverageGapTests
 
         Input.SetScreenButton("FireButton", true);
         Assert.True(Input.GetScreenButtonDown("FireButton"));
-        // ScreenButton evaluation is not wired until the built-in UI port is available.
-        Assert.Equal(0.0f, map.Evaluate("Screen"));
+        Assert.Equal(1.0f, map.Evaluate("Screen"));
         Input.SetScreenButton("FireButton", false);
         Assert.False(Input.GetScreenButtonDown("FireButton"));
     }
