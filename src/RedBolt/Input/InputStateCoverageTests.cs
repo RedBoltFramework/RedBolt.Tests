@@ -33,10 +33,15 @@ public sealed class InputStateCoverageTests
 
         input.SetScreenButton("Jump", true);
         Assert.Equal(InputDeviceType.Joystick, input.ActiveInputDevice);
+        input.SetScreenJoystickHatPosition(HatPosition.Up);
+        Assert.Equal(InputDeviceType.Joystick, input.ActiveInputDevice);
         input.SetKey(Key.W, Scancode.W, true);
+        Assert.Equal(InputDeviceType.KeyboardMouse, input.ActiveInputDevice);
+        input.SetScreenJoystickHatPosition(HatPosition.Right);
         Assert.Equal(InputDeviceType.KeyboardMouse, input.ActiveInputDevice);
 
         input.SetKey(Key.W, Scancode.W, false);
+        input.SetScreenJoystickHatPosition(HatPosition.Center);
         input.SetScreenButton("Jump", false);
     }
 
@@ -203,10 +208,27 @@ public sealed class InputStateCoverageTests
 
         input.SetScreenButton("fire", true);
         Assert.True(input.GetScreenButtonDown("fire"));
+        Assert.True(input.GetScreenButtonPress("fire"));
+        input.SetScreenButton("fire", true);
+        input.BeginFrame();
+        Assert.True(input.GetScreenButtonDown("fire"));
+        Assert.False(input.GetScreenButtonPress("fire"));
+        input.SetScreenButton("fire", false);
+        input.SetScreenButton("fire", true);
+        Assert.True(input.GetScreenButtonPress("fire"));
         input.SetScreenButton("fire", false);
         Assert.False(input.GetScreenButtonDown("fire"));
         Assert.Throws<ArgumentException>(() => input.SetScreenButton(" ", true));
         Assert.Throws<ArgumentException>(() => input.GetScreenButtonDown(" "));
+        Assert.Throws<ArgumentException>(() => input.GetScreenButtonPress(" "));
+
+        input.SetScreenAxis("move", 2.0f);
+        Assert.Equal(1.0f, input.GetScreenAxisPosition("move"));
+        input.SetScreenAxis("move", -2.0f);
+        Assert.Equal(-1.0f, input.GetScreenAxisPosition("move"));
+        input.BeginFrame();
+        Assert.Equal(0.0f, input.GetScreenAxisPosition("move"));
+        Assert.Throws<ArgumentException>(() => input.SetScreenAxis(" ", 1.0f));
 
         input.SetMouseMode(MouseMode.Relative);
         Assert.Equal(MouseMode.Relative, input.GetMouseMode());

@@ -211,7 +211,7 @@ public sealed class InputCoverageGapTests
         Input.SetKey(Key.A, Scancode.A, true);
         Assert.Equal(1.0f, map.Evaluate("Duplicate"));
         Assert.Equal(1.0f, map.Evaluate("OtherAction"));
-        Assert.Equal(0.0f, map.EvaluateByHash(new StringHash("Duplicate")));
+        Assert.Equal(1.0f, map.EvaluateByHash(new StringHash("Duplicate")));
         Input.SetKey(Key.A, Scancode.A, false);
 
         Input.SetScreenButton("FireButton", true);

@@ -51,7 +51,7 @@ public sealed class InputMapTests
     }
 
     [Fact]
-    public void Keyboard_remapping_preserves_native_value_copy_behavior()
+    public void Keyboard_mappings_and_hash_evaluation_work()
     {
         var map = new InputMap { Name = "Input/Smoke" };
         map.MapKeyboardKey("Jump", Scancode.A);
@@ -59,21 +59,22 @@ public sealed class InputMapTests
         Input.SetKey(Key.A, Scancode.A, true);
         Assert.True(MathDefs.Equals(map.Evaluate("Jump"), 1.0f));
         Assert.True(MathDefs.Equals(map.Evaluate("Move"), 1.0f));
-        Assert.True(MathDefs.Equals(map.EvaluateByHash(new StringHash("Move")), 0.0f));
+        Assert.True(MathDefs.Equals(map.EvaluateByHash(new StringHash("Move")), 1.0f));
         Input.SetKey(Key.A, Scancode.A, false);
     }
 
     [Fact]
-    public void Mouse_and_controller_mapping_preserves_native_mouse_value_behavior()
+    public void Mouse_and_controller_mapping_evaluates_digital_input()
     {
         Input.SetMouseButton(MouseButton.Left, true);
         var map = new InputMap { Name = "Input/Smoke" };
         map.MapMouseButton("Fire", MouseButton.Left);
 
-        Assert.True(MathDefs.Equals(map.Evaluate("Fire"), 0.0f));
+        Assert.True(MathDefs.Equals(map.Evaluate("Fire"), 1.0f));
+        Assert.True(map.EvaluatePressed("Fire"));
         map.MapControllerButton("Fire", ControllerButton.A);
         var mapping = map.GetMapping("Fire");
-        Assert.Equal((MouseButton)(1u << (int)MouseButton.Left), mapping.MouseButtons[0].GetMask());
+        Assert.Equal(MouseButton.Left, mapping.MouseButtons[0].GetMask());
         Assert.Equal(ControllerButton.A, mapping.ControllerButtons[0].GetControllerButton());
         Input.SetMouseButton(MouseButton.Left, false);
     }
@@ -169,6 +170,7 @@ public sealed class InputMapTests
         Assert.True(typeof(ControllerAxisMapping).IsValueType);
         Assert.True(typeof(ControllerHatMapping).IsValueType);
         Assert.True(typeof(ScreenButtonMapping).IsValueType);
+        Assert.True(typeof(ScreenAxisMapping).IsValueType);
 
         var source = new InputMap.ActionMapping();
         source.KeyboardKeys.Add(new KeyboardKeyMapping(Scancode.A));
@@ -195,6 +197,7 @@ public sealed class InputMapTests
         source.MapJoystickAxis("Action", 3, 0.1f, -0.9f);
         source.MapHat("Action", HatPosition.LeftUp);
         source.MapScreenButton("Action", "ActionButton");
+        source.MapScreenAxis("AxisAction", "StickX", 0.0f, -1.0f);
 
         using var stream = new VectorBuffer();
         Assert.True(source.Save(stream, format));
@@ -206,12 +209,30 @@ public sealed class InputMapTests
         Assert.Equal(new Variant(1.5f), loaded.GetMetadata("Sensitivity"));
         var mapping = loaded.GetMapping("Action");
         Assert.Equal(Scancode.A, Assert.Single(mapping.KeyboardKeys).Scancode);
-        Assert.Equal(MouseButton.X2, Assert.Single(mapping.MouseButtons).GetMask());
+        Assert.Equal(MouseButton.Right, Assert.Single(mapping.MouseButtons).GetMask());
         Assert.Contains(mapping.ControllerButtons, value => value.Controller && value.GetControllerButton() == ControllerButton.X);
         Assert.Contains(mapping.ControllerButtons, value => !value.Controller && value.GetGenericButton() == 7);
         Assert.Contains(mapping.ControllerAxes, value => value.Controller && value.GetControllerAxis() == ControllerAxis.RightX);
         Assert.Contains(mapping.ControllerAxes, value => !value.Controller && value.GetGenericAxis() == 3);
         Assert.Equal(HatPosition.LeftUp, (HatPosition)Assert.Single(mapping.ControllerHats).HatPosition);
         Assert.Equal("ActionButton", Assert.Single(mapping.ScreenButtons).ElementName);
+        Assert.Equal("StickX", Assert.Single(loaded.GetMapping("AxisAction").ScreenAxes).AxisName);
+    }
+
+    [Fact]
+    public void Screen_axis_and_screen_button_press_evaluate_and_reset()
+    {
+        var map = new InputMap { Name = "Input/Screen" };
+        map.MapScreenAxis("Left", "StickX", 0.0f, -1.0f);
+        map.MapScreenButton("Fire", "FireButton");
+        Input.SetScreenAxis("StickX", -2.0f);
+        Input.SetScreenButton("FireButton", true);
+
+        Assert.Equal(1.0f, map.Evaluate("Left"));
+        Assert.True(map.EvaluatePressedByHash(new StringHash("Fire")));
+        Input.BeginFrame();
+        Assert.Equal(0.0f, map.Evaluate("Left"));
+        Assert.False(map.EvaluatePressed("Fire"));
+        Input.SetScreenButton("FireButton", false);
     }
 }
