@@ -155,6 +155,12 @@ public sealed class ShaderProgramReflectionTests
                 Assert.NotNull(lightmapScaleOffset);
                 Assert.Equal(ShaderParameterGroup.Material, lightmapScaleOffset!.Value.Group);
                 Assert.Equal(16, lightmapScaleOffset.Value.Size);
+                Assert.Equal(ShaderCodeVariableClass.ShaderCodeVariableClassVector,
+                    lightmapScaleOffset.Value.VariableClass);
+                Assert.Equal(ShaderCodeBasicType.ShaderCodeBasicTypeFloat,
+                    lightmapScaleOffset.Value.BasicType);
+                Assert.Equal(4, lightmapScaleOffset.Value.NumRows);
+                Assert.Equal(1, lightmapScaleOffset.Value.NumColumns);
             }
             finally
             {

@@ -225,6 +225,8 @@ public sealed class InputMapTests
         var map = new InputMap { Name = "Input/Screen" };
         map.MapScreenAxis("Left", "StickX", 0.0f, -1.0f);
         map.MapScreenButton("Fire", "FireButton");
+        Input.SetScreenAxis("StickX", -0.025f);
+        Assert.Equal(0.025f, map.Evaluate("Left"));
         Input.SetScreenAxis("StickX", -2.0f);
         Input.SetScreenButton("FireButton", true);
 
@@ -234,5 +236,17 @@ public sealed class InputMapTests
         Assert.Equal(0.0f, map.Evaluate("Left"));
         Assert.False(map.EvaluatePressed("Fire"));
         Input.SetScreenButton("FireButton", false);
+    }
+
+    [Fact]
+    public void Input_overlay_joystick_uses_touch_specific_defaults()
+    {
+        using var map = new InputMap { Name = "Input/Overlay" };
+        using var overlay = new InputOverlay(map);
+
+        var joystick = overlay.AddJoystick("Movement", "Up", "Down", "Left", "Right");
+
+        Assert.Equal(54.0f, joystick.Radius);
+        Assert.Equal(0.025f, joystick.DeadZone);
     }
 }

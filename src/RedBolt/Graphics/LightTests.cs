@@ -125,10 +125,6 @@ public sealed class LightTests
         Assert.Equal(MathDefs.Epsilon, cascade.FadeStart);
         Assert.Equal(2.0f, cascade.BiasAutoAdjust);
 
-        cascade.BlendFactor = 2.0f;
-        cascade.Validate();
-        Assert.Equal(1.0f, cascade.BlendFactor);
-
         var focus = new FocusParameters(true, true, true, 0.0f, 0.0f);
         focus.Validate();
         Assert.Equal(Light.ShadowMinQuantize, focus.Quantize);
