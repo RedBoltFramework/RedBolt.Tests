@@ -1,6 +1,13 @@
 <!-- Copyright (c) 2026 RedBolt and contributors. -->
 <Project>
   <Import Project="$(RedBoltRoot)/src/Directory.Build.targets" />
+  <!-- Tests use editor types directly. Their output bucket is separate, so copy the editor
+       assembly and include it in the test host dependency graph. -->
+  <ItemGroup>
+    <ProjectReference Update="$(RedBoltRoot)/src/RedBolt/Editor/RedBolt.Editor.csproj">
+      <Private>true</Private>
+    </ProjectReference>
+  </ItemGroup>
   <!--
     Import every module's test integration so the test suite can exercise all modules. Each module's
     TestIntegration.targets registers itself (with its native flag) and is guarded internally so the
