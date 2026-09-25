@@ -122,7 +122,6 @@ public sealed class KinematicCharacterControllerTests
         Assert.Null(startEvent.BodyA);
         Assert.Same(sensorBody, startEvent.BodyB);
         Assert.True(startEvent.Trigger);
-        Assert.NotNull(startEvent.Contacts);
         Assert.Empty(startEvent.Contacts);
 
         characterNode.SetWorldPosition(new Vector3f(20.0f, 0.0f, 0.0f));
