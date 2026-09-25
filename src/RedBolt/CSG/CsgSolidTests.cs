@@ -81,6 +81,34 @@ public sealed class CsgSolidTests
     }
 
     [Fact]
+    public void Solids_touching_along_an_edge_stay_closed()
+    {
+        // The second box shares only the edge x = 0.5, y = 0.5 with the first; the union pinches that edge.
+        var a = Polygons("Models/Box.mdl", Matrix3x4.Identity);
+        var b = Polygons("Models/Box.mdl", Matrix3x4.FromTranslation(new Vector3f(1.0f, 1.0f, 0.0f)));
+
+        var result = Csg.BooleanOperation(new CsgSolid(a), new CsgSolid(b), CsgOperation.Union);
+
+        Assert.True(result.IsClosed);
+        Assert.Equal(2.0, Volume(result.ToPolygons()), VolumeTolerance);
+    }
+
+    [Fact]
+    public void Zero_area_needle_faces_do_not_open_a_solid()
+    {
+        var box = Polygons("Models/Box.mdl", Matrix3x4.Identity);
+        // A collinear triangle on the top face, present in both orientations as boolean fragments can leave it.
+        var needle = new[]
+        {
+            new Vector3f(-0.5f, 0.5f, 0.0f), new Vector3f(0.0f, 0.5f, 0.0f), new Vector3f(0.5f, 0.5f, 0.0f)
+        };
+        box.Add(new CsgPolygon([Vertex(needle[0]), Vertex(needle[1]), Vertex(needle[2])], 0));
+        box.Add(new CsgPolygon([Vertex(needle[2]), Vertex(needle[1]), Vertex(needle[0])], 0));
+
+        Assert.True(new CsgSolid(box).IsClosed);
+    }
+
+    [Fact]
     public void Contains_point_classifies_inside_outside_and_far_points()
     {
         var solid = new CsgSolid(Polygons("Models/Sphere.mdl", Matrix3x4.Identity));
@@ -92,16 +120,38 @@ public sealed class CsgSolidTests
     }
 
     [Fact]
-    public void Open_operand_is_not_closed_and_uses_bsp_result()
+    public void Open_mesh_is_not_closed()
     {
-        var plane = Polygons("Models/Plane.mdl", Matrix3x4.Identity);
-        var box = Polygons("Models/Box.mdl", Matrix3x4.Identity);
-        var open = new CsgSolid(plane);
+        // Operands must be closed; an open mesh is detected rather than silently accepted.
+        Assert.False(new CsgSolid(Polygons("Models/Plane.mdl", Matrix3x4.Identity)).IsClosed);
+    }
 
-        var result = Csg.BooleanOperation(open, new CsgSolid(box), CsgOperation.Union);
+    [Theory]
+    [InlineData(CsgOperation.Union, 1.5)]
+    [InlineData(CsgOperation.DifferenceAB, 0.5)]
+    [InlineData(CsgOperation.Intersection, 0.5)]
+    public void Coplanar_faces_produce_closed_results(CsgOperation operation, double volume)
+    {
+        // Half-overlapping unit boxes share four face planes, so every contact is coplanar.
+        var a = Polygons("Models/Box.mdl", Matrix3x4.Identity);
+        var b = Polygons("Models/Box.mdl", Matrix3x4.FromTranslation(new Vector3f(0.5f, 0.0f, 0.0f)));
 
-        Assert.False(open.IsClosed);
-        Assert.Equal(Volume(Bsp(plane, box, CsgOperation.Union)), Volume(result.ToPolygons()), VolumeTolerance);
+        var result = Csg.BooleanOperation(new CsgSolid(a), new CsgSolid(b), operation);
+
+        Assert.True(result.IsClosed);
+        Assert.Equal(volume, Volume(result.ToPolygons()), VolumeTolerance);
+    }
+
+    [Fact]
+    public void Empty_result_is_closed()
+    {
+        var a = Polygons("Models/Box.mdl", Matrix3x4.Identity);
+        var b = Polygons("Models/Box.mdl", Matrix3x4.FromTranslation(new Vector3f(3.0f, 0.0f, 0.0f)));
+
+        var result = Csg.BooleanOperation(new CsgSolid(a), new CsgSolid(b), CsgOperation.Intersection);
+
+        Assert.Equal(0, result.FaceCount);
+        Assert.True(result.IsClosed);
     }
 
     [Fact]
@@ -121,6 +171,14 @@ public sealed class CsgSolidTests
             vertex.Uv[0] = new Vector4f(7.0f, 7.0f, 7.0f, 7.0f);
 
         Assert.Equal(original, solid.ToPolygons()[0].Vertices[0].Uv[0]);
+    }
+
+    private static ModelVertex Vertex(Vector3f position)
+    {
+        var vertex = new ModelVertex();
+        vertex.SetPosition(position);
+        vertex.SetNormal(Vector3f.Up);
+        return vertex;
     }
 
     private List<CsgPolygon> Polygons(string model, Matrix3x4 transform) =>
