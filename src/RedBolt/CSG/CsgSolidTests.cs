@@ -155,6 +155,46 @@ public sealed class CsgSolidTests
     }
 
     [Fact]
+    public void Result_rebuilt_as_operand_stays_closed()
+    {
+        var box = Polygons("Models/Box.mdl", Matrix3x4.Identity);
+        var sphere = Polygons("Models/Sphere.mdl", Matrix3x4.FromTranslation(new Vector3f(0.4f, 0.4f, 0.4f)));
+        var result = Csg.BooleanOperation(new CsgSolid(box), new CsgSolid(sphere), CsgOperation.DifferenceAB);
+
+        var rebuilt = new CsgSolid(result.ToPolygons());
+
+        Assert.True(result.IsClosed);
+        Assert.True(rebuilt.IsClosed);
+        Assert.Equal(Volume(result.ToPolygons()), Volume(rebuilt.ToPolygons()), VolumeTolerance);
+    }
+
+    [Fact]
+    public void Repeated_bores_stay_closed_and_match_bsp_volume()
+    {
+        // Slanted cylinders bored one after another through a slab, each applied to the previous result.
+        var slab = Polygons("Models/Box.mdl", Matrix3x4.FromScale(new Vector3f(3.0f, 2.0f, 0.5f)));
+        var solid = new CsgSolid(slab);
+        var reference = slab;
+        var random = new System.Random(7);
+        for (var i = 0; i < 12; ++i)
+        {
+            var position = new Vector3f(Next(-1.5f, 1.5f), Next(-1.0f, 1.0f), 0.25f);
+            var direction = new Vector3f(Next(-0.3f, 0.3f), Next(-0.3f, 0.3f), -1.0f).Normalized;
+            var bore = Polygons("Models/Cylinder.mdl", new Matrix3x4(position,
+                new Quaternion(Vector3f.Up, direction), new Vector3f(0.32f, 4.0f, 0.32f)));
+
+            solid = Csg.BooleanOperation(solid, new CsgSolid(bore), CsgOperation.DifferenceAB);
+            reference = Bsp(reference, bore, CsgOperation.DifferenceAB);
+
+            Assert.True(solid.IsClosed);
+        }
+
+        Assert.Equal(Volume(reference), Volume(solid.ToPolygons()), VolumeTolerance);
+
+        float Next(float min, float max) => min + (float)random.NextDouble() * (max - min);
+    }
+
+    [Fact]
     public void Returned_polygons_and_triangulated_vertices_do_not_alias_solid_faces()
     {
         var box = Polygons("Models/Box.mdl", Matrix3x4.Identity);
