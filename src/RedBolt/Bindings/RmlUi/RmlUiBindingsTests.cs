@@ -36,6 +36,24 @@ public sealed class RmlUiBindingsTests
     }
 
     [Fact]
+    public void Variant_round_trips_legacy_colourb_value()
+    {
+        var value = new RmlUiLegacyColourb { Red = 10, Green = 20, Blue = 30, Alpha = 40 };
+        var fallback = new RmlUiLegacyColourb { Red = 200, Green = 150, Blue = 100, Alpha = 50 };
+
+        using var empty = new Variant();
+        Assert.Equal(fallback, empty.Get(fallback));
+
+        using var other = new Variant(true);
+        Assert.Equal(fallback, other.Get(fallback));
+
+        using var variant = new Variant();
+        variant.Assign(value);
+        Assert.Equal(value, variant.Get<RmlUiLegacyColourb>());
+        Assert.Equal(value, variant.Get(fallback));
+    }
+
+    [Fact]
     public void System_interface_round_trips_managed_director()
     {
         var original = RmlUi.GetSystemInterface();
