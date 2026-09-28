@@ -361,6 +361,12 @@ internal sealed class VisualRegressionFixture : IDisposable
         Assert.True(Graphics.BeginFrame());
         try
         {
+            // Swap-chain contents are undefined after a present and are not cleared outside viewport
+            // rectangles, so clear the whole backbuffer before rendering the views.
+            var renderContext = _engineFixture.RenderContext;
+            renderContext.SetSwapChainRenderTargets();
+            renderContext.SetFullViewport();
+            renderContext.ClearRenderTarget(0, Color.Black);
             Renderer.Update(0.0f);
             Renderer.Render();
             Graphics.ResetRenderTargets();
