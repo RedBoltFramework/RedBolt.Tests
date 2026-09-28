@@ -6,17 +6,15 @@ using System.Reflection;
 public sealed class GeneratorContractTests
 {
     private static readonly object ProgramLock = new();
-    private static readonly Assembly GeneratorAssembly = AppDomain.CurrentDomain.GetAssemblies()
-        .FirstOrDefault(static assembly => assembly.GetName().Name == "RedBolt.Generator.Dependencies")
-        ?? Assembly.LoadFrom(RbfxTestData.GetAppFile(
-            "tools", "RedBolt.Generator.Dependencies.dll"));
+    private static readonly Assembly GeneratorAssembly = LoadGenerator("RedBolt.Generator.Dependencies");
 
-    private static Assembly LoadExternalGenerator(string repositoryName, string assemblyName) =>
+    // Every module's generator tool is written to the aggregate build's host tools directory.
+    private static Assembly LoadGenerator(string assemblyName) =>
         AppDomain.CurrentDomain.GetAssemblies()
             .FirstOrDefault(assembly => assembly.GetName().Name == assemblyName)
         ?? Assembly.LoadFrom(Path.Combine(
-            RbfxTestData.RepositoryRoot, "..", repositoryName, "build", "bin",
-            RbfxTestData.BuildConfiguration, "host", "tools", assemblyName + ".dll"));
+            RbfxTestData.BuildRoot, "bin", RbfxTestData.BuildConfiguration, "host", "tools",
+            assemblyName + ".dll"));
 
     [Fact]
     public void Generator_options_normalize_paths_and_keep_repeated_options()
@@ -70,8 +68,12 @@ public sealed class GeneratorContractTests
         var includeDirectories = (IReadOnlyList<string>)toolchainInfo.GetType()
             .GetProperty("IncludeDirectories")!.GetValue(toolchainInfo)!;
 
+        // Compiler builtins (stddef.h) come from the parser's resource directory and are
+        // filtered out; discovery must still surface the C library and C++ standard library.
         Assert.Contains(includeDirectories,
-            static includeDirectory => File.Exists(Path.Combine(includeDirectory, "stddef.h")));
+            static includeDirectory => File.Exists(Path.Combine(includeDirectory, "stdio.h")));
+        Assert.Contains(includeDirectories,
+            static includeDirectory => File.Exists(Path.Combine(includeDirectory, "vector")));
     }
 
     [Fact]
@@ -111,23 +113,17 @@ public sealed class GeneratorContractTests
             ("tinygltf", GeneratorAssembly),
             ("lz4", GeneratorAssembly),
             ("harfbuzz", GeneratorAssembly),
-            ("rmlui", LoadExternalGenerator(
-                "RedBolt.RmlUI", "RedBolt.RmlUI.Generator.Dependencies")),
+            ("rmlui", LoadGenerator("RedBolt.RmlUI.Generator.Dependencies")),
             ("webp", GeneratorAssembly),
-            ("xatlas", LoadExternalGenerator(
-                "RedBolt.Glow", "RedBolt.Glow.Generator.Dependencies")),
+            ("xatlas", LoadGenerator("RedBolt.Glow.Generator.Dependencies")),
             ("glslang", GeneratorAssembly),
             ("spirvcross", GeneratorAssembly),
             ("spirvtools", GeneratorAssembly),
             ("shadercompiler", GeneratorAssembly),
-            ("embree", LoadExternalGenerator(
-                "RedBolt.Glow", "RedBolt.Glow.Generator.Dependencies")),
-            ("libdatachannel", LoadExternalGenerator(
-                "RedBolt.Network", "RedBolt.Network.Generator.Dependencies")),
-            ("box2d", LoadExternalGenerator(
-                "RedBolt.PhysicsBox2D", "RedBolt.PhysicsBox2D.Generator.Dependencies")),
-            ("jolt", LoadExternalGenerator(
-                "RedBolt.PhysicsJolt", "RedBolt.PhysicsJolt.Generator.Dependencies"))
+            ("embree", LoadGenerator("RedBolt.Glow.Generator.Dependencies")),
+            ("libdatachannel", LoadGenerator("RedBolt.Network.Generator.Dependencies")),
+            ("box2d", LoadGenerator("RedBolt.PhysicsBox2D.Generator.Dependencies")),
+            ("jolt", LoadGenerator("RedBolt.PhysicsJolt.Generator.Dependencies"))
         };
 
         foreach (var (surface, generator) in surfaces)
