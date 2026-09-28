@@ -61,12 +61,23 @@ public sealed class ApplicationCommandLineTests
     public void Application_rejects_unknown_command_line_parameters()
     {
         using var application = new ProbeApplication();
-
-        var exitCode = application.Run(["--does-not-exist"]);
+        using var output = new StringWriter();
+        var previousError = Console.Error;
+        Console.SetError(output);
+        int exitCode;
+        try
+        {
+            exitCode = application.Run(["--does-not-exist"]);
+        }
+        finally
+        {
+            Console.SetError(previousError);
+        }
 
         Assert.Equal(Application.FailureExitCode, exitCode);
         Assert.Equal("Unknown option '--does-not-exist'.", application.ErrorMessage);
         Assert.False(application.Started);
+        Assert.Contains("Unknown option '--does-not-exist'.", output.ToString());
     }
 
     [Fact]
