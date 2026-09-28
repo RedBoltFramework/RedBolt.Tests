@@ -60,11 +60,13 @@ public sealed class GeneratorContractTests
         if (!OperatingSystem.IsLinux())
             return;
 
-        var discoveryType = GeneratorAssembly.GetType("RedBolt.Generator.Dependencies.CompilerToolchainDiscovery")!;
+        // The generators use SharpCpp's toolchain discovery.
+        var discoveryType = Assembly.LoadFrom(Path.Combine(Path.GetDirectoryName(GeneratorAssembly.Location)!, "SharpCpp.Toolchain.dll"))
+            .GetType("SharpCpp.Toolchain.CompilerToolchainDiscovery")!;
         var discover = discoveryType.GetMethod("Discover", BindingFlags.Public | BindingFlags.Static)!;
         var toolchainInfo = discover.Invoke(
             null,
-            [Environment.GetEnvironmentVariable("CXX") ?? "c++", null, null])!;
+            [Environment.GetEnvironmentVariable("CXX") ?? "c++", null, null, null])!;
         var includeDirectories = (IReadOnlyList<string>)toolchainInfo.GetType()
             .GetProperty("IncludeDirectories")!.GetValue(toolchainInfo)!;
 
