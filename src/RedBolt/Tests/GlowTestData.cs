@@ -8,9 +8,9 @@ using RedBolt.Resource;
 internal static class GlowTestData
 {
     public static string Root { get; } = Path.GetFullPath(
-        Path.Combine(RbfxTestData.RepositoryRoot, "..", "RedBolt.Glow"));
+        Path.Combine(RbfxTestData.RepositoryRoot, "RedBolt.Glow"));
 
-    public static string CoreData { get; } = Path.Combine(Root, "bin", "CoreData");
+    public static string CoreData { get; } = Path.Combine(Root, "bin", "CoreData.Glow");
 
     public static string SampleData { get; } = Path.Combine(Root, "bin", "SampleData.Glow");
 
