@@ -4,7 +4,6 @@ namespace RedBolt.Tests;
 using RedBolt.Bindings.Sdl;
 using RedBolt.Graphics;
 using RedBolt.Input;
-using RedBolt.Resource;
 
 [Collection(nameof(GraphicsEngineCollection))]
 public sealed class InputSdlEventTests
@@ -52,7 +51,8 @@ public sealed class InputSdlEventTests
         Assert.Equal(1, Sdl.SdlPushEvent(keyDown));
         Input.PollEvents();
         Assert.Equal(InputDeviceType.KeyboardMouse, Input.ActiveInputDevice);
-        Assert.True(Input.GetScreenButtonDown("Jump"));
+        // Leaving touch modality releases on-screen controls.
+        Assert.False(Input.GetScreenButtonDown("Jump"));
 
         using var fingerUp = new SdlEvent();
         fingerUp.Type = (uint)SdlEventType.SdlFingerup;
@@ -111,59 +111,24 @@ public sealed class InputSdlEventTests
         }
     }
 
+    // On-screen controls are driven through screen buttons and axes (see InputOverlay) and are only active in touch
+    // modality.
     [GraphicsFact]
-    public void Registered_screen_joystick_adapts_to_active_input_device()
+    public void Screen_controls_follow_active_input_device()
     {
-        using var layout = new XMLFile();
-        Assert.True(layout.FromString("""
-            <element>
-                <attribute name="Name" value="TestJoystick" />
-                <attribute name="Size" value="64 64" />
-                <element type="Button">
-                    <attribute name="Name" value="Hat0" />
-                    <attribute name="Position" value="2 -2" />
-                    <attribute name="Size" value="24 24" />
-                    <attribute name="Vert Alignment" value="Bottom" />
-                    <attribute name="Texture" value="Texture2D;Textures/TouchInput.png" />
-                    <attribute name="Image Rect" value="0 0 96 96" />
-                    <element type="Text">
-                        <attribute name="Name" value="KeyBinding" />
-                        <attribute name="Text" value="WSAD" />
-                    </element>
-                </element>
-                <element type="Button">
-                    <attribute name="Name" value="Action" />
-                    <attribute name="Position" value="-2 -2" />
-                    <attribute name="Size" value="24 24" />
-                    <attribute name="Horiz Alignment" value="Right" />
-                    <attribute name="Vert Alignment" value="Bottom" />
-                    <attribute name="Texture" value="Texture2D;Textures/TouchInput.png" />
-                    <attribute name="Image Rect" value="96 0 192 96" />
-                    <element type="Text">
-                        <attribute name="Name" value="KeyBinding" />
-                        <attribute name="Text" value="Space" />
-                    </element>
-                </element>
-            </element>
-            """));
-
-        var joystickId = Input.AddScreenJoystick(layout);
-        Assert.True(joystickId >= 0);
         try
         {
-            Assert.False(Input.IsScreenJoystickVisible(joystickId));
-
             PushFingerEvent(SdlEventType.SdlFingerdown, 51, 0.8f, 0.75f);
             Input.BeginFrame();
             Input.PollEvents();
-
             Assert.Equal(InputDeviceType.Touch, Input.ActiveInputDevice);
-            Assert.True(Input.IsScreenJoystickVisible(joystickId));
+
+            Input.SetScreenButton("Action", true);
+            Input.SetScreenAxis("Move", 0.5f);
             Assert.True(Input.GetScreenButtonDown("Action"));
             Assert.True(Input.GetScreenButtonPress("Action"));
-            Assert.True(Input.GetKeyDown(Key.Space));
-            Assert.True(Input.GetJoystick(joystickId)!.Value.GetButtonDown(0));
-            Assert.Equal(InputDeviceType.Touch, Input.ActiveInputDevice);
+            Assert.Equal(0.5f, Input.GetScreenAxisPosition("Move"));
+            Assert.False(Input.GetKeyDown(Key.Space));
 
             using var keyDown = new SdlEvent();
             keyDown.Type = (uint)SdlEventType.SdlKeydown;
@@ -173,21 +138,21 @@ public sealed class InputSdlEventTests
             Input.PollEvents();
 
             Assert.Equal(InputDeviceType.KeyboardMouse, Input.ActiveInputDevice);
-            Assert.False(Input.IsScreenJoystickVisible(joystickId));
             Assert.False(Input.GetScreenButtonDown("Action"));
-            Assert.False(Input.GetKeyDown(Key.Space));
-            Assert.NotNull(Input.GetJoystick(joystickId));
+            Assert.False(Input.GetScreenButtonPress("Action"));
+            Assert.Equal(0.0f, Input.GetScreenAxisPosition("Move"));
 
             PushFingerEvent(SdlEventType.SdlFingerdown, 52, 0.2f, 0.66f);
             Input.BeginFrame();
             Input.PollEvents();
-            Assert.True(Input.IsScreenJoystickVisible(joystickId));
-            Assert.True(Input.GetKeyDown(Key.W));
+            Assert.Equal(InputDeviceType.Touch, Input.ActiveInputDevice);
+
+            Input.SetScreenButton("Action", true);
+            Assert.True(Input.GetScreenButtonDown("Action"));
 
             PushFingerEvent(SdlEventType.SdlFingerup, 52, 0.2f, 0.66f);
             PushFingerEvent(SdlEventType.SdlFingerup, 51, 0.8f, 0.75f);
             Input.PollEvents();
-            Assert.False(Input.GetKeyDown(Key.W));
 
             using var keyUp = new SdlEvent();
             keyUp.Type = (uint)SdlEventType.SdlKeyup;
@@ -198,10 +163,9 @@ public sealed class InputSdlEventTests
         }
         finally
         {
+            Input.SetScreenButton("Action", false);
+            Input.SetScreenAxis("Move", 0.0f);
             Input.SetKey(Key.A, Scancode.A, false);
-            Input.SetKey(Key.Space, Scancode.Space, false);
-            Input.SetKey(Key.W, Scancode.W, false);
-            Assert.True(Input.RemoveScreenJoystick(joystickId));
         }
     }
 
