@@ -17,8 +17,9 @@ Run the suite from the workspace root with:
 dotnet test ./RedBolt.Tests/RedBolt.Tests.csproj
 ```
 
-On a host without a desktop display, use the workspace software-renderer
-helper for display-dependent tests:
+Use the workspace software-renderer helper for display-dependent tests. It
+always renders on a private Xvfb display so results do not depend on the host
+display (set `REDBOLT_TESTS_USE_HOST_DISPLAY=1` to use the host display):
 
 ```bash
 ./RedBolt.Tests/scripts/with_software_renderer.sh dotnet test ./RedBolt.Tests/RedBolt.Tests.csproj

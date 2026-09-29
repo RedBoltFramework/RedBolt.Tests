@@ -29,7 +29,11 @@ export LIBGL_ALWAYS_SOFTWARE=1
 export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
 export SDL_AUDIODRIVER="${SDL_AUDIODRIVER:-dummy}"
 
-if [[ -n "${DISPLAY:-}" ]] || has_wayland_display; then
+# Render on a private Xvfb display by default so results do not depend on the
+# host display's DPI, visual or sRGB capability. Set
+# REDBOLT_TESTS_USE_HOST_DISPLAY=1 to run on the host desktop display instead.
+if [[ "${REDBOLT_TESTS_USE_HOST_DISPLAY:-}" == "1" ]] &&
+    { [[ -n "${DISPLAY:-}" ]] || has_wayland_display; }; then
     exec -- "$@"
 fi
 
@@ -39,6 +43,6 @@ if [[ -z "$xvfb_run" ]]; then
     exit 1
 fi
 
-export SDL_VIDEODRIVER="${SDL_VIDEODRIVER:-x11}"
+export SDL_VIDEODRIVER=x11
 
-exec -- "$xvfb_run" -a -s "-screen 0 256x192x24 -nolisten tcp" -- "$@"
+exec -- env -u DISPLAY -u WAYLAND_DISPLAY "$xvfb_run" -a -s "-screen 0 256x192x24 -nolisten tcp" -- "$@"
