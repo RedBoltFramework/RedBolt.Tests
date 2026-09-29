@@ -171,6 +171,17 @@ public sealed class SceneScreenshotTests
         }
         finally
         {
+            // The screenshot renderers queue their offscreen viewport into the shared
+            // GraphicsEngineFixture Renderer and get disposed asynchronously through the
+            // WorkQueue (see SceneScreenshot.ScreenshotRenderer.OnEndViewRender). Disposing a
+            // Viewport also disposes its cached RenderPipelineView, but Renderer only prunes its
+            // internal _renderPipelineViews list at the start of the next Update() call. Without
+            // this flush, the shared Renderer keeps a reference to the now-disposed
+            // RenderPipelineView, and any later test that calls Renderer.Render() without first
+            // calling Update() (e.g. GraphicsRendererTests.Render_dispatches_end_all_views_event)
+            // would iterate and render that disposed view, throwing a NullReferenceException.
+            _fixture.Renderer.Update(0.0f);
+
             tab?.Dispose();
             if (project is not null)
             {
