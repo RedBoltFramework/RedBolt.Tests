@@ -108,6 +108,6 @@ public sealed class VisualRegressionCoreTests
 
         fixture.AssertMatches("camera/projection-gallery.png",
             new VisualRegressionView(scene, perspective, new IntRect(0, 0, 128, 96)),
-            new VisualRegressionView(scene, orthographic, new IntRect(128, 0, 128, 96)));
+            new VisualRegressionView(scene, orthographic, new IntRect(128, 0, 256, 96)));
     }
 }

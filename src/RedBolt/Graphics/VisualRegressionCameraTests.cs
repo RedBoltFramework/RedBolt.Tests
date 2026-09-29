@@ -232,7 +232,7 @@ public sealed class VisualRegressionCameraTests
                 scene, new Vector3f(0.0f, 1.1f, -4.2f), new Vector3f(0.0f, 0.7f, 0.0f), 128.0f / 128.0f,
                 fov: 35.0f);
             camera.SetFillMode(fillModes[i]);
-            views[i] = new VisualRegressionView(scene, camera, new IntRect(i * 128, 0, 128, 128));
+            views[i] = new VisualRegressionView(scene, camera, new IntRect(i * 128, 0, (i + 1) * 128, 128));
         }
 
         fixture.AssertMatches("camera/fill-modes.png", views);
@@ -263,7 +263,7 @@ public sealed class VisualRegressionCameraTests
 
         fixture.AssertMatches("camera/view-masks.png",
             new VisualRegressionView(scene, firstCamera, new IntRect(0, 0, 128, 128)),
-            new VisualRegressionView(scene, secondCamera, new IntRect(128, 0, 128, 128)));
+            new VisualRegressionView(scene, secondCamera, new IntRect(128, 0, 256, 128)));
     }
 
     [VisualFact]
@@ -278,7 +278,7 @@ public sealed class VisualRegressionCameraTests
             scene, new Vector3f(0.0f, 0.8f, -3.8f), Vector3f.Zero, 96.0f / 80.0f);
 
         fixture.AssertMatches("camera/viewport-border.png",
-            new VisualRegressionView(scene, camera, new IntRect(16, 8, 96, 80)));
+            new VisualRegressionView(scene, camera, new IntRect(16, 8, 112, 88)));
     }
 
     private static void AddClippingModel(
