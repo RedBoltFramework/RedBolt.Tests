@@ -131,4 +131,25 @@ public sealed class JoltSimdValueProjectionTests
         Assert.Equal((float)translation.Y, center.Y, 256.0f);
         Assert.Equal(0.125f, center.Z, 1e-3f);
     }
+
+    [Fact]
+    public void Const_Vec3_input_array_binds_as_read_only_span_with_minimum_length()
+    {
+        // A positive mass is required for a valid MotionProperties (a mass of 0 asserts and aborts).
+        using var mass = new MassProperties { MMass = 1.0f };
+        using var properties = new MotionProperties();
+        properties.SetMassProperties(EAllowedDOFs.All, mass);
+
+        // ResetSleepTestSpheres reads exactly three points and has no observable getter.
+        BaseRealVector3<float>[] points =
+        [
+            new(0.0f, 0.0f, 0.0f),
+            new(1.0f, 0.0f, 0.0f),
+            new(0.0f, 1.0f, 0.0f)
+        ];
+        properties.ResetSleepTestSpheres(points);
+
+        // The wrapper rejects spans shorter than the three elements native code reads.
+        Assert.Throws<ArgumentException>(() => properties.ResetSleepTestSpheres(points.AsSpan(0, 2)));
+    }
 }
