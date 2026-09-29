@@ -174,21 +174,21 @@ public sealed class EditorApplicationTests
 
             var exitCode = application.Run([]);
             Assert.True(exitCode == 0, application.ErrorMessage);
-            Assert.True(application.StartCalled);
-            Assert.True(application.StopCalled);
-            Assert.True(application.HasConsole);
-            Assert.True(application.HasDebugHud);
-            Assert.False(application.HasRmlUI);
-            Assert.True(application.HasSystemUI);
-            Assert.True(application.HasDefaultFont);
-            Assert.True(application.HasProjectSettingsHandler);
-            Assert.True(application.HasDocking);
-            Assert.True(application.ScalesFontsForDpi);
-            Assert.True(application.HasUsableRenderSize);
+            Assert.True(application.StartCalled, "StartCalled");
+            Assert.True(application.StopCalled, "StopCalled");
+            Assert.True(application.HasConsole, "HasConsole");
+            Assert.True(application.HasDebugHud, "HasDebugHud");
+            Assert.False(application.HasRmlUI, "HasRmlUI");
+            Assert.True(application.HasSystemUI, "HasSystemUI");
+            Assert.True(application.HasDefaultFont, "HasDefaultFont");
+            Assert.True(application.HasProjectSettingsHandler, "HasProjectSettingsHandler");
+            Assert.True(application.HasDocking, "HasDocking");
+            Assert.True(application.ScalesFontsForDpi, "ScalesFontsForDpi");
+            Assert.True(application.HasUsableRenderSize, "HasUsableRenderSize");
             Assert.Equal(3.0f, application.WindowRounding);
             Assert.Equal(new Vector2f(4.0f, 4.0f), application.ItemSpacing);
-            Assert.False(application.HasWorkQueue);
-            Assert.False(application.ReadUninitializedTextureWarning);
+            Assert.False(application.HasWorkQueue, "HasWorkQueue");
+            Assert.False(application.ReadUninitializedTextureWarning, "ReadUninitializedTextureWarning");
         }
         finally
         {
