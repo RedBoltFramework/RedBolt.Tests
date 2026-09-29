@@ -12,7 +12,7 @@ public sealed class JoltSimdValueProjectionTests
     {
         Physics.RegisterPhysicsLibrary(fixture.Context);
 
-        // Plane/DMat44 are heap-allocated natively; Jolt needs its allocator installed first.
+        // Plane/AABox are heap-allocated natively; Jolt needs its allocator installed first.
         Jolt.RegisterDefaultAllocator();
     }
 
@@ -43,30 +43,89 @@ public sealed class JoltSimdValueProjectionTests
     }
 
     [Fact]
-    public void DVec3_round_trips_with_double_precision_through_native_matrix()
+    public void UVec4_by_value_return_is_read_component_wise()
     {
-        // Values that are not representable in float, to prove no narrowing happens.
-        var translation = new BaseRealVector3<double>(1.0e10 + 0.25, -2.0e9 - 0.5, 0.125);
+        using var properties = new MotionProperties();
+        properties.SetMassProperties(EAllowedDOFs.TranslationX | EAllowedDOFs.TranslationZ | EAllowedDOFs.RotationY, new MassProperties());
 
-        using var matrix = DMat44.STranslation(in translation);
-        var roundTripped = matrix.GetTranslation();
+        // Allowed axes are all-ones, locked axes are zero; w is always zero.
+        var linear = properties.GetLinearDOFsMask();
+        Assert.Equal(uint.MaxValue, linear.X);
+        Assert.Equal(0u, linear.Y);
+        Assert.Equal(uint.MaxValue, linear.Z);
+        Assert.Equal(0u, linear.W);
 
-        Assert.Equal(translation.X, roundTripped.X);
-        Assert.Equal(translation.Y, roundTripped.Y);
-        Assert.Equal(translation.Z, roundTripped.Z);
+        var angular = properties.GetAngularDOFsMask();
+        Assert.Equal(0u, angular.X);
+        Assert.Equal(uint.MaxValue, angular.Y);
+        Assert.Equal(0u, angular.Z);
+        Assert.Equal(0u, angular.W);
     }
 
     [Fact]
-    public void DVec3_by_reference_parameter_updates_native_matrix()
+    public void UVec4_by_value_and_by_reference_round_trip()
     {
-        using var matrix = new DMat44();
-        var translation = new BaseRealVector3<double>(3.0e12 + 0.5, 4.0, -5.0);
+        // Half floats 1, 2, 3, 4 converted to a float vector (by-value UVec4 in, Vec4 out).
+        var halves = new JoltUInt4(0x3C00u, 0x4000u, 0x4200u, 0x4400u);
+        Vector4f floats = Jolt.ToFloat(halves);
+        Assert.Equal(new Vector4f(1.0f, 2.0f, 3.0f, 4.0f), floats);
 
-        matrix.SetTranslation(in translation);
+        // Trues (all-ones lanes) are moved to the front of the identifiers (UVec4& in/out).
+        var mask = new JoltUInt4(uint.MaxValue, 0u, uint.MaxValue, 0u);
+        var identifiers = new JoltUInt4(10u, 11u, 12u, 13u);
+        int trues = Jolt.CountAndSortTrues(mask, ref identifiers);
+        Assert.Equal(2, trues);
+        Assert.Equal(10u, identifiers.X);
+        Assert.Equal(12u, identifiers.Y);
+    }
 
-        var roundTripped = matrix.GetTranslation();
-        Assert.Equal(translation.X, roundTripped.X);
-        Assert.Equal(translation.Y, roundTripped.Y);
-        Assert.Equal(translation.Z, roundTripped.Z);
+    [Fact]
+    public void DMat44_by_reference_reads_columns_and_translation()
+    {
+        // Distinct off-diagonal columns prove column order; translation values are exact in float.
+        var matrix = new JoltDMatrix4(
+            new Vector4f(0.0f, 2.0f, 0.0f, 0.0f),
+            new Vector4f(3.0f, 0.0f, 0.0f, 0.0f),
+            new Vector4f(0.0f, 0.0f, 4.0f, 0.0f),
+            new BaseRealVector3<double>(100.5, -200.25, 0.125));
+        var min = new BaseRealVector3<double>(-1.0, -1.0, -1.0);
+        var max = new BaseRealVector3<double>(1.0, 1.0, 1.0);
+
+        using var box = new AABox(in min, in max);
+        using var transformed = box.Transformed(in matrix);
+
+        var center = (BaseRealVector3<float>)transformed.GetCenter();
+        Assert.Equal(100.5f, center.X);
+        Assert.Equal(-200.25f, center.Y);
+        Assert.Equal(0.125f, center.Z);
+
+        var extent = (BaseRealVector3<float>)transformed.GetExtent();
+        Assert.Equal(3.0f, extent.X);
+        Assert.Equal(2.0f, extent.Y);
+        Assert.Equal(4.0f, extent.Z);
+    }
+
+    [Fact]
+    public void DMat44_translation_is_not_corrupted_by_double_transport()
+    {
+        // No bound API returns a DMat44 or exposes double results, so the double translation is
+        // checked through the (float) transformed bounds: the center must be the float rounding
+        // of the double value, not garbage from a mis-sized ABI copy.
+        var translation = new BaseRealVector3<double>(1.0e10 + 0.25, -2.0e9 - 0.5, 0.125);
+        var matrix = new JoltDMatrix4(
+            new Vector4f(1.0f, 0.0f, 0.0f, 0.0f),
+            new Vector4f(0.0f, 1.0f, 0.0f, 0.0f),
+            new Vector4f(0.0f, 0.0f, 1.0f, 0.0f),
+            translation);
+        var half = new BaseRealVector3<double>(0.5, 0.5, 0.5);
+        var negativeHalf = new BaseRealVector3<double>(-0.5, -0.5, -0.5);
+
+        using var box = new AABox(in negativeHalf, in half);
+        using var transformed = box.Transformed(in matrix);
+
+        var center = (BaseRealVector3<float>)transformed.GetCenter();
+        Assert.Equal((float)translation.X, center.X, 1024.0f);
+        Assert.Equal((float)translation.Y, center.Y, 256.0f);
+        Assert.Equal(0.125f, center.Z, 1e-3f);
     }
 }
