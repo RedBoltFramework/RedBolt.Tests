@@ -45,28 +45,31 @@ public sealed class JoltSimdValueProjectionTests
     [Fact]
     public void UVec4_by_value_return_is_read_component_wise()
     {
+        // A positive mass is required when any translation axis is allowed (JPH_ASSERT aborts in Debug).
+        using var mass = new MassProperties { MMass = 1.0f };
         using var properties = new MotionProperties();
-        properties.SetMassProperties(EAllowedDOFs.TranslationX | EAllowedDOFs.TranslationZ | EAllowedDOFs.RotationY, new MassProperties());
+        properties.SetMassProperties(EAllowedDOFs.TranslationX | EAllowedDOFs.TranslationZ | EAllowedDOFs.RotationY, mass);
 
-        // Allowed axes are all-ones, locked axes are zero; w is always zero.
+        // Allowed axes are all-ones, locked axes are zero; w compares 0 == 0 and is always all-ones.
         var linear = properties.GetLinearDOFsMask();
         Assert.Equal(uint.MaxValue, linear.X);
         Assert.Equal(0u, linear.Y);
         Assert.Equal(uint.MaxValue, linear.Z);
-        Assert.Equal(0u, linear.W);
+        Assert.Equal(uint.MaxValue, linear.W);
 
         var angular = properties.GetAngularDOFsMask();
         Assert.Equal(0u, angular.X);
         Assert.Equal(uint.MaxValue, angular.Y);
         Assert.Equal(0u, angular.Z);
-        Assert.Equal(0u, angular.W);
+        Assert.Equal(uint.MaxValue, angular.W);
     }
 
     [Fact]
     public void UVec4_by_value_and_by_reference_round_trip()
     {
-        // Half floats 1, 2, 3, 4 converted to a float vector (by-value UVec4 in, Vec4 out).
-        var halves = new JoltUInt4(0x3C00u, 0x4000u, 0x4200u, 0x4400u);
+        // Half floats 1, 2, 3, 4 (two packed per 32-bit lane, low half first) converted to a float
+        // vector (by-value UVec4 in, Vec4 out).
+        var halves = new JoltUInt4(0x40003C00u, 0x44004200u, 0u, 0u);
         Vector4f floats = Jolt.ToFloat(halves);
         Assert.Equal(new Vector4f(1.0f, 2.0f, 3.0f, 4.0f), floats);
 
