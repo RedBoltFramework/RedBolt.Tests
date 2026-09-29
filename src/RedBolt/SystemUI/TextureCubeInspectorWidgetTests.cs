@@ -146,11 +146,11 @@ public sealed class TextureCubeInspectorWidgetTests
         try
         {
             var io = ImGui.GetIO();
-            io.DisplaySize = new Vector2f(360.0f, 300.0f);
+            io.DisplaySize = new Vector2f(400.0f, 420.0f);
             io.DeltaTime = 1.0f / 60.0f;
             ImGui.NewFrame();
             frameStarted = true;
-            ImGui.SetNextWindowSize(new Vector2f(320.0f, 260.0f));
+            ImGui.SetNextWindowSize(new Vector2f(320.0f, 340.0f));
             var isOpen = true;
             ImGui.Begin("TextureCube Inspector"u8, ref isOpen);
             windowStarted = true;
