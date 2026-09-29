@@ -105,9 +105,11 @@ public sealed class EngineTests
         Assert.Equal(string.Empty, parameters.PluginPaths);
         Assert.Equal("conf://psocache.bin", parameters.PsoCache);
         Assert.Null(parameters.RenderBackend);
-        Assert.Equal("CoreData;Cache;SampleData", parameters.ResourcePaths);
+        Assert.Equal("CoreData;Cache;Data", parameters.ResourcePaths);
         Assert.Equal("conf://ShaderCache", parameters.ShaderCacheDir);
-        Assert.Equal("{\"gpuDescriptorHeapSize_cvb_srv_uav\":32768,\"gpuDescriptorHeapDynamicSize_cvb_srv_uav\":24576}", parameters.TweakD3D12);
+        Assert.Equal(
+            "{\n            \"gpuDescriptorHeapSize_cvb_srv_uav\":32768,\n            \"gpuDescriptorHeapDynamicSize_cvb_srv_uav\":24576\n        }",
+            parameters.TweakD3D12);
         Assert.Equal("{\"dynamicHeapSize\":33554432}", parameters.TweakVulkan);
         Assert.True(parameters.WindowMaximize);
         Assert.Null(parameters.WindowPositionX);
