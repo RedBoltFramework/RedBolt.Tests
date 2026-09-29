@@ -47,6 +47,17 @@ public sealed class JoltMathTypeCompatibilityTests
         Assert.Equal(24, Unsafe.SizeOf<Ray>());
         Assert.Equal(IntPtr.Zero, Marshal.OffsetOf<Ray>(nameof(Ray.Origin)));
         Assert.Equal((IntPtr)12, Marshal.OffsetOf<Ray>(nameof(Ray.Direction)));
+
+        Assert.Equal(64, Unsafe.SizeOf<Matrix4>());
+        Assert.Equal(IntPtr.Zero, Marshal.OffsetOf<Matrix4>(nameof(Matrix4.M00)));
+        Assert.Equal((IntPtr)12, Marshal.OffsetOf<Matrix4>(nameof(Matrix4.M03)));
+        Assert.Equal((IntPtr)48, Marshal.OffsetOf<Matrix4>(nameof(Matrix4.M30)));
+        Assert.Equal((IntPtr)60, Marshal.OffsetOf<Matrix4>(nameof(Matrix4.M33)));
+
+        Assert.Equal(12, Unsafe.SizeOf<Float3>());
+        Assert.Equal(IntPtr.Zero, Marshal.OffsetOf<Float3>(nameof(Float3.X)));
+        Assert.Equal((IntPtr)4, Marshal.OffsetOf<Float3>(nameof(Float3.Y)));
+        Assert.Equal((IntPtr)8, Marshal.OffsetOf<Float3>(nameof(Float3.Z)));
     }
 
     [Fact]
@@ -79,6 +90,79 @@ public sealed class JoltMathTypeCompatibilityTests
         var hit = new JoltRayCastResult { BodyId = uint.MaxValue, Fraction = 1.0f };
         Assert.True(world.NarrowPhaseQuery.CastRay(in ray, ref hit));
         Assert.InRange(hit.Fraction, 0.35f, 0.4f);
+    }
+
+    [Fact]
+    public void Matrix4_round_trips_through_Jolt_body_world_transform()
+    {
+        using var scene = new Scene();
+        var world = scene.CreateComponent<PhysicsWorld>();
+
+        // A non-uniform rotation (not a multiple of 90 degrees around a coordinate axis) so a
+        // row/column transposition or a wrong SIMD-column read would show up as a mismatched
+        // off-diagonal element rather than accidentally cancelling out.
+        var rotation = new Quaternion(37.0f, new Vector3f(1.0f, 2.0f, 3.0f).Normalized);
+        var position = new Vector3f(1.5f, -2.25f, 3.75f);
+
+        using var shape = new BoxShape(new Vector3f(0.5f, 0.5f, 0.5f));
+        using var settings = new BodyCreationSettings(
+            shape, position, rotation, EMotionType.Static,
+            ObjectLayerPairFilterMask.SGetObjectLayer(2, uint.MaxValue & 0xffff));
+        var bodyId = world.BodyInterface.CreateAndAddBody(settings, EActivation.DontActivate);
+        try
+        {
+            var transform = world.BodyInterface.GetWorldTransform(in bodyId);
+            var expected = new Matrix4(rotation, position);
+
+            Assert.True(transform.ApproximatelyEquivalent(expected, 1.0e-4f));
+            Assert.True(transform.Translation.ApproximatelyEquivalent(position, 1.0e-4f));
+            Assert.True(transform.Rotation.Equivalent(rotation, 1.0e-4f));
+
+            // Sanity check that the fixture is actually asymmetric, so the equality checks above
+            // could not pass by accident if rows and columns were swapped.
+            Assert.True(MathF.Abs(expected.M01 - expected.M10) > 0.01f);
+            Assert.True(MathF.Abs(expected.M02 - expected.M20) > 0.01f);
+            Assert.True(MathF.Abs(expected.M12 - expected.M21) > 0.01f);
+        }
+        finally
+        {
+            world.BodyInterface.RemoveBody(in bodyId);
+            world.BodyInterface.DestroyBody(in bodyId);
+        }
+    }
+
+    [Fact]
+    public void Float3_array_round_trips_through_Jolt_mesh_shape_bounds()
+    {
+        using var scene = new Scene();
+        scene.CreateComponent<PhysicsWorld>();
+
+        // Distinct, asymmetric coordinates so a wrong element order or wrong array stride
+        // (e.g. reading Float3's packed 12 bytes with Vec3's 16-byte-aligned stride) would
+        // produce bounds that don't match any of the source vertices.
+        var vertices = new[]
+        {
+            new Vector3f(1.0f, 2.0f, 3.0f),
+            new Vector3f(4.0f, -5.0f, 6.0f),
+            new Vector3f(-7.0f, 8.0f, -9.0f)
+        };
+
+        using var nativeVertices = new global::JPH.Array<Float3>();
+        foreach (var vertex in vertices)
+            nativeVertices.Add(vertex);
+
+        using var triangles = new global::JPH.Array<IndexedTriangle>();
+        using (var triangle = new IndexedTriangle(0, 1, 2, 0))
+            triangles.Add(triangle);
+
+        using var meshSettings = new MeshShapeSettings(nativeVertices, triangles);
+        using var result = meshSettings.Create();
+        Assert.True(result.IsValid());
+        using var shape = result.Get();
+
+        using var bounds = shape.GetLocalBounds();
+        Assert.True(bounds.MMin.ApproximatelyEquivalent(new Vector3f(-7.0f, -5.0f, -9.0f), 1.0e-4f));
+        Assert.True(bounds.MMax.ApproximatelyEquivalent(new Vector3f(4.0f, 8.0f, 6.0f), 1.0e-4f));
     }
 
     [Fact]
