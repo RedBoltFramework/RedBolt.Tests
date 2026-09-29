@@ -159,8 +159,12 @@ public sealed class JoltRemainingCoverageTests
 
         InvokeInstance(world, "SendCollisionEvents");
 
+        // SendCollisionEvents now swaps the pooled buffers instead of clearing and
+        // copying, so _previousContacts becomes this frame's 3 current contacts while
+        // _currentContacts becomes the prior frame's 2 previous contacts (reused, not yet
+        // repopulated until the next physics step).
         Assert.Equal(3, GetDictionary(world, "_previousContacts").Count);
-        Assert.Equal(3, GetDictionary(world, "_currentContacts").Count);
+        Assert.Equal(2, GetDictionary(world, "_currentContacts").Count);
     }
 
     [Fact]
@@ -345,8 +349,11 @@ public sealed class JoltRemainingCoverageTests
 
         var contactType = typeof(PhysicsWorld).GetNestedType("ContactData", BindingFlags.NonPublic)!;
         var contactConstructor = contactType.GetConstructors(InstanceNonPublic | BindingFlags.Public)
-            .Single(constructor => constructor.GetParameters().Length == 4);
-        var contact = contactConstructor.Invoke(new object?[] { pair, false, false, new[] { new PhysicsContact() } });
+            .Single(constructor => constructor.GetParameters().Length == 6);
+        // Pooled shape: Pair, Trigger, CharacterTrigger, ContactOffset, ContactCount, ContactCapacity.
+        // Zero offset/count/capacity keeps this a no-op slice into the (empty) shared contact arena,
+        // which is all the guard paths under test (missing/detached bodies) need.
+        var contact = contactConstructor.Invoke(new object?[] { pair, false, false, 0, 0, 0 });
         GetDictionary(world, fieldName)[pair] = contact;
     }
 
