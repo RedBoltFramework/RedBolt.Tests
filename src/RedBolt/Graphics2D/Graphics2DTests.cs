@@ -92,9 +92,9 @@ public sealed class Graphics2DTests
         Assert.Equal(20, platformer.Info.Height);
         Assert.Equal(0.70f, platformer.Info.TileWidth);
         Assert.All(Enumerable.Range(1, 98), gid => Assert.NotNull(platformer.GetTileSprite((uint)gid)));
-        Assert.Equal(21u, Assert.IsType<TmxObjectGroup2D>(platformer.GetLayer("Physics")).NumObjects);
-        Assert.Equal(11u, Assert.IsType<TmxObjectGroup2D>(platformer.GetLayer("Hazards")).NumObjects);
-        Assert.Equal(25u, Assert.IsType<TmxObjectGroup2D>(platformer.GetLayer("Coins")).NumObjects);
+        Assert.Equal(20u, Assert.IsType<TmxObjectGroup2D>(platformer.GetLayer("Physics")).NumObjects);
+        Assert.Equal(10u, Assert.IsType<TmxObjectGroup2D>(platformer.GetLayer("Hazards")).NumObjects);
+        Assert.Equal(18u, Assert.IsType<TmxObjectGroup2D>(platformer.GetLayer("Coins")).NumObjects);
         Assert.Equal(4u, Assert.IsType<TmxObjectGroup2D>(platformer.GetLayer("Checkpoints")).NumObjects);
         Assert.Equal(1u, Assert.IsType<TmxObjectGroup2D>(platformer.GetLayer("Goal")).NumObjects);
         Assert.Equal(5u, Assert.IsType<TmxObjectGroup2D>(platformer.GetLayer("Story")).NumObjects);
