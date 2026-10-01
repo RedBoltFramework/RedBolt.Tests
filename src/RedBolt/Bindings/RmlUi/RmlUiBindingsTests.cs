@@ -514,7 +514,7 @@ public sealed class RmlUiBindingsTests
             return ExpectedFileHandle;
         }
 
-        public override void NativeClose(nuint file)
+        public override void CloseFile(nuint file)
         {
         }
 
@@ -607,7 +607,7 @@ public sealed class RmlUiBindingsTests
             return (nuint)GCHandle.ToIntPtr(GCHandle.Alloc(System.IO.File.OpenRead(path.ToString())));
         }
 
-        public override void NativeClose(nuint file)
+        public override void CloseFile(nuint file)
         {
             var handle = GCHandle.FromIntPtr((nint)file);
             ((FileStream)handle.Target!).Dispose();

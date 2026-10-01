@@ -56,7 +56,7 @@ public sealed class RmlFileTests : IDisposable
             }
             finally
             {
-                fileInterface.NativeClose(file);
+                fileInterface.CloseFile(file);
             }
 
             fileInterface.AddResourceLoaded("Data/manual.rml");
