@@ -390,9 +390,9 @@ public sealed class RmlUiBindingsTests
             Assert.True(context.Update());
             Assert.True(context.Render());
             Assert.True(renderInterface.TextureGenerationCount > initialAtlasVersion);
-            addedGlyphDocument.Close();
+            addedGlyphDocument.CloseDocument();
 
-            document.Close();
+            document.CloseDocument();
             document.Dispose();
             document = null;
             Assert.True(context.Update());
@@ -406,7 +406,7 @@ public sealed class RmlUiBindingsTests
         {
             if (document is not null)
             {
-                document.Close();
+                document.CloseDocument();
                 document.Dispose();
                 context?.Update();
             }
@@ -514,7 +514,7 @@ public sealed class RmlUiBindingsTests
             return ExpectedFileHandle;
         }
 
-        public override void Close(nuint file)
+        public override void NativeClose(nuint file)
         {
         }
 
@@ -607,7 +607,7 @@ public sealed class RmlUiBindingsTests
             return (nuint)GCHandle.ToIntPtr(GCHandle.Alloc(System.IO.File.OpenRead(path.ToString())));
         }
 
-        public override void Close(nuint file)
+        public override void NativeClose(nuint file)
         {
             var handle = GCHandle.FromIntPtr((nint)file);
             ((FileStream)handle.Target!).Dispose();

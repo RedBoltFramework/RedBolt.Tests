@@ -157,7 +157,7 @@ public sealed class RmlUITests : IDisposable
             context.SendEvent(ref dropFile);
             Assert.Equal(1, dropEventCount);
 
-            document.Close();
+            document.CloseDocument();
             Assert.Same(document, unloadedDocument);
             Assert.True(ui.GetRmlContext().RemoveDataModel(modelName));
         }

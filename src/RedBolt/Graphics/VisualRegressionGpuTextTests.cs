@@ -128,7 +128,7 @@ public sealed class VisualRegressionGpuTextTests
         }
         finally
         {
-            document.Close();
+            document.CloseDocument();
             fixture.EngineFixture.Context.RemoveSubsystem<RmlUISubsystem>();
         }
     }
