@@ -67,6 +67,59 @@ public sealed class HarfBuzzBindingsTests
     }
 
     [Fact]
+    public void Shape_full_terminates_the_shaper_list()
+    {
+        var fontPath = Path.Combine(RbfxTestData.SampleData, "Fonts", "Anonymous Pro.ttf");
+        var blob = HarfBuzz.HbBlobCreateFromFileOrFail(fontPath);
+        Assert.False(blob.IsNull);
+        try
+        {
+            var face = HarfBuzz.HbFaceCreateOrFail(blob, 0);
+            Assert.False(face.IsNull);
+            try
+            {
+                var font = HarfBuzz.HbFontCreate(face);
+                Assert.False(font.IsNull);
+                try
+                {
+                    HarfBuzz.HbOtFontSetFuncs(font);
+                    var buffer = HarfBuzz.HbBufferCreate();
+                    Assert.False(buffer.IsNull);
+                    try
+                    {
+                        HarfBuzz.HbBufferAddUtf8(buffer, new sbyte[] { (sbyte)'A' }, 1, 0, 1);
+                        HarfBuzz.HbBufferGuessSegmentProperties(buffer);
+
+                        // A one-entry list without a trailing null would read past the array unless the wrapper appends it.
+                        Assert.NotEqual(0, HarfBuzz.HbShapeFull(font, buffer, null!, 0, ["ot"]));
+                        Assert.Equal(1u, HarfBuzz.HbBufferGetLength(buffer));
+                    }
+                    finally
+                    {
+                        HarfBuzz.HbBufferDestroy(buffer);
+                        buffer.Dispose();
+                    }
+                }
+                finally
+                {
+                    HarfBuzz.HbFontDestroy(font);
+                    font.Dispose();
+                }
+            }
+            finally
+            {
+                HarfBuzz.HbFaceDestroy(face);
+                face.Dispose();
+            }
+        }
+        finally
+        {
+            HarfBuzz.HbBlobDestroy(blob);
+            blob.Dispose();
+        }
+    }
+
+    [Fact]
     public void Raster_draw_produces_a8_glyph_image()
     {
         var fontPath = Path.Combine(RbfxTestData.SampleData, "Fonts", "Anonymous Pro.ttf");
