@@ -28,7 +28,7 @@ for ((shard_index = 0; shard_index < shard_count; ++shard_index)); do
             dotnet test "$repo_dir/RedBolt.Tests.csproj" \
             --configuration "$configuration" \
             --no-build \
-            "${redbolt_build_root_arguments[@]}" \
+            ${redbolt_build_root_arguments[@]+"${redbolt_build_root_arguments[@]}"} \
             "$@"
     ) >"$results_dir/shard-$shard_index.log" 2>&1 &
     pids+=("$!")

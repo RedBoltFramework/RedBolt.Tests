@@ -21,7 +21,7 @@ offscreen_coverage_arguments=(
 "$script_directory/with_software_renderer.sh" \
     dotnet test "$tests_root/RedBolt.Tests.csproj" \
     --configuration Debug --no-restore \
-    "${redbolt_build_root_arguments[@]}" \
+    ${redbolt_build_root_arguments[@]+"${redbolt_build_root_arguments[@]}"} \
     "${offscreen_coverage_arguments[@]}" "$@"
 
 coverage_file="$(find "$results_directory" -type f -name coverage.cobertura.xml -printf '%T@ %p\n' \
