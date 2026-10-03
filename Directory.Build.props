@@ -23,6 +23,9 @@
     <!-- Tests on their own build into their build/. Inside the monorepo the root Directory.Build.props,
          imported by the core props below, overrides this default; a global RedBoltBuildRoot wins over both. -->
     <RedBoltExpectedBuildRoot Condition="'$(RedBoltExpectedBuildRoot)' == '' and '$(RedBoltBuildRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)build'))</RedBoltExpectedBuildRoot>
+    <!-- The project lies at the repository root, so that build/ is below it: keep its generated sources
+         out of the default items. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);build/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <Import Project="$(RedBoltRoot)/src/Directory.Build.props" />

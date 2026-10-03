@@ -4,6 +4,9 @@ bin/
 obj/
 TestResults/
 
+# Build root of a standalone build.
+build/
+
 # Visual regression captures are generated beside their references.
 src/RedBolt/**/References/**/*_shot.png
 
