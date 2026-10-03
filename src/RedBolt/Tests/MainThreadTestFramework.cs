@@ -58,9 +58,16 @@ internal sealed class MainThreadTestFrameworkExecutor : XunitTestFrameworkExecut
         ITestFrameworkExecutionOptions executionOptions)
     {
         testCases = SelectShard(testCases);
-        using var runner = new MainThreadTestAssemblyRunner(
-            TestAssembly, testCases, DiagnosticMessageSink, executionMessageSink, executionOptions);
-        runner.RunAsync().GetAwaiter().GetResult();
+        try
+        {
+            using var runner = new MainThreadTestAssemblyRunner(
+                TestAssembly, testCases, DiagnosticMessageSink, executionMessageSink, executionOptions);
+            runner.RunAsync().GetAwaiter().GetResult();
+        }
+        finally
+        {
+            TestGraphicsCache.Delete();
+        }
     }
 
     private static IEnumerable<IXunitTestCase> SelectShard(IEnumerable<IXunitTestCase> testCases)

@@ -579,7 +579,10 @@ public sealed class EngineCoverageGapTests
                 WindowHidden = true,
                 WindowWidth = 64,
                 WindowHeight = 64,
-                LogName = "none://"
+                LogName = "none://",
+                // Nothing is rendered here; stay out of the caches in the shared preferences directory.
+                SaveShaderCache = false,
+                PsoCache = string.Empty
             }));
 
             Assert.False(engine.IsHeadless);

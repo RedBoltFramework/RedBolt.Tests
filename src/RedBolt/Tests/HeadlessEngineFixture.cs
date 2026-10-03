@@ -89,6 +89,56 @@ public class HeadlessEngineFixture : IDisposable
 
 }
 
+/// <summary>
+/// Shader and pipeline state caches of the graphics fixtures. They live in a directory that belongs to
+/// this test process, so a run never reads what another run, renderer or checkout left behind.
+/// </summary>
+internal static class TestGraphicsCache
+{
+    private static readonly object _lock = new();
+    private static string? _root;
+
+    public static string ShaderCacheDir => Path.Combine(GetRoot(), "ShaderCache");
+
+    public static string PsoCache => Path.Combine(GetRoot(), "psocache.bin");
+
+    /// <summary>Remove the caches of this process. Called once the test run is over.</summary>
+    public static void Delete()
+    {
+        lock (_lock)
+        {
+            if (_root is null)
+                return;
+
+            try
+            {
+                Directory.Delete(_root, true);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+            _root = null;
+        }
+    }
+
+    private static string GetRoot()
+    {
+        lock (_lock)
+        {
+            if (_root is null)
+            {
+                _root = Path.Combine(
+                    Path.GetTempPath(), "RedBolt.Tests.GraphicsCache", Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(Path.Combine(_root, "ShaderCache"));
+            }
+            return _root;
+        }
+    }
+}
+
 internal static class TestGraphicsBackend
 {
     public static RenderBackend Current
@@ -189,19 +239,28 @@ public sealed class GraphicsEngineFixture : HeadlessEngineFixture
             nameof(ShaderTranslationPolicy.Verbatim) => ShaderTranslationPolicy.Verbatim,
             _ => (ShaderTranslationPolicy?)null
         };
+        var defaultCacheParameters = new EngineParameters();
+        // The default caches are kept in the user's preferences directory, where they outlive the run and
+        // are shared by every renderer and checkout. Keep them private to this test process instead.
+        var shaderCacheDir = parameters.ShaderCacheDir == defaultCacheParameters.ShaderCacheDir
+            ? TestGraphicsCache.ShaderCacheDir
+            : parameters.ShaderCacheDir;
+        var psoCache = parameters.PsoCache == defaultCacheParameters.PsoCache
+            ? TestGraphicsCache.PsoCache
+            : parameters.PsoCache;
         Graphics.Configure(new GraphicsSettings
         {
             RenderDevice = deviceSettings,
             ShaderTranslationPolicy = RenderAPIUtils.SelectShaderTranslationPolicy(
                 deviceSettings.Backend, requestedShaderPolicy),
-            ShaderCacheDir = FileIdentifier.FromUri(parameters.ShaderCacheDir),
+            ShaderCacheDir = FileIdentifier.FromUri(shaderCacheDir),
             LogShaderSources = parameters.ShaderLogSources,
             ValidateShaders = parameters.ValidateShaders,
             DiscardShaderCache = parameters.DiscardShaderCache,
             CacheShaders = parameters.SaveShaderCache
         });
         Graphics.Initialize(parameters, deviceSettings, windowSettings, Input);
-        Graphics.InitializePipelineStateCache(FileIdentifier.FromUri(parameters.PsoCache));
+        Graphics.InitializePipelineStateCache(FileIdentifier.FromUri(psoCache));
     }
 
     public void ResetGraphics()

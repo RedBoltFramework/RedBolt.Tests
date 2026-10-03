@@ -208,22 +208,34 @@ public sealed class EngineTests
     [GraphicsFact]
     public void Exit_closes_graphics_when_screenshot_on_exit_is_configured()
     {
-        using var engine = new EngineScope(new Engine(), new EngineParameters
+        // The engine writes its caches and the screenshot here; a private directory keeps concurrent
+        // test runs from sharing them.
+        var preferencesDirectory = Path.Combine(Path.GetTempPath(), $"redbolt-engine-screenshot-{Guid.NewGuid():N}");
+        try
         {
-            ApplicationName = "RedBolt.Tests.ScreenshotExit",
-            ConfigName = string.Empty,
-            RenderBackend = RenderBackend.OpenGL,
-            ScreenshotOnExit = Path.Combine(Path.GetTempPath(), "redbolt-test-screenshot.png"),
-            Headless = false,
-            WindowHidden = true
-        });
+            using var engine = new EngineScope(new Engine(), new EngineParameters
+            {
+                ApplicationName = "RedBolt.Tests.ScreenshotExit",
+                ApplicationPreferencesDir = preferencesDirectory + Path.DirectorySeparatorChar,
+                ConfigName = string.Empty,
+                RenderBackend = RenderBackend.OpenGL,
+                ScreenshotOnExit = Path.Combine(preferencesDirectory, "redbolt-test-screenshot.png"),
+                Headless = false,
+                WindowHidden = true
+            });
 
-        var graphics = engine.Value.Context.GetSubsystem<Graphics>()!;
-        Assert.True(graphics.IsInitialized);
+            var graphics = engine.Value.Context.GetSubsystem<Graphics>()!;
+            Assert.True(graphics.IsInitialized);
 
-        engine.Value.Exit();
+            engine.Value.Exit();
 
-        Assert.False(graphics.IsInitialized);
+            Assert.False(graphics.IsInitialized);
+        }
+        finally
+        {
+            if (Directory.Exists(preferencesDirectory))
+                Directory.Delete(preferencesDirectory, recursive: true);
+        }
     }
 
     [GraphicsFact]

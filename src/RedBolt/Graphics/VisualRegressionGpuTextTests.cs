@@ -35,7 +35,11 @@ public sealed class VisualRegressionGpuTextTests
             File.ReadAllBytes(Path.Combine(fontRoot, "fa-solid-900.ttf")),
             "Font Awesome", iconRanges, 16.0f, merge: true));
         using (var io = ImGui.GetIO())
+        {
             io.FontDefault = defaultFont;
+            // The reference is rendered at 100% display scale; a scaled host display must not resize the text.
+            io.ConfigDpiScaleFonts = false;
+        }
         using var customTexture = new Texture2D();
         customTexture.SetNumLevels(1);
         Assert.True(customTexture.SetSize(2, 2, TextureFormat.TexFormatRgba8Unorm));

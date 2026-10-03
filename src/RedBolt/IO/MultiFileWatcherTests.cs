@@ -2,6 +2,7 @@
 namespace RedBolt.Tests;
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 
@@ -36,11 +37,11 @@ public sealed class MultiFileWatcherTests
             System.IO.File.WriteAllText(Path.Combine(firstDirectory, "first.txt"), "first");
             System.IO.File.WriteAllText(Path.Combine(secondDirectory, "second.txt"), "second");
 
-            Assert.True(TryGetChange(watcher, out var firstChange));
-            Assert.True(TryGetChange(watcher, out var secondChange));
+            // One write can report the same file more than once (created, then modified), in any order
+            // between the two directories, so collect names until both files were seen.
             Assert.Equal(
                 new HashSet<string> { "first.txt", "second.txt" },
-                new HashSet<string> { firstChange.FileName, secondChange.FileName });
+                CollectChangedFiles(watcher, expectedCount: 2));
 
             watcher.StopWatching();
             var noChange = new FileChange();
@@ -63,18 +64,20 @@ public sealed class MultiFileWatcherTests
         Assert.False(watcher.GetNextChange(ref change));
     }
 
-    private static bool TryGetChange(MultiFileWatcher watcher, out FileChange change)
+    private static HashSet<string> CollectChangedFiles(MultiFileWatcher watcher, int expectedCount)
     {
-        change = new FileChange();
-        for (var i = 0; i < 20; ++i)
+        var fileNames = new HashSet<string>();
+        var change = new FileChange();
+        var timer = Stopwatch.StartNew();
+        while (fileNames.Count < expectedCount && timer.Elapsed < TimeSpan.FromSeconds(10))
         {
             if (watcher.GetNextChange(ref change))
-                return true;
-
-            Thread.Sleep(50);
+                fileNames.Add(change.FileName);
+            else
+                Thread.Sleep(10);
         }
 
-        return false;
+        return fileNames;
     }
 
     private static string CreateTempDirectory()

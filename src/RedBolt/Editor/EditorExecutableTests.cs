@@ -24,7 +24,7 @@ public sealed class EditorExecutableTests
     }
 
     [GraphicsFact]
-    public void Built_editor_renders_and_exits_with_software_graphics()
+    public void Built_editor_renders_and_exits()
     {
         var preferencesPath = Path.Combine(
             Path.GetTempPath(), "RedBolt.EditorExecutableTests", Guid.NewGuid().ToString("N"));
@@ -40,7 +40,10 @@ public sealed class EditorExecutableTests
             ]);
 
             Assert.True(result.ExitCode == 0, result.StandardError);
-            Assert.Contains("llvmpipe", result.StandardOutput);
+            // The renderer depends on the host: llvmpipe under the software wrapper, the GPU otherwise.
+            Assert.Contains("GPU Renderer:", result.StandardOutput);
+            if (Environment.GetEnvironmentVariable("LIBGL_ALWAYS_SOFTWARE") is "1")
+                Assert.Contains("llvmpipe", result.StandardOutput);
         }
         finally
         {
