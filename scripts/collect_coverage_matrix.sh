@@ -6,7 +6,9 @@ set -euo pipefail
 script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 tests_root="$(cd -- "$script_directory/.." && pwd)"
 default_apis="${REDBOLT_COVERAGE_APIS:-opengl,vulkan}"
-matrix_results_directory="${REDBOLT_COVERAGE_MATRIX_RESULTS_DIR:-$tests_root/TestResults/coverage-matrix}"
+# shellcheck source=redbolt_build_root.sh
+source "$script_directory/redbolt_build_root.sh" "$tests_root"
+matrix_results_directory="${REDBOLT_COVERAGE_MATRIX_RESULTS_DIR:-$redbolt_build_root/TestResults/coverage-matrix}"
 combined_report="${REDBOLT_COVERAGE_COMBINED_REPORT:-$matrix_results_directory/combined/coverage.cobertura.xml}"
 minimum_coverage="${REDBOLT_COVERAGE_MINIMUM:-95}"
 

@@ -5,7 +5,9 @@ set -euo pipefail
 
 script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 tests_root="$(cd -- "$script_directory/.." && pwd)"
-results_directory="${REDBOLT_COVERAGE_RESULTS_DIR:-$tests_root/TestResults/coverage}"
+# shellcheck source=redbolt_build_root.sh
+source "$script_directory/redbolt_build_root.sh" "$tests_root"
+results_directory="${REDBOLT_COVERAGE_RESULTS_DIR:-$redbolt_build_root/TestResults/coverage}"
 
 mkdir -p "$results_directory"
 
@@ -19,6 +21,7 @@ offscreen_coverage_arguments=(
 "$script_directory/with_software_renderer.sh" \
     dotnet test "$tests_root/RedBolt.Tests.csproj" \
     --configuration Debug --no-restore \
+    "${redbolt_build_root_arguments[@]}" \
     "${offscreen_coverage_arguments[@]}" "$@"
 
 coverage_file="$(find "$results_directory" -type f -name coverage.cobertura.xml -printf '%T@ %p\n' \

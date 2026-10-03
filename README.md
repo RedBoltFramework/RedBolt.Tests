@@ -41,7 +41,11 @@ off-screen harness and a 95% line/branch gate:
 
 The command uses Xvfb/llvmpipe for display-dependent tests. Set
 `REDBOLT_COVERAGE_MINIMUM` to override the gate for local experiments. The
-report is written under `TestResults/coverage/` in Cobertura format.
+report is written under `<build root>/TestResults/coverage/` in Cobertura format.
+The build root is `REDBOLT_BUILD_ROOT`, else the monorepo `build/` when this
+repository sits beside `RedBolt.slnx`, else this repository's own `build/`
+(`scripts/redbolt_build_root.sh`). An explicit `REDBOLT_BUILD_ROOT` is also passed
+to `dotnet test` as `-p:RedBoltBuildRoot`; otherwise the MSBuild props decide.
 
 Run the supported Linux backend matrix and merge the reports into one gated
 Cobertura report with:
@@ -54,7 +58,7 @@ The matrix runs the full test suite once with OpenGL and once with Vulkan;
 graphics fixtures use the backend selected for each run. Select a subset with
 `REDBOLT_COVERAGE_APIS=opengl` or `--apis opengl,vulkan`. The merged report is
 written to
-`TestResults/coverage-matrix/combined/coverage.cobertura.xml`; override that
+`<build root>/TestResults/coverage-matrix/combined/coverage.cobertura.xml`; override that
 path with `--output` or `REDBOLT_COVERAGE_COMBINED_REPORT`.
 
 Vulkan fixtures reuse one Diligent device/context for the lifetime of the test
@@ -71,8 +75,8 @@ references.
 To merge existing reports without rerunning tests:
 
 ```bash
-./scripts/combine_coverage.sh --output TestResults/coverage-combined.xml \
-  TestResults/coverage/opengl TestResults/coverage/vulkan
+./scripts/combine_coverage.sh --output ../build/TestResults/coverage-combined.xml \
+  ../build/TestResults/coverage/opengl ../build/TestResults/coverage/vulkan
 ```
 
 Cobertura does not provide stable IDs for individual branch edges. The merger

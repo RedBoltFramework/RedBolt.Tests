@@ -13,7 +13,9 @@ if [[ ! "$shard_count" =~ ^[1-9][0-9]*$ ]]; then
     exit 2
 fi
 
-results_dir="$repo_dir/TestResults/parallel-$(date -u +%Y%m%dT%H%M%SZ)-$$"
+# shellcheck source=redbolt_build_root.sh
+source "$script_dir/redbolt_build_root.sh" "$repo_dir"
+results_dir="$redbolt_build_root/TestResults/parallel-$(date -u +%Y%m%dT%H%M%SZ)-$$"
 mkdir -p -- "$results_dir"
 
 pids=()
@@ -26,6 +28,7 @@ for ((shard_index = 0; shard_index < shard_count; ++shard_index)); do
             dotnet test "$repo_dir/RedBolt.Tests.csproj" \
             --configuration "$configuration" \
             --no-build \
+            "${redbolt_build_root_arguments[@]}" \
             "$@"
     ) >"$results_dir/shard-$shard_index.log" 2>&1 &
     pids+=("$!")
