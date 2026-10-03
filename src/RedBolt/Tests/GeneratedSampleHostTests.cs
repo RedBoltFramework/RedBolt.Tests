@@ -15,16 +15,30 @@ public sealed class GeneratedSampleHostTests
     [MonorepoFact]
     public async Task Generated_sample_hosts_match_generator_output()
     {
-        var result = await RunGenerateSamplesCheckAsync();
+        await AssertGeneratorOutputMatchesAsync("Run ./monorepo.cs generate-samples to regenerate the hosts.");
+    }
+
+    [MonorepoFact]
+    public async Task Aggregate_sample_host_matches_generator_output()
+    {
+        await AssertGeneratorOutputMatchesAsync(
+            "Run ./monorepo.cs generate-samples --output Samples --name all to regenerate the host. " +
+            "The aggregate host needs every module checkout to be present.",
+            "--output", "Samples", "--name", "all");
+    }
+
+    private static async Task AssertGeneratorOutputMatchesAsync(string regenerateHint, params string[] extraArguments)
+    {
+        var result = await RunGenerateSamplesCheckAsync(extraArguments);
 
         Assert.True(
             result.ExitCode == 0,
             $"generate-samples --check exited with code {result.ExitCode}. " +
-            $"Run ./monorepo.cs generate-samples to regenerate the hosts.{Environment.NewLine}" +
+            $"{regenerateHint}{Environment.NewLine}" +
             $"{result.StandardError}{result.StandardOutput}");
     }
 
-    private static async Task<GeneratorResult> RunGenerateSamplesCheckAsync()
+    private static async Task<GeneratorResult> RunGenerateSamplesCheckAsync(params string[] extraArguments)
     {
         var startInfo = new ProcessStartInfo("dotnet")
         {
@@ -32,7 +46,7 @@ public sealed class GeneratedSampleHostTests
             RedirectStandardError = true,
             RedirectStandardOutput = true,
         };
-        foreach (var argument in new[] { "run", "--file", "monorepo.cs", "--", "generate-samples", "--check" })
+        foreach (var argument in new[] { "run", "--file", "monorepo.cs", "--", "generate-samples" }.Concat(extraArguments).Append("--check"))
             startInfo.ArgumentList.Add(argument);
 
         using var process = Process.Start(startInfo);
