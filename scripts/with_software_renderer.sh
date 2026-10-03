@@ -37,12 +37,71 @@ if [[ "${REDBOLT_TESTS_USE_HOST_DISPLAY:-}" == "1" ]] &&
     exec -- "$@"
 fi
 
-xvfb_run="$(command -v xvfb-run || true)"
-if [[ -z "$xvfb_run" ]]; then
-    printf 'No usable desktop display was detected and xvfb-run was not found. Install Xvfb and ensure xvfb-run is on PATH.\n' >&2
+xvfb="$(command -v Xvfb || true)"
+if [[ -z "$xvfb" ]]; then
+    printf 'No usable desktop display was detected and Xvfb was not found. Install Xvfb and ensure Xvfb is on PATH.\n' >&2
     exit 1
 fi
 
 export SDL_VIDEODRIVER=x11
 
-exec -- env -u DISPLAY -u WAYLAND_DISPLAY "$xvfb_run" -a -s "-screen 0 256x192x24 -nolisten tcp" -- "$@"
+# Let Xvfb pick a free display atomically (-displayfd) so concurrent wrappers
+# never share or race for a display number.
+work_directory="$(mktemp -d)"
+xvfb_pid=""
+
+cleanup() {
+    if [[ -n "$xvfb_pid" ]]; then
+        kill "$xvfb_pid" 2>/dev/null || true
+        wait "$xvfb_pid" 2>/dev/null || true
+    fi
+    rm -rf -- "$work_directory"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 129' HUP
+trap 'exit 143' TERM
+
+display_file="$work_directory/display"
+xvfb_log="$work_directory/xvfb.log"
+display_number=""
+
+# Start Xvfb and wait for it to report its display number. Extra arguments are
+# passed through to Xvfb.
+start_xvfb() {
+    local attempt
+
+    display_number=""
+    : >"$display_file"
+    "$xvfb" -displayfd 3 -screen 0 256x192x24 -nolisten tcp "$@" 3>"$display_file" >/dev/null 2>>"$xvfb_log" &
+    xvfb_pid=$!
+
+    for ((attempt = 0; attempt < 200; attempt++)); do
+        if [[ -s "$display_file" ]] && IFS= read -r display_number <"$display_file" && [[ -n "$display_number" ]]; then
+            return 0
+        fi
+        if ! kill -0 "$xvfb_pid" 2>/dev/null; then
+            break
+        fi
+        sleep 0.05
+    done
+
+    kill "$xvfb_pid" 2>/dev/null || true
+    wait "$xvfb_pid" 2>/dev/null || true
+    xvfb_pid=""
+    return 1
+}
+
+# Fall back to abstract sockets only when /tmp/.X11-unix is not writable.
+if ! start_xvfb && ! start_xvfb -nolisten unix; then
+    printf 'Xvfb did not report a display number.\n' >&2
+    cat -- "$xvfb_log" >&2
+    exit 1
+fi
+
+export DISPLAY=":$display_number"
+unset WAYLAND_DISPLAY
+
+status=0
+"$@" || status=$?
+exit "$status"
