@@ -14,6 +14,7 @@ using RedBolt.Utility;
 using RedBolt.RmlUI.Editor;
 using RedBolt.PhysicsJolt;
 using RedBolt.UserCode.Desktop;
+using System.Runtime.Loader;
 using File = global::System.IO.File;
 
 [Collection(nameof(HeadlessEngineCollection))]
@@ -49,6 +50,44 @@ public sealed class PluginManagerTests
             "First.Start", "Second.Start",
             "Second.Stop", "First.Stop"
         ], ProbeApplication.Calls);
+    }
+
+    [Fact]
+    public void Catalog_scans_a_directory_once_whether_or_not_it_ends_with_a_separator()
+    {
+        var directory = Path.GetFullPath(Path.GetDirectoryName(typeof(RmlUIEditorPlugin).Assembly.Location)!);
+        var withSeparator = Path.TrimEndingDirectorySeparator(directory) + Path.DirectorySeparatorChar;
+        var catalog = new ManagedPluginCatalog([withSeparator, Path.TrimEndingDirectorySeparator(directory)]);
+
+        Assert.Single(catalog.Scan(), static candidate => candidate.Name == "RedBolt.RmlUI.Editor");
+    }
+
+    [Fact]
+    public void Shared_assembly_map_prefers_the_default_context_in_any_input_order()
+    {
+        var hostAssembly = typeof(RmlUIEditorPlugin).Assembly;
+        var name = hostAssembly.GetName().Name!;
+        var firstContext = new AssemblyLoadContext("SharedMapFirst", isCollectible: true);
+        var secondContext = new AssemblyLoadContext("SharedMapSecond", isCollectible: true);
+        try
+        {
+            var first = firstContext.LoadFromAssemblyPath(hostAssembly.Location);
+            var second = secondContext.LoadFromAssemblyPath(hostAssembly.Location);
+            Assert.Equal(AssemblyLoadContext.Default, AssemblyLoadContext.GetLoadContext(hostAssembly));
+            Assert.NotSame(hostAssembly, first);
+
+            Assert.Same(hostAssembly, DesktopAssemblyBackend.CreateSharedAssemblyMap([first, hostAssembly])[name]);
+            Assert.Same(hostAssembly, DesktopAssemblyBackend.CreateSharedAssemblyMap([hostAssembly, first])[name]);
+
+            // Without a host copy, the first private copy seen keeps the name.
+            Assert.Same(first, DesktopAssemblyBackend.CreateSharedAssemblyMap([first, second])[name]);
+            Assert.Same(second, DesktopAssemblyBackend.CreateSharedAssemblyMap([second, first])[name]);
+        }
+        finally
+        {
+            firstContext.Unload();
+            secondContext.Unload();
+        }
     }
 
     [Fact]
@@ -208,15 +247,8 @@ public sealed class PluginManagerTests
         Project? project = null;
         try
         {
-            // The application directory is always scanned for plugins; adding it again would report the same
-            // plugin twice, which happens when the libraries sit beside the tests (the coverage output).
             var companionDirectory = Path.GetFullPath(Path.GetDirectoryName(typeof(IKEditorPlugin).Assembly.Location)!);
-            var applicationDirectory = Path.GetFullPath(AppContext.BaseDirectory);
-            engine.Parameters.PluginPaths = string.Equals(
-                Path.TrimEndingDirectorySeparator(companionDirectory),
-                Path.TrimEndingDirectorySeparator(applicationDirectory), StringComparison.Ordinal)
-                ? string.Empty
-                : companionDirectory;
+            engine.Parameters.PluginPaths = companionDirectory;
             project = new Project(projectPath, settingsPath, ProjectFlag.SingleProcess);
 
             using var pipeline = new AssetPipeline();
