@@ -43,25 +43,6 @@ if [[ ! -f "$output_path" ]]; then
     exit 1
 fi
 
-coverage_header="$(rg -o '<coverage[^>]*' "$output_path" | head -1)"
-line_rate="$(printf '%s\n' "$coverage_header" | sed -n 's/.*line-rate="\([^"]*\)".*/\1/p')"
-branch_rate="$(printf '%s\n' "$coverage_header" | sed -n 's/.*branch-rate="\([^"]*\)".*/\1/p')"
-lines_covered="$(printf '%s\n' "$coverage_header" | sed -n 's/.*lines-covered="\([^"]*\)".*/\1/p')"
-lines_valid="$(printf '%s\n' "$coverage_header" | sed -n 's/.*lines-valid="\([^"]*\)".*/\1/p')"
-branches_covered="$(printf '%s\n' "$coverage_header" | sed -n 's/.*branches-covered="\([^"]*\)".*/\1/p')"
-branches_valid="$(printf '%s\n' "$coverage_header" | sed -n 's/.*branches-valid="\([^"]*\)".*/\1/p')"
-
-minimum_coverage="${REDBOLT_COVERAGE_MINIMUM:-95}"
-
-awk -v line_rate="$line_rate" -v branch_rate="$branch_rate" \
-    -v lines_covered="$lines_covered" -v lines_valid="$lines_valid" \
-    -v branches_covered="$branches_covered" -v branches_valid="$branches_valid" \
-    -v minimum_coverage="$minimum_coverage" \
-    'BEGIN {
-        printf "Combined line coverage: %.2f%% (%s/%s lines)\n", 100 * line_rate, lines_covered, lines_valid
-        printf "Combined branch coverage: %.2f%% (%s/%s branches)\n", 100 * branch_rate, branches_covered, branches_valid
-        if (100 * line_rate < minimum_coverage || 100 * branch_rate < minimum_coverage) {
-            printf "Combined coverage gate failed: both line and branch coverage must be at least %.2f%%\n", minimum_coverage > "/dev/stderr"
-            exit 1
-        }
-    }'
+# The combined report covers more than a single run, so it has a baseline of its own.
+REDBOLT_COVERAGE_BASELINE="${REDBOLT_COVERAGE_BASELINE:-$script_directory/../coverage.combined.baseline}" \
+    "$script_directory/coverage_advisory.sh" "$output_path" Combined

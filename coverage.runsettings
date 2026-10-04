@@ -7,21 +7,7 @@
         <Configuration>
           <Format>cobertura</Format>
           <Include>[RedBolt*]*</Include>
-          <!--
-            Keep the type filters limited to native resource/device wrappers,
-            process/platform services, Jolt wrappers, and backend-dependent
-            engine frame orchestration. Managed RenderAPI helpers and shader
-            reflection remain in the measured set.
-          -->
-          <Exclude>[RedBolt.Tests]*,[RedBolt.Core]RedBolt.RenderAPI.RenderDevice*,[RedBolt.Core]RedBolt.RenderAPI.RawTexture*,[RedBolt.Core]RedBolt.RenderAPI.PipelineState*,[RedBolt.Core]RedBolt.RenderAPI.PipelineStateCache*,[RedBolt.Core]RedBolt.RenderAPI.RawBuffer*,[RedBolt.Core]RedBolt.RenderAPI.DrawCommandQueue*,[RedBolt.Core]RedBolt.RenderAPI.RenderPool*,[RedBolt.Core]RedBolt.RenderAPI.RenderContext*,[RedBolt.Core]RedBolt.RenderAPI.RenderScope*,[RedBolt.Core]RedBolt.RenderAPI.ShaderBytecode*,[RedBolt.Core]RedBolt.RenderAPI.RawShader*,[RedBolt.Core]RedBolt.RenderAPI.ConstantBufferCollection*,[RedBolt.Core]RedBolt.RenderAPI.NativeWindow*,[RedBolt.Core]RedBolt.Core.ProcessUtils*,[RedBolt.Core]RedBolt.Engine.Engine*,[RedBolt.Core]RedBolt.Engine.Application*,[RedBolt.PhysicsJolt]RedBolt.PhysicsJolt.PhysicsWorld*,[RedBolt.PhysicsJolt]RedBolt.PhysicsJolt.RigidBody*,[RedBolt.PhysicsJolt]RedBolt.PhysicsJolt.CollisionShape*</Exclude>
-          <!--
-            The gate covers deterministic managed runtime code. Build-time
-            generators, backend-specific native adapters, optional native
-            UI/audio and navigation integrations, and backend-dependent frame
-            orchestration are covered by the manual/backend test plan instead.
-            Keep these as comma-separated Coverlet file globs.
-          -->
-          <ExcludeByFile>**/build/**,**/Generator/**,**/RenderAPI/Backends/**,**/DearImGui/DearImGui.cs,**/DearImGui/ImGuiDiligentRendererEx.cs,**/RmlUI/**,**/Navigation/**,**/IK/**,**/Audio/**,**/RedBolt/Graphics/**,**/RedBolt/Input/**,**/RedBolt/Scene/**,**/RedBolt/Resource/**,**/RedBolt/RenderPipeline/**,**/RedBolt/IO/**</ExcludeByFile>
+          <Exclude>[RedBolt.Tests]*</Exclude>
           <UseSourceLink>false</UseSourceLink>
           <SkipAutoProps>true</SkipAutoProps>
         </Configuration>

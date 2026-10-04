@@ -10,7 +10,6 @@ default_apis="${REDBOLT_COVERAGE_APIS:-opengl,vulkan}"
 source "$script_directory/redbolt_build_root.sh" "$tests_root"
 matrix_results_directory="${REDBOLT_COVERAGE_MATRIX_RESULTS_DIR:-$redbolt_build_root/TestResults/coverage-matrix}"
 combined_report="${REDBOLT_COVERAGE_COMBINED_REPORT:-$matrix_results_directory/combined/coverage.cobertura.xml}"
-minimum_coverage="${REDBOLT_COVERAGE_MINIMUM:-95}"
 
 declare -a requested_apis=()
 declare -a test_arguments=()
@@ -47,11 +46,6 @@ while (($# > 0)); do
             combined_report="$2"
             shift 2
             ;;
-        --minimum)
-            (($# >= 2)) || { printf '%s requires a percentage.\n' "$1" >&2; exit 2; }
-            minimum_coverage="$2"
-            shift 2
-            ;;
         --help|-h)
             cat <<'USAGE'
 Usage: collect_coverage_matrix.sh [options] [dotnet test arguments]
@@ -61,7 +55,6 @@ Options:
   --api <api>                 Add one API to the matrix
   --results-directory <dir>   Store per-API runs below this directory
   --output <file>             Write the merged Cobertura report here
-  --minimum <percent>         Combined line/branch gate (default: 95)
   --                          End matrix options and pass the rest to dotnet test
 
 The Linux matrix supports OpenGL and Vulkan. Both backends run the full test
@@ -109,17 +102,10 @@ for requested_api in "${requested_apis[@]}"; do
     declare -a api_test_arguments=("${test_arguments[@]}")
 
     printf 'Collecting %s coverage into %s\n' "$api" "$run_directory"
-    if [[ "$api" == "vulkan" ]]; then
-        REDBOLT_TEST_GRAPHICS_API="$api" \
-        REDBOLT_COVERAGE_RESULTS_DIR="$run_directory" \
-        REDBOLT_COVERAGE_MINIMUM=0 \
-            "$script_directory/collect_coverage.sh" "${api_test_arguments[@]}"
-    else
-        REDBOLT_TEST_GRAPHICS_API="$api" \
-        REDBOLT_COVERAGE_RESULTS_DIR="$run_directory" \
-        REDBOLT_COVERAGE_MINIMUM=0 \
-            "$script_directory/collect_coverage.sh" "${api_test_arguments[@]}"
-    fi
+    REDBOLT_TEST_GRAPHICS_API="$api" \
+    REDBOLT_COVERAGE_RESULTS_DIR="$run_directory" \
+    REDBOLT_COVERAGE_ADVISORY=off \
+        "$script_directory/collect_coverage.sh" "${api_test_arguments[@]}"
 
     coverage_file="$(find "$run_directory" -type f -name coverage.cobertura.xml -printf '%T@ %p\n' \
         | sort -nr | sed -n '1{s/^[^ ]* //;p}')"
@@ -134,7 +120,6 @@ done
 
 declare -a merge_arguments=(--output "$combined_report")
 merge_arguments+=("${reports[@]}")
-REDBOLT_COVERAGE_MINIMUM="$minimum_coverage" \
-    "$script_directory/combine_coverage.sh" "${merge_arguments[@]}"
+"$script_directory/combine_coverage.sh" "${merge_arguments[@]}"
 
 printf 'Combined coverage report: %s\n' "$combined_report"

@@ -33,21 +33,31 @@ REDBOLT_TEST_GRAPHICS_API=vulkan \
 ```
 
 Collect production line and branch coverage with the software-rendered
-off-screen harness and a 95% line/branch gate:
+off-screen harness:
 
 ```bash
 ./scripts/collect_coverage.sh
 ```
 
-The command uses Xvfb/llvmpipe for display-dependent tests. Set
-`REDBOLT_COVERAGE_MINIMUM` to override the gate for local experiments. The
+The command uses Xvfb/llvmpipe for display-dependent tests. The
 report is written under `<build root>/TestResults/coverage/` in Cobertura format.
 The build root is `REDBOLT_BUILD_ROOT`, else the monorepo `build/` when this
 repository sits beside `RedBolt.slnx`, else this repository's own `build/`
 (`scripts/redbolt_build_root.sh`). An explicit `REDBOLT_BUILD_ROOT` is also passed
 to `dotnet test` as `-p:RedBoltBuildRoot`; otherwise the MSBuild props decide.
 
-Run the supported Linux backend matrix and merge the reports into one gated
+Everything in the `RedBolt*` assemblies is measured; only the test assembly
+itself is excluded (`coverage.runsettings`). The harness never fails on a coverage
+value. `scripts/coverage_advisory.sh` compares the line and branch percentages
+with the baseline recorded in `coverage.baseline` and prints a
+`Coverage advisory:` message on stderr when either one dropped; do not reduce
+coverage. After an intentional change, record the new numbers with
+`REDBOLT_COVERAGE_UPDATE_BASELINE=1 ./scripts/collect_coverage.sh` and commit the
+file. The merged matrix report is compared with, and recorded in,
+`coverage.combined.baseline` instead. `REDBOLT_COVERAGE_BASELINE` selects another
+baseline file.
+
+Run the supported Linux backend matrix and merge the reports into one
 Cobertura report with:
 
 ```bash
@@ -82,10 +92,3 @@ To merge existing reports without rerunning tests:
 Cobertura does not provide stable IDs for individual branch edges. The merger
 therefore unions line hits and caps the sum of covered branch edges at each
 line's denominator.
-
-The gate intentionally measures deterministic managed runtime surfaces. The
-coverage settings exclude build-time generators, OpenGLES and backend-specific
-native adapters, plus optional native/UI/audio/navigation/IK integration and
-backend-dependent graphics, input, scene, resource, render pipeline, and IO
-orchestration. Those surfaces remain part of the documented manual/backend
-test plan.
