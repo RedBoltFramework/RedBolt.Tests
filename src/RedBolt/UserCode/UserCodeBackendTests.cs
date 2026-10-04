@@ -4,6 +4,7 @@ namespace RedBolt.Tests;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 
 using RedBolt.Core;
 using RedBolt.UserCode;
@@ -151,8 +152,17 @@ public sealed class UserCodeBackendTests
     {
         using var backend = new ReloadableAssemblyBackend();
         var dependencyPath = typeof(RedBolt.UserCode.TestDependency.Dependency).Assembly.Location;
+        // Share the host's own assemblies, so a copy of the bindings beside the plugin (the coverage output)
+        // is not loaded a second time; the test dependency stays private. Only the default context counts:
+        // other tests leave private copies of the same assemblies in contexts of their own.
+        var shared = AppDomain.CurrentDomain.GetAssemblies()
+            .Where(static assembly => !assembly.IsDynamic
+                && AssemblyLoadContext.GetLoadContext(assembly) == AssemblyLoadContext.Default
+                && assembly.GetName().Name is not ("RedBolt.UserCode.TestDependency" or "RedBolt.UserCode.TestPlugin"))
+            .ToArray();
         using var prepared = backend.Prepare(new DesktopAssemblyInput(
             typeof(PluginProbe).Assembly.Location,
+            shared,
             dependencyPaths: [dependencyPath]));
         Assert.True(prepared.Succeeded, Format(prepared.Diagnostics));
         var loaded = backend.Commit(prepared);

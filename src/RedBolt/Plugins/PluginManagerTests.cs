@@ -208,7 +208,15 @@ public sealed class PluginManagerTests
         Project? project = null;
         try
         {
-            engine.Parameters.PluginPaths = Path.GetDirectoryName(typeof(IKEditorPlugin).Assembly.Location)!;
+            // The application directory is always scanned for plugins; adding it again would report the same
+            // plugin twice, which happens when the libraries sit beside the tests (the coverage output).
+            var companionDirectory = Path.GetFullPath(Path.GetDirectoryName(typeof(IKEditorPlugin).Assembly.Location)!);
+            var applicationDirectory = Path.GetFullPath(AppContext.BaseDirectory);
+            engine.Parameters.PluginPaths = string.Equals(
+                Path.TrimEndingDirectorySeparator(companionDirectory),
+                Path.TrimEndingDirectorySeparator(applicationDirectory), StringComparison.Ordinal)
+                ? string.Empty
+                : companionDirectory;
             project = new Project(projectPath, settingsPath, ProjectFlag.SingleProcess);
 
             using var pipeline = new AssetPipeline();
