@@ -385,7 +385,18 @@ public sealed class RenderDeviceTests
             Assert.True(_fixture.Graphics.BeginFrame());
             _fixture.Graphics.ResetRenderTargets();
             _fixture.Graphics.Clear(ClearTarget.Color);
+            var screenModeHeight = 0;
+            var screenModeWidth = 0;
+            using var screenModeReceiver = new TestEventReceiver();
+            screenModeReceiver.SubscribeToEvent<GraphicsEvents.ScreenModeEvent>(
+                (ref GraphicsEvents.ScreenModeEvent data) =>
+                {
+                    screenModeWidth = data.Width;
+                    screenModeHeight = data.Height;
+                });
             _fixture.Graphics.OnWindowResized();
+            Assert.Equal(_fixture.Graphics.Width, screenModeWidth);
+            Assert.Equal(_fixture.Graphics.Height, screenModeHeight);
             _fixture.Graphics.OnWindowMoved();
             _fixture.Graphics.EndFrame();
             Assert.Equal(Vector2i.Zero, _fixture.Graphics.GetRenderTargetDimensions());

@@ -42,6 +42,8 @@ public sealed class ShaderFileTests
             Assert.Equal("LitSolid", shader.GetShaderName());
             Assert.Contains("#ifndef _MATERIAL_GLSL_", shader.SourceCode, StringComparison.Ordinal);
             Assert.Contains("GetSurfaceColor", shader.SourceCode, StringComparison.Ordinal);
+            var materialFileName = Resources.GetResourceFileName("Shaders/GLSL/v2/M_Default.glsl");
+            Assert.Contains($"/// {materialFileName}\n", shader.SourceCode, StringComparison.Ordinal);
             Assert.True(shader.TimeStamp > DateTime.MinValue);
         }
         finally

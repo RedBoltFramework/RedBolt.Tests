@@ -34,6 +34,9 @@ public sealed class RenderPipelineSerializationTests
         sceneProcessor.AmbientMode = DrawableAmbientMode.Flat;
         sceneProcessor.DepthPrePass = true;
         sceneProcessor.LightingMode = DirectLightingMode.DeferredBlinnPhong;
+        sceneProcessor.DirectionalShadowSize = 2048;
+        sceneProcessor.SpotShadowSize = 512;
+        sceneProcessor.PointShadowSize = 128;
         sceneProcessor.EnableShadows = false;
         sceneProcessor.CubemapBoxProjection = true;
         sceneProcessor.PcfKernelSize = 5;
@@ -82,6 +85,9 @@ public sealed class RenderPipelineSerializationTests
         Assert.Equal(DrawableAmbientMode.Flat, actual.SceneProcessor.AmbientMode);
         Assert.True(actual.SceneProcessor.DepthPrePass);
         Assert.Equal(DirectLightingMode.DeferredBlinnPhong, actual.SceneProcessor.LightingMode);
+        Assert.Equal(2048, actual.SceneProcessor.DirectionalShadowSize);
+        Assert.Equal(512, actual.SceneProcessor.SpotShadowSize);
+        Assert.Equal(128, actual.SceneProcessor.PointShadowSize);
         Assert.False(actual.SceneProcessor.EnableShadows);
         Assert.True(actual.SceneProcessor.CubemapBoxProjection);
         Assert.Equal(5, actual.SceneProcessor.PcfKernelSize);
