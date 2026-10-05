@@ -320,6 +320,56 @@ public sealed class ImageTests
     }
 
     [Fact]
+    public void Image_cube_loads_or_calculates_spherical_harmonics_from_the_sh_element()
+    {
+        (byte R, byte G, byte B)[] colors =
+            [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255), (0, 255, 255)];
+        var roots = new List<string>();
+        var cubes = new List<ImageCube>();
+        try
+        {
+            var plain = LoadImageCube(colors, out var plainRoot);
+            roots.Add(plainRoot);
+            cubes.Add(plain);
+            Assert.Null(plain.GetSphericalHarmonics());
+
+            var calculated = LoadImageCube(colors, out var calculatedRoot, "<sh calculate=\"true\" />");
+            roots.Add(calculatedRoot);
+            cubes.Add(calculated);
+            var cached = calculated.GetSphericalHarmonics();
+            Assert.NotNull(cached);
+            var expected = new SphericalHarmonicsDot9(calculated.CalculateSphericalHarmonics());
+            foreach (var direction in new[] { Vector3f.Right, Vector3f.Up, Vector3f.Forward, -Vector3f.Right })
+                Assert.True(cached.Value.Evaluate(direction).ApproximatelyEquivalent(expected.Evaluate(direction), 0.0001f));
+
+            var explicitSh = LoadImageCube(colors, out var explicitRoot,
+                "<sh ar=\"1 0 0 0\" ag=\"0 0 0 0\" ab=\"0 0 0 0\" br=\"0 0 0 0\" bg=\"0 0 0 0\" bb=\"0 0 0 0\" c=\"0 0 0 0\" />");
+            roots.Add(explicitRoot);
+            cubes.Add(explicitSh);
+            Assert.NotNull(explicitSh.GetSphericalHarmonics());
+            Assert.Equal(new Vector4f(1, 0, 0, 0), explicitSh.GetSphericalHarmonics()!.Value.Ar);
+            Assert.Equal(explicitSh.GetSphericalHarmonics()!.Value.Ar,
+                explicitSh.GetOrCreateSphericalHarmonics().Ar);
+
+            // Loading the same instance again without the element drops the cached value.
+            var reloadPath = Path.Combine(plainRoot, plain.Name);
+            using var source = new MemoryBuffer(System.IO.File.ReadAllBytes(reloadPath));
+            Assert.True(calculated.BeginLoad(source));
+            Assert.Null(calculated.GetSphericalHarmonics());
+        }
+        finally
+        {
+            foreach (var cube in cubes)
+                cube.Dispose();
+            foreach (var root in roots)
+            {
+                _fixture.Resources.RemoveResourceDir(root);
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
     public void Repo_backed_rbfx_dds_image_loads_and_decompresses_through_image_resource()
     {
         var image = new Image();
@@ -585,7 +635,7 @@ public sealed class ImageTests
     }
 
     private ImageCube LoadImageCube(
-        IReadOnlyList<(byte R, byte G, byte B)> colors, out string tempRoot)
+        IReadOnlyList<(byte R, byte G, byte B)> colors, out string tempRoot, string shXml = "")
     {
         tempRoot = Path.Combine(Path.GetTempPath(), "RedBolt.ImageCube", Guid.NewGuid().ToString("N"));
         var relativeDirectory = Guid.NewGuid().ToString("N");
@@ -602,7 +652,7 @@ public sealed class ImageTests
                 <face name="Face4.bmp" />
                 <face name="Face5.bmp" />
             </cubemap>
-            """);
+            """.Replace("</cubemap>", shXml + "</cubemap>"));
         for (var i = 0; i < colors.Count; ++i)
         {
             var color = colors[i];

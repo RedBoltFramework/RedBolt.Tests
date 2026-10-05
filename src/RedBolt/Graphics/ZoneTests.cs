@@ -90,6 +90,42 @@ public sealed class ZoneTests
     }
 
     [Fact]
+    public void Zone_uses_spherical_harmonics_cached_in_the_texture_cube()
+    {
+        var sh = new SphericalHarmonicsDot9(new Color(0.25f, 0.5f, 0.75f));
+        var texture = new TextureCube { Name = "CachedShCube" };
+        typeof(TextureCube).GetField("_sphericalHarmonics",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .SetValue(texture, sh);
+        Assert.NotNull(texture.GetSphericalHarmonics());
+
+        var zone = new Zone();
+        zone.SetAmbientColor(Color.Black);
+        zone.SetBackgroundBrightness(1.0f);
+        zone.SetZoneTexture(texture);
+        zone.UpdateCachedData();
+
+        var actual = zone.GetAmbientAndBackgroundLighting().Evaluate(Vector3f.Up);
+        var expected = sh.Evaluate(Vector3f.Up);
+        Assert.True(actual.ApproximatelyEquivalent(expected, 0.001f));
+    }
+
+    [Fact]
+    public void Zone_without_cached_texture_cube_spherical_harmonics_falls_back_to_black()
+    {
+        var texture = new TextureCube { Name = "NoShCube" };
+        Assert.Null(texture.GetSphericalHarmonics());
+
+        var zone = new Zone();
+        zone.SetAmbientColor(Color.Black);
+        zone.SetZoneTexture(texture);
+        zone.UpdateCachedData();
+
+        var actual = zone.GetAmbientAndBackgroundLighting().Evaluate(Vector3f.Up);
+        Assert.True(actual.ApproximatelyEquivalent(Vector3f.Zero, 0.001f));
+    }
+
+    [Fact]
     public void BoundingBox_and_ambient_roundtrip()
     {
         var zone = new Scene().CreateChild("Zone").CreateComponent<Zone>();
