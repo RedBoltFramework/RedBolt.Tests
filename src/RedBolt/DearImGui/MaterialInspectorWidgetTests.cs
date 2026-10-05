@@ -1,6 +1,8 @@
 // Copyright (c) 2026 RedBolt and contributors.
 namespace RedBolt.Tests;
 
+using System.Collections;
+using System.Linq;
 using System.Reflection;
 
 using RedBolt.Bindings.DearImGui;
@@ -38,7 +40,7 @@ public sealed class MaterialInspectorWidgetTests
             _fixture.Context.RegisterSubsystem(systemUI);
 
             material = CreateMaterial("Materials/PreviewTest.xml");
-            widget = new MaterialInspectorWidget([material]);
+            widget = new MaterialInspectorWidget([material], string.Empty);
             widget.UpdateTechniques("Techniques/");
 
             var editBeginCount = 0;
@@ -108,7 +110,7 @@ public sealed class MaterialInspectorWidgetTests
             first.SetShaderParameter("TestParameter", 2.0f);
             second.SetShaderParameter("TestParameter", 2.0f);
 
-            widget = new MaterialInspectorWidget([first, second]);
+            widget = new MaterialInspectorWidget([first, second], string.Empty);
             widget.UpdateTechniques("Techniques/");
             var editBeginCount = 0;
             var editEndCount = 0;
@@ -177,6 +179,121 @@ public sealed class MaterialInspectorWidgetTests
                 systemUI.Dispose();
             }
         }
+    }
+
+    [NativeBindingFact]
+    public void Techniques_outside_core_data_are_never_deprecated_and_core_data_is_detected_by_path_prefix()
+    {
+        _fixture.ResetGraphics();
+        DearImGuiSubsystem? systemUI = null;
+        Material? material = null;
+        MaterialInspectorWidget? coreWidget = null;
+        MaterialInspectorWidget? externalWidget = null;
+        try
+        {
+            systemUI = new DearImGuiSubsystem();
+            _fixture.Context.RegisterSubsystem(systemUI);
+
+            material = CreateMaterial("Materials/TechniqueSelectorTest.xml");
+            var litOpaquePath = _fixture.Resources.Get<Technique>("Techniques/LitOpaque.xml").GetAbsoluteFileName();
+            var corePrefix = litOpaquePath[..litOpaquePath.LastIndexOf("Techniques/", StringComparison.Ordinal)];
+            Assert.NotEmpty(corePrefix);
+
+            coreWidget = new MaterialInspectorWidget([material], corePrefix);
+            coreWidget.UpdateTechniques("Techniques/");
+            var coreTechniques = GetTechniqueDescriptions(coreWidget);
+            Assert.NotEmpty(coreTechniques);
+            var litOpaque = Assert.Single(
+                coreTechniques, static item => item.ResourceName == "Techniques/LitOpaque.xml");
+            Assert.True(litOpaque.IsCoreData);
+            Assert.False(litOpaque.Deprecated);
+            Assert.All(
+                coreTechniques.Where(static item =>
+                    item.ResourceName.StartsWith("Techniques/PBR/", StringComparison.Ordinal)),
+                static item => Assert.True(item.Deprecated));
+
+            externalWidget = new MaterialInspectorWidget([material], corePrefix + "NotCoreData/");
+            externalWidget.UpdateTechniques("Techniques/");
+            var externalTechniques = GetTechniqueDescriptions(externalWidget);
+            Assert.Equal(coreTechniques.Count, externalTechniques.Count);
+            Assert.All(externalTechniques, static item => Assert.False(item.IsCoreData));
+            Assert.All(externalTechniques, static item => Assert.False(item.Deprecated));
+            Assert.Equal(
+                externalTechniques.Select(static item => item.DisplayName).Order(StringComparer.Ordinal),
+                externalTechniques.Select(static item => item.DisplayName));
+        }
+        finally
+        {
+            externalWidget?.Dispose();
+            coreWidget?.Dispose();
+            material?.Dispose();
+            if (systemUI is not null)
+            {
+                _fixture.Context.RemoveSubsystem<DearImGuiSubsystem>();
+                systemUI.Dispose();
+            }
+        }
+    }
+
+    [Fact]
+    public void Technique_order_is_deprecated_then_core_data_then_display_name()
+    {
+        var descriptions = new[]
+        {
+            CreateTechniqueDescription("Deprecated", isCoreData: true, deprecated: true),
+            CreateTechniqueDescription("CoreB", isCoreData: true, deprecated: false),
+            CreateTechniqueDescription("UserZ", isCoreData: false, deprecated: false),
+            CreateTechniqueDescription("CoreA", isCoreData: true, deprecated: false),
+            CreateTechniqueDescription("UserA", isCoreData: false, deprecated: false),
+        };
+
+        var compareTo = descriptions[0].GetType().GetMethod("CompareTo", [descriptions[0].GetType()])!;
+        Array.Sort(descriptions, (lhs, rhs) => (int)compareTo.Invoke(lhs, [rhs])!);
+
+        Assert.Equal(
+            ["UserA", "UserZ", "CoreA", "CoreB", "Deprecated"],
+            descriptions.Select(static item => GetDescriptionField<string>(item, "DisplayName")));
+    }
+
+    [Fact]
+    public void Technique_color_distinguishes_user_core_and_deprecated_techniques()
+    {
+        var getColor = typeof(MaterialInspectorWidget).GetMethod(
+            "GetTechniqueColor", BindingFlags.NonPublic | BindingFlags.Static)!;
+
+        Assert.Equal(new Color(0.5f, 1.0f, 0.0f, 1.0f), (Color)getColor.Invoke(null, [false, false])!);
+        Assert.Equal(new Color(0.5f, 1.0f, 0.0f, 1.0f), (Color)getColor.Invoke(null, [false, true])!);
+        Assert.Equal(new Color(1.0f, 1.0f, 1.0f, 1.0f), (Color)getColor.Invoke(null, [true, false])!);
+        Assert.Equal(new Color(0.5f, 0.5f, 0.5f, 1.0f), (Color)getColor.Invoke(null, [true, true])!);
+    }
+
+    private readonly record struct TechniqueSnapshot(
+        string ResourceName, string DisplayName, bool IsCoreData, bool Deprecated);
+
+    private static List<TechniqueSnapshot> GetTechniqueDescriptions(MaterialInspectorWidget widget)
+    {
+        return GetField<IList>(widget, "_sortedTechniques").Cast<object>()
+            .Select(static item => new TechniqueSnapshot(
+                GetDescriptionField<string>(item, "ResourceName"),
+                GetDescriptionField<string>(item, "DisplayName"),
+                GetDescriptionField<bool>(item, "IsCoreData"),
+                GetDescriptionField<bool>(item, "Deprecated")))
+            .ToList();
+    }
+
+    private static object CreateTechniqueDescription(string displayName, bool isCoreData, bool deprecated)
+    {
+        var type = typeof(MaterialInspectorWidget).GetNestedType("TechniqueDesc", BindingFlags.NonPublic)!;
+        var description = Activator.CreateInstance(type)!;
+        type.GetField("DisplayName")!.SetValue(description, displayName);
+        type.GetField("IsCoreData")!.SetValue(description, isCoreData);
+        type.GetField("Deprecated")!.SetValue(description, deprecated);
+        return description;
+    }
+
+    private static T GetDescriptionField<T>(object description, string name)
+    {
+        return (T)description.GetType().GetField(name)!.GetValue(description)!;
     }
 
     private Material CreateMaterial(string name)
