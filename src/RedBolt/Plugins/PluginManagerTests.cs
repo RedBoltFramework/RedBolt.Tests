@@ -28,14 +28,14 @@ public sealed class PluginManagerTests
     [Fact]
     public void Static_plugins_follow_ordered_lifecycle()
     {
-        ProbeApplication.Calls.Clear();
+        ProbePlugin.Calls.Clear();
         using var manager = new PluginManager();
-        Assert.True(manager.AddStaticPlugin("First", () => new ProbeApplication("First")));
-        Assert.True(manager.AddStaticPlugin("Second", () => new ProbeApplication("Second")));
+        Assert.True(manager.AddStaticPlugin("First", () => new ProbePlugin("First")));
+        Assert.True(manager.AddStaticPlugin("Second", () => new ProbePlugin("Second")));
         manager.SetPluginsLoaded(["First", "Second"]);
         manager.Commit();
 
-        var first = Assert.IsType<ProbeApplication>(manager.GetPluginApplication("First", true));
+        var first = Assert.IsType<ProbePlugin>(manager.GetPlugin("First", true));
         Assert.Equal(Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "Resources")),
             first.GetPluginPath("Resources"));
         Assert.Throws<ArgumentException>(() => first.GetPluginPath(Path.GetPathRoot(AppContext.BaseDirectory)!));
@@ -49,7 +49,7 @@ public sealed class PluginManagerTests
             "First.Load", "Second.Load",
             "First.Start", "Second.Start",
             "Second.Stop", "First.Stop"
-        ], ProbeApplication.Calls);
+        ], ProbePlugin.Calls);
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public sealed class PluginManagerTests
     [Fact]
     public void Catalog_expands_executable_directory_in_plugin_paths()
     {
-        var sourcePath = typeof(RedBolt.UserCode.TestPlugin.TestPluginApplication).Assembly.Location;
+        var sourcePath = typeof(RedBolt.UserCode.TestPlugin.TestPlugin).Assembly.Location;
         var directoryName = "plugin-path-" + Guid.NewGuid().ToString("N");
         var pluginDirectory = Path.Combine(AppContext.BaseDirectory, directoryName);
         Directory.CreateDirectory(pluginDirectory);
@@ -165,7 +165,7 @@ public sealed class PluginManagerTests
 
             manager.Commit();
             Assert.Empty(manager.LoadedPlugins);
-            Assert.NotNull(manager.GetPluginApplication("RedBolt.RmlUI.Editor", true));
+            Assert.NotNull(manager.GetPlugin("RedBolt.RmlUI.Editor", true));
             Assert.NotNull(RedBolt.Core.Context.Instance.GetSubsystem<RedBolt.RmlUI.RmlUI>());
             Assert.Contains(editorPlugins.Plugins, static plugin => plugin.Name == "RmlUI.ReloadFonts");
             Assert.Contains(editorPlugins.Plugins, static plugin => plugin.Name == "RmlUI.GameView");
@@ -193,7 +193,7 @@ public sealed class PluginManagerTests
             manager.Commit();
 
             Assert.Empty(manager.LoadedPlugins);
-            Assert.NotNull(manager.GetPluginApplication("RedBolt.IK.Editor", true));
+            Assert.NotNull(manager.GetPlugin("RedBolt.IK.Editor", true));
             Assert.Contains(editorPlugins.Plugins,
                 static plugin => plugin.Name == "IK.DefaultRetargetTransformer");
             using var solver = Assert.IsType<IKSolver>(
@@ -216,8 +216,8 @@ public sealed class PluginManagerTests
             new ManagedPluginCatalog([Path.GetDirectoryName(assemblyPath)!]).Populate(manager);
             manager.Commit();
 
-            var application = Assert.IsAssignableFrom<PluginApplication>(
-                manager.GetPluginApplication("RedBolt.Glow.Editor", true));
+            var application = Assert.IsAssignableFrom<Plugin>(
+                manager.GetPlugin("RedBolt.Glow.Editor", true));
             Assert.Equal(Path.GetFullPath(Path.GetDirectoryName(assemblyPath)!), application.PluginDirectory);
             Assert.Contains(editorPlugins.Plugins,
                 static plugin => plugin.Name == "Glow.DefaultLightmapUVTransformer");
@@ -275,7 +275,7 @@ public sealed class PluginManagerTests
     [Fact]
     public void Collectible_plugin_reloads_when_its_assembly_changes()
     {
-        var sourcePath = typeof(RedBolt.UserCode.TestPlugin.TestPluginApplication).Assembly.Location;
+        var sourcePath = typeof(RedBolt.UserCode.TestPlugin.TestPlugin).Assembly.Location;
         var tempDirectory = Directory.CreateTempSubdirectory("RedBoltPluginReload");
         try
         {
@@ -285,14 +285,14 @@ public sealed class PluginManagerTests
             new ManagedPluginCatalog([tempDirectory.FullName]).Populate(manager);
             manager.SetPluginsLoaded(["RedBolt.Test.Reloadable"]);
             manager.Commit();
-            var first = manager.GetPluginApplication("RedBolt.Test.Reloadable", true);
+            var first = manager.GetPlugin("RedBolt.Test.Reloadable", true);
             Assert.NotNull(first);
 
             File.SetLastWriteTimeUtc(pluginPath, DateTime.UtcNow.AddSeconds(2));
             manager.Reload();
             manager.Commit();
 
-            var second = manager.GetPluginApplication("RedBolt.Test.Reloadable", true);
+            var second = manager.GetPlugin("RedBolt.Test.Reloadable", true);
             Assert.NotNull(second);
             Assert.NotSame(first, second);
 
@@ -301,7 +301,7 @@ public sealed class PluginManagerTests
             manager.Reload();
             manager.Commit();
 
-            Assert.Same(second, manager.GetPluginApplication("RedBolt.Test.Reloadable", true));
+            Assert.Same(second, manager.GetPlugin("RedBolt.Test.Reloadable", true));
         }
         finally
         {
@@ -309,7 +309,7 @@ public sealed class PluginManagerTests
         }
     }
 
-    private sealed class ProbeApplication(string name) : PluginApplication
+    private sealed class ProbePlugin(string name) : Plugin
     {
         public static List<string> Calls { get; } = [];
 
