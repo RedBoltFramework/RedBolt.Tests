@@ -109,6 +109,8 @@ public sealed class AnimationTests
         var source = new Animation { Name = "animation" };
         using var triggerData = new Variant(new byte[] { 1, 2, 3 });
         source.AddTrigger(0.5f, false, triggerData);
+        using var metadata = new Variant(new byte[] { 7, 8, 9 });
+        source.AddMetadata("buffer", metadata);
 
         var variantTrack = source.CreateVariantTrack("buffer");
         variantTrack.KeyFrames.Add(new VariantCurvePoint
@@ -122,6 +124,7 @@ public sealed class AnimationTests
         source.Dispose();
 
         Assert.Equal(1, clone.Triggers[0].Data.GetBuffer()[0]);
+        Assert.Equal(7, clone.GetMetadata("buffer").GetBuffer()[0]);
         Assert.Equal(4, clone.GetVariantTrack("buffer")!.KeyFrames[0].Value.GetBuffer()[0]);
     }
 

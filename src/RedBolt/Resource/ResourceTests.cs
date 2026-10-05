@@ -60,9 +60,9 @@ public sealed class ResourceTests
 
         source.AddMetadata("Buffer", value);
         value.GetBuffer()[0] = 9;
-        copy.CopyMetadata(source);
+        copy.SetMetadata(source.GetMetadata());
         source.GetMetadata("Buffer").GetBuffer()[0] = 8;
-        source.CopyMetadata(source);
+        source.SetMetadata(source.GetMetadata());
 
         Assert.Equal(8, source.GetMetadata("Buffer").GetBuffer()[0]);
         Assert.Equal(1, copy.GetMetadata("Buffer").GetBuffer()[0]);
@@ -70,6 +70,55 @@ public sealed class ResourceTests
         source.RemoveMetadata("Buffer");
         Assert.True(source.GetMetadata("Buffer").IsEmpty);
         Assert.Equal(1, copy.GetMetadata("Buffer").GetBuffer()[0]);
+    }
+
+    [Fact]
+    public void Resource_set_metadata_overwrites_all_old_values_and_copies_new_ones()
+    {
+        using var resource = new MetadataResource();
+        resource.AddMetadata("Old", new Variant(1));
+        resource.AddMetadata("Kept", new Variant(2));
+
+        using var replacement = new StringVariantMap();
+        replacement.Add("Kept", new Variant(3));
+        replacement.Add("Buffer", new Variant(new byte[] { 1, 2, 3 }));
+        resource.SetMetadata(replacement);
+        replacement["Buffer"].GetBuffer()[0] = 9;
+
+        Assert.Equal(2, resource.GetMetadata().Count);
+        Assert.True(resource.GetMetadata("Old").IsEmpty);
+        Assert.Equal(new Variant(3), resource.GetMetadata("Kept"));
+        Assert.Equal(1, resource.GetMetadata("Buffer").GetBuffer()[0]);
+
+        resource.SetMetadata(new StringVariantMap());
+        Assert.False(resource.HasMetadata());
+        Assert.Empty(resource.GetMetadata());
+    }
+
+    [Fact]
+    public void Resource_metadata_add_get_has_remove_and_remove_all()
+    {
+        using var resource = new MetadataResource();
+        Assert.False(resource.HasMetadata());
+        Assert.True(resource.GetMetadata("Missing").IsEmpty);
+
+        resource.AddMetadata("Count", new Variant(42));
+        resource.AddMetadata("Label", new Variant("Smoke"));
+        resource.AddMetadata("Count", new Variant(7));
+
+        Assert.True(resource.HasMetadata());
+        Assert.Equal(2, resource.GetMetadata().Count);
+        Assert.Equal(new Variant(7), resource.GetMetadata("Count"));
+        Assert.Equal(new Variant(7), resource.GetMetadata()["Count"]);
+
+        resource.RemoveMetadata("Count");
+        resource.RemoveMetadata("Missing");
+        Assert.True(resource.GetMetadata("Count").IsEmpty);
+        Assert.Equal(new Variant("Smoke"), resource.GetMetadata("Label"));
+
+        resource.RemoveAllMetadata();
+        Assert.False(resource.HasMetadata());
+        Assert.Empty(resource.GetMetadata());
     }
 
     [Fact]
@@ -92,37 +141,45 @@ public sealed class ResourceTests
     }
 
     [Fact]
-    public void Resource_metadata_preserves_variants_order_and_xml_roundtrip()
+    public void Resource_metadata_saves_sorted_keys_and_xml_roundtrips()
     {
         var resource = new MetadataResource();
-        resource.AddMetadata("Count", new Variant(42));
         resource.AddMetadata("Label", new Variant("Smoke"));
+        resource.AddMetadata("Count", new Variant(42));
         resource.AddMetadata("Count", new Variant(7));
-
-        Assert.Equal(["Count", "Label"], resource.GetMetadataKeys());
 
         var xml = new XMLFile { Name = string.Empty };
         var root = xml.CreateRoot("resource");
         resource.SaveMetadata(root);
 
+        var first = root.GetChild("metadata");
+        Assert.Equal("Count", first.GetAttribute("name"));
+        Assert.Equal("Label", first.GetNext("metadata").GetAttribute("name"));
+
         var loaded = new MetadataResource();
+        loaded.AddMetadata("Stale", new Variant(1));
         loaded.LoadMetadata(root);
+        Assert.Equal(2, loaded.GetMetadata().Count);
+        Assert.True(loaded.GetMetadata("Stale").IsEmpty);
         Assert.Equal(new Variant(7), loaded.GetMetadata("Count"));
         Assert.Equal(new Variant("Smoke"), loaded.GetMetadata("Label"));
     }
 
     [Fact]
-    public void Resource_metadata_loads_json_array()
+    public void Resource_metadata_created_from_xml_keeps_first_duplicate()
     {
-        var entry = new JSONValue(JSONValueType.Object);
-        entry.Set("name", new JSONValue("Enabled"));
-        entry.Set("type", new JSONValue("Bool"));
-        entry.Set("value", new JSONValue(true));
+        var xml = new XMLFile { Name = string.Empty };
+        Assert.True(xml.FromString("""
+            <resource>
+              <metadata name="Value" type="Int" value="1" />
+              <metadata name="Value" type="Int" value="2" />
+            </resource>
+            """));
 
-        var resource = new MetadataResource();
-        resource.LoadMetadata([entry]);
+        using var metadata = MetadataResource.Create(xml.GetRoot());
 
-        Assert.Equal(new Variant(true), resource.GetMetadata("Enabled"));
+        Assert.Single(metadata);
+        Assert.Equal(new Variant(1), metadata["Value"]);
     }
 
     [Fact]
@@ -169,9 +226,13 @@ public sealed class ResourceTests
         {
         }
 
-        public void LoadMetadata(XMLElement source) => LoadMetadataFromXML(source);
+        public static StringVariantMap Create(XMLElement source) => CreateMetadataFromXML(source);
 
-        public void LoadMetadata(IReadOnlyList<JSONValue> source) => LoadMetadataFromJSON(source);
+        public void LoadMetadata(XMLElement source)
+        {
+            using var metadata = CreateMetadataFromXML(source);
+            SetMetadata(metadata);
+        }
 
         public void SaveMetadata(XMLElement destination) => SaveMetadataToXML(destination);
     }
