@@ -198,7 +198,7 @@ public sealed class SceneSynchronizationTests
 
         var sentIds = new List<NetworkMessageId>();
         var connection = simulator.GetServerToClientConnection(clientScene)!.Connection;
-        connection.OnSendMessage += (NetworkConnection sender, NetworkMessageId id, MemoryBuffer data,
+        connection.OnSendMessage += (NetworkConnection sender, NetworkMessageId id, ReadOnlySpan<byte> data,
             PacketType type, string debugInfo, ref bool handled) => sentIds.Add(id);
 
         simulator.SetServerToClientConnected(clientScene, false);

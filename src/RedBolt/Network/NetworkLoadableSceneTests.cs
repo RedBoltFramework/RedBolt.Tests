@@ -133,7 +133,7 @@ public sealed class NetworkLoadableSceneTests
         using var clientLoadableScene = new NetworkLoadableScene(clientConnection);
 
         clientLoadableScene.LoadSceneRequestReceived +=
-            (NetworkLoadableScene _, string _, MemoryBuffer _, ref bool accept) => accept = false;
+            (NetworkLoadableScene _, string _, ReadOnlySpan<byte> _, ref bool accept) => accept = false;
         var clientFinished = false;
         var clientSuccess = true;
         clientLoadableScene.LoadSceneFinished +=
@@ -315,15 +315,10 @@ public sealed class NetworkLoadableSceneTests
             HandleDisconnected();
         }
 
-        public override bool SendData(MemoryBuffer data,
+        public override bool SendData(ReadOnlySpan<byte> data,
             PacketType type = PacketType.ReliableOrdered)
         {
-            var oldPosition = data.Position;
-            data.Seek(0);
-            var packet = new byte[checked((int)data.Size)];
-            data.Read(packet);
-            data.Seek(oldPosition);
-            _packets.Add(packet);
+            _packets.Add(data.ToArray());
             return true;
         }
 
@@ -341,8 +336,7 @@ public sealed class NetworkLoadableSceneTests
             _packets.Clear();
             foreach (var packet in packets)
             {
-                using var message = new MemoryBuffer(packet);
-                Peer!.HandleDataReceived(message);
+                Peer!.HandleDataReceived(packet);
             }
             return packets.Length;
         }

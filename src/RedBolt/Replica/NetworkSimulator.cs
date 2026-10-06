@@ -44,17 +44,12 @@ internal sealed class ManualConnection : IDisposable
         Connection.Dispose();
     }
 
-    private bool SendData(MemoryBuffer data, PacketType packetType)
+    private bool SendData(ReadOnlySpan<byte> data, PacketType packetType)
     {
-        var dataSize = data.Size - data.Position;
-        if (dataSize == 0)
+        if (data.Length == 0)
             return false;
 
-        var packetData = new byte[checked((int)dataSize)];
-        var position = data.Position;
-        data.Read(packetData);
-        data.Seek(position);
-        using var packet = new MemoryBuffer(packetData);
+        using var packet = new MemoryBuffer(data.ToArray());
         var messageId = (NetworkMessageId)packet.ReadVLE();
         var payloadSize = packet.Size - packet.Position;
 
@@ -151,7 +146,7 @@ internal sealed class ManualConnection : IDisposable
 
         public override bool Connect(URL url) => true;
         public override void Disconnect() { }
-        public override bool SendData(MemoryBuffer data,
+        public override bool SendData(ReadOnlySpan<byte> data,
             PacketType type = PacketType.ReliableOrdered) => _owner.SendData(data, type);
 
         public void SetConnected(bool connected) =>

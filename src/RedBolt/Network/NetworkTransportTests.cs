@@ -11,21 +11,19 @@ using System.Net.Sockets;
 public sealed class NetworkTransportTests
 {
     [Fact]
-    public void SendMessage_copies_the_entire_source_buffer()
+    public void SendMessage_frames_the_whole_span()
     {
         using var environment = new NetworkEnvironment();
         using var connection = new TestConnection();
         var packets = CapturePackets(connection);
         string? debugInfo = null;
-        connection.OnSendMessage += (NetworkConnection sender, NetworkMessageId id, MemoryBuffer data,
+        connection.OnSendMessage += (NetworkConnection sender, NetworkMessageId id, ReadOnlySpan<byte> data,
             PacketType type, string info, ref bool handled) => debugInfo = info;
-        using var source = new MemoryBuffer(new byte[] { 10, 20, 30 });
-        source.Seek(2);
+        var source = new byte[] { 10, 20, 30 };
 
         Assert.True(connection.SendMessage(NetworkMessageId.User, source,
             PacketType.ReliableOrdered, "message"));
 
-        Assert.Equal(2u, source.Position);
         var packet = Assert.Single(packets);
         using var reader = new MemoryBuffer(packet.Data);
         Assert.Equal((uint)NetworkMessageId.User, reader.ReadVLE());
@@ -41,7 +39,7 @@ public sealed class NetworkTransportTests
         using var connection = new TestConnection();
         var packets = CapturePackets(connection);
         string? debugInfo = null;
-        connection.OnSendMessage += (NetworkConnection sender, NetworkMessageId id, MemoryBuffer data,
+        connection.OnSendMessage += (NetworkConnection sender, NetworkMessageId id, ReadOnlySpan<byte> data,
             PacketType type, string info, ref bool handled) => debugInfo = info;
 
         NetworkMessageUtils.WriteSerializedMessage(connection, NetworkMessageId.SceneClock,
@@ -107,13 +105,42 @@ public sealed class NetworkTransportTests
         byte[]? restored = null;
         foreach (var packet in packets)
         {
-            using var message = new MemoryBuffer(packet.Data);
-            var messageId = (NetworkMessageId)message.ReadVLE();
-            reader.OnMessage(messageId, message, data => restored = ReadRemaining(data));
+            using var message = new MemoryBuffer(ReadPayload(packet));
+            reader.OnMessage(ReadMessageId(packet), message, data => restored = ReadRemaining(data));
         }
 
         Assert.Equal(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 }, restored);
         Assert.Equal(0u, readBuffer.Size);
+    }
+
+    [Fact]
+    public void LargeMessage_round_trip_keeps_a_size_that_is_an_exact_multiple_of_the_payload_size()
+    {
+        using var environment = new NetworkEnvironment();
+        using var connection = new TestConnection { MaxMessageSizeOverride = 9 };
+        var packets = CapturePackets(connection);
+        using var writeBuffer = new VectorBuffer();
+        var expected = Enumerable.Range(1, (int)connection.MaxPayloadSize * 3).Select(i => (byte)i).ToArray();
+
+        using (var writer = new LargeMessageWriter(connection, writeBuffer, new System.Text.StringBuilder(),
+                   NetworkMessageId.AddObjectsIncomplete, NetworkMessageId.AddObjects))
+        {
+            writer.Buffer.Write(expected);
+        }
+
+        Assert.Equal(3, packets.Count);
+        Assert.All(packets, packet => Assert.Equal((int)connection.MaxPayloadSize, ReadPayload(packet).Length));
+        using var readBuffer = new VectorBuffer();
+        var reader = new LargeMessageReader(readBuffer,
+            NetworkMessageId.AddObjectsIncomplete, NetworkMessageId.AddObjects);
+        byte[]? restored = null;
+        foreach (var packet in packets)
+        {
+            using var message = new MemoryBuffer(ReadPayload(packet));
+            reader.OnMessage(ReadMessageId(packet), message, data => restored = ReadRemaining(data));
+        }
+
+        Assert.Equal(expected, restored);
     }
 
     [Fact]
@@ -136,7 +163,73 @@ public sealed class NetworkTransportTests
     }
 
     [Fact]
-    public void LargeMessageReader_preserves_source_position()
+    public void LargeMessageWriter_sends_one_empty_message_for_an_empty_buffer()
+    {
+        using var environment = new NetworkEnvironment();
+        using var connection = new TestConnection { MaxMessageSizeOverride = 9 };
+        var packets = CapturePackets(connection);
+        using var writeBuffer = new VectorBuffer();
+
+        using (new LargeMessageWriter(connection, writeBuffer, new System.Text.StringBuilder(),
+                   NetworkMessageId.AddObjectsIncomplete, NetworkMessageId.AddObjects))
+        {
+        }
+
+        var packet = Assert.Single(packets);
+        Assert.Equal(NetworkMessageId.AddObjects, ReadMessageId(packet));
+        Assert.Empty(ReadPayload(packet));
+    }
+
+    [Fact]
+    public void LargeMessageWriter_sends_nothing_when_discarded()
+    {
+        using var environment = new NetworkEnvironment();
+        using var connection = new TestConnection { MaxMessageSizeOverride = 9 };
+        var packets = CapturePackets(connection);
+        using var writeBuffer = new VectorBuffer();
+
+        using (var writer = new LargeMessageWriter(connection, writeBuffer, new System.Text.StringBuilder(),
+                   NetworkMessageId.AddObjectsIncomplete, NetworkMessageId.AddObjects))
+        {
+            writer.Discard();
+        }
+
+        Assert.Empty(packets);
+    }
+
+    [Fact]
+    public void LargeMessage_round_trip_keeps_an_empty_message()
+    {
+        using var environment = new NetworkEnvironment();
+        using var connection = new TestConnection { MaxMessageSizeOverride = 9 };
+        var packets = CapturePackets(connection);
+        using var writeBuffer = new VectorBuffer();
+        using (new LargeMessageWriter(connection, writeBuffer, new System.Text.StringBuilder(),
+                   NetworkMessageId.AddObjectsIncomplete, NetworkMessageId.AddObjects))
+        {
+        }
+
+        using var readBuffer = new VectorBuffer();
+        var reader = new LargeMessageReader(readBuffer,
+            NetworkMessageId.AddObjectsIncomplete, NetworkMessageId.AddObjects);
+        var calls = 0;
+        byte[]? restored = null;
+        foreach (var packet in packets)
+        {
+            using var message = new MemoryBuffer(ReadPayload(packet));
+            reader.OnMessage(ReadMessageId(packet), message, data =>
+            {
+                ++calls;
+                restored = ReadRemaining(data);
+            });
+        }
+
+        Assert.Equal(1, calls);
+        Assert.Empty(restored!);
+    }
+
+    [Fact]
+    public void LargeMessageReader_appends_the_whole_source_and_moves_it_to_the_end()
     {
         using var buffer = new VectorBuffer();
         var reader = new LargeMessageReader(buffer,
@@ -150,8 +243,8 @@ public sealed class NetworkTransportTests
             _ => Assert.Fail("Incomplete message must not invoke the callback"));
         reader.OnMessage(NetworkMessageId.AddObjects, last, data => restored = ReadRemaining(data));
 
-        Assert.Equal(1u, first.Position);
-        Assert.Equal(new byte[] { 2, 3, 4, 5 }, restored);
+        Assert.Equal(first.Size, first.Position);
+        Assert.Equal(new byte[] { 1, 2, 3, 4, 5 }, restored);
     }
 
     [Fact]
@@ -180,14 +273,37 @@ public sealed class NetworkTransportTests
     }
 
     [Fact]
+    public void OnMessageReceived_passes_the_payload_after_the_message_id()
+    {
+        using var environment = new NetworkEnvironment();
+        using var connection = new TestConnection();
+        NetworkMessageId? receivedId = null;
+        byte[]? receivedPayload = null;
+        connection.OnMessageReceived += (NetworkConnection sender, NetworkMessageId id,
+            ReadOnlySpan<byte> payload, ref bool handled) =>
+        {
+            receivedId = id;
+            receivedPayload = payload.ToArray();
+        };
+        using var incomingData = new VectorBuffer();
+        incomingData.WriteVLE((uint)NetworkMessageId.User);
+        incomingData.Write(new byte[] { 7, 8, 9 });
+
+        connection.Receive(incomingData.Buffer);
+
+        Assert.Equal(NetworkMessageId.User, receivedId);
+        Assert.Equal(new byte[] { 7, 8, 9 }, receivedPayload);
+    }
+
+    [Fact]
     public void StatisticsCounter_tracks_unhandled_outgoing_and_all_incoming_packets()
     {
         using var environment = new NetworkEnvironment();
         using var connection = new TestConnection();
         var counter = new NetworkStatisticsCounter(connection, windowSize: 1, intervalMs: 10);
         connection.OnSendData += HandleOutgoing;
-        using var outgoing = new MemoryBuffer(new byte[] { 1, 2, 3 });
-        using var incoming = new MemoryBuffer(new byte[] { 0, 4, 5, 6 });
+        var outgoing = new byte[] { 1, 2, 3 };
+        var incoming = new byte[] { 0, 4, 5, 6 };
 
         Assert.True(connection.SendData(outgoing));
         connection.Receive(incoming);
@@ -199,7 +315,7 @@ public sealed class NetworkTransportTests
         Assert.Equal(1, snapshot.PacketsOutPerSec);
         Assert.Equal(1, snapshot.PacketsInPerSec);
 
-        static void HandleOutgoing(NetworkConnection connection, MemoryBuffer data,
+        static void HandleOutgoing(NetworkConnection connection, ReadOnlySpan<byte> data,
             PacketType type, ref bool handled)
         {
         }
@@ -245,7 +361,7 @@ public sealed class NetworkTransportTests
         byte[]? received = null;
         var serverConnection = server.Connections[0];
         serverConnection.OnMessageReceived += OnMessage;
-        using var payload = new MemoryBuffer(new byte[] { 3, 1, 4, 1, 5 });
+        var payload = new byte[] { 3, 1, 4, 1, 5 };
 
         Assert.True(client.SendMessage(NetworkMessageId.User, payload));
         Assert.True(environment.WaitUntil(() => received is not null));
@@ -256,10 +372,10 @@ public sealed class NetworkTransportTests
         environment.WaitUntil(() => client.IsDisconnected, milliseconds: 2000);
 
         void OnMessage(NetworkConnection connection, NetworkMessageId messageId,
-            MemoryBuffer data, ref bool handled)
+            ReadOnlySpan<byte> data, ref bool handled)
         {
             Assert.Equal(NetworkMessageId.User, messageId);
-            received = ReadRemaining(data);
+            received = data.ToArray();
         }
     }
 
@@ -269,19 +385,19 @@ public sealed class NetworkTransportTests
         using var environment = new NetworkEnvironment();
         using var connection = new TestConnection();
         var logger = new CapturingMessageLogger(connection);
-        using var outgoing = new MemoryBuffer(new byte[] { 1, 2, 3 });
+        var outgoing = new byte[] { 1, 2, 3 };
         using var incomingData = new VectorBuffer();
         incomingData.WriteVLE((uint)NetworkMessageId.User);
         incomingData.Write(new byte[] { 4, 5 });
-        using var incoming = new MemoryBuffer(incomingData);
 
         Assert.True(connection.SendMessage(NetworkMessageId.User, outgoing,
             PacketType.ReliableOrdered, "payload"));
-        connection.Receive(incoming);
+        connection.Receive(incomingData.Buffer);
 
-        Assert.Equal((NetworkMessageId.User, 3u, PacketType.ReliableOrdered, "payload"),
+        Assert.Equal((NetworkMessageId.User, 3, PacketType.ReliableOrdered, "payload"),
             logger.Sent);
-        Assert.Equal((NetworkMessageId.User, 3u, string.Empty), logger.Received);
+        // The received size is the payload size, which excludes the message id.
+        Assert.Equal((NetworkMessageId.User, 2, string.Empty), logger.Received);
         logger.IsEnabled = false;
         Assert.Equal(RedBolt.Logging.LogLevel.None,
             logger.GetMessageLogLevel(NetworkMessageId.User));
@@ -293,14 +409,9 @@ public sealed class NetworkTransportTests
         connection.OnSendData += Capture;
         return packets;
 
-        void Capture(NetworkConnection sender, MemoryBuffer data, PacketType type, ref bool handled)
+        void Capture(NetworkConnection sender, ReadOnlySpan<byte> data, PacketType type, ref bool handled)
         {
-            var position = data.Position;
-            data.Seek(0);
-            var bytes = new byte[checked((int)data.Size)];
-            data.Read(bytes);
-            data.Seek(position);
-            packets.Add(new CapturedPacket(bytes, type));
+            packets.Add(new CapturedPacket(data.ToArray(), type));
         }
     }
 
@@ -341,7 +452,7 @@ public sealed class NetworkTransportTests
 
         public override bool Connect(URL url) => true;
 
-        public void Receive(MemoryBuffer data) => DispatchDataReceived(data);
+        public void Receive(ReadOnlySpan<byte> data) => DispatchDataReceived(data);
     }
 
     private struct ClockMessage : INetworkSerializableMessage
@@ -399,19 +510,19 @@ public sealed class NetworkTransportTests
         {
         }
 
-        public (NetworkMessageId Id, uint Size, PacketType Type, string DebugInfo) Sent { get; private set; }
-        public (NetworkMessageId Id, uint Size, string DebugInfo) Received { get; private set; }
+        public (NetworkMessageId Id, int Size, PacketType Type, string DebugInfo) Sent { get; private set; }
+        public (NetworkMessageId Id, int Size, string DebugInfo) Received { get; private set; }
 
-        public override void LogSentMessage(NetworkMessageId messageId, MemoryBuffer data,
+        public override void LogSentMessage(NetworkMessageId messageId, ReadOnlySpan<byte> data,
             PacketType packetType, string debugInfo = "")
         {
-            Sent = (messageId, data.Size, packetType, debugInfo);
+            Sent = (messageId, data.Length, packetType, debugInfo);
         }
 
         public override void LogReceivedMessage(
-            NetworkMessageId messageId, MemoryBuffer data, string debugInfo = "")
+            NetworkMessageId messageId, ReadOnlySpan<byte> data, string debugInfo = "")
         {
-            Received = (messageId, data.Size, debugInfo);
+            Received = (messageId, data.Length, debugInfo);
         }
     }
 
