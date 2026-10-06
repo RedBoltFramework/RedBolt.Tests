@@ -4,6 +4,7 @@ namespace RedBolt.Tests;
 using RedBolt.Container;
 using RedBolt.Core;
 using RedBolt.IO;
+using RedBolt.Logging;
 using RedBolt.Network;
 
 using System.Net;
@@ -409,6 +410,254 @@ public sealed class NetworkTransportTests
             Assert.Equal(NetworkMessageId.User, messageId);
             received = data.ToArray();
         }
+    }
+
+    [Fact]
+    public void DataChannel_peer_handle_is_valid_only_while_connected()
+    {
+        using var environment = new NetworkEnvironment();
+        using var server = new DataChannelServer();
+        using var client = new DataChannelConnection();
+        Assert.Equal(-1, client.Peer);
+
+        var serverConnection = ConnectLoopback(environment, server, client);
+        Assert.True(client.Peer >= 0);
+        Assert.True(serverConnection.Peer >= 0);
+
+        DisconnectLoopback(environment, server, client);
+        Assert.True(environment.WaitUntil(() =>
+            client.Peer == -1 && serverConnection.IsDisconnected && serverConnection.Peer == -1));
+    }
+
+    [Theory]
+    [InlineData("stun:127.0.0.1:1")]
+    [InlineData(null)]
+    public void DataChannel_connects_with_ice_servers_configured(string? iceServer)
+    {
+        using var environment = new NetworkEnvironment();
+        using var server = new DataChannelServer();
+        using var client = new DataChannelConnection();
+        string[] iceServers = iceServer is null ? [] : [iceServer];
+        server.SetIceServers(iceServers);
+        client.SetIceServers(iceServers);
+
+        var serverConnection = ConnectLoopback(environment, server, client);
+
+        Assert.Equal(new byte[] { 2, 7, 1, 8 }, ExchangeMessage(environment, client, serverConnection, [2, 7, 1, 8]));
+        DisconnectLoopback(environment, server, client);
+    }
+
+    [Fact]
+    public void DataChannel_connects_with_bind_address_and_port_range_configured()
+    {
+        using var environment = new NetworkEnvironment();
+        using var server = new DataChannelServer();
+        using var client = new DataChannelConnection();
+        var (serverBegin, serverEnd) = GetAvailableUdpPortRange(10, 40000);
+        var (clientBegin, clientEnd) = GetAvailableUdpPortRange(10, serverEnd + 1);
+        server.SetBindAddress("127.0.0.1");
+        server.SetPortRange(serverBegin, serverEnd);
+        client.SetBindAddress("127.0.0.1");
+        client.SetPortRange(clientBegin, clientEnd);
+
+        var serverConnection = ConnectLoopback(environment, server, client);
+
+        // The address of a connection is the remote ICE address, so each side shows the UDP port
+        // that the other side bound inside its configured range.
+        AssertAddressInRange(client.Address, serverBegin, serverEnd);
+        AssertAddressInRange(serverConnection.Address, clientBegin, clientEnd);
+        Assert.Equal(new byte[] { 1, 6, 1, 8 }, ExchangeMessage(environment, client, serverConnection, [1, 6, 1, 8]));
+        DisconnectLoopback(environment, server, client);
+    }
+
+    [Theory]
+    [InlineData(1200u)]
+    [InlineData(800u)]
+    public void DataChannel_delivers_a_full_size_message_with_the_mtu_configured(uint mtu)
+    {
+        using var environment = new NetworkEnvironment();
+        using var server = new DataChannelServer();
+        using var client = new DataChannelConnection();
+        server.SetMtu(mtu);
+        client.SetMtu(mtu);
+
+        var serverConnection = ConnectLoopback(environment, server, client);
+
+        // The protocol caps a message at MaxMessageSize (1024 bytes), so the largest message is
+        // sent. The test checks that the message arrives complete with the MTU configured. It does not
+        // check how many packets carry the message.
+        var payload = new byte[client.MaxPayloadSize];
+        Assert.True(payload.Length > 900);
+        for (var i = 0; i < payload.Length; ++i)
+            payload[i] = (byte)(i * 31 + 7);
+
+        Assert.Equal(payload, ExchangeMessage(environment, client, serverConnection, payload));
+        DisconnectLoopback(environment, server, client);
+    }
+
+    [Fact]
+    public void DataChannel_max_message_size_is_available_only_while_connected()
+    {
+        using var environment = new NetworkEnvironment();
+        using var server = new DataChannelServer();
+        using var client = new DataChannelConnection();
+        Assert.Equal(0u, client.MaxMessageSize);
+
+        var serverConnection = ConnectLoopback(environment, server, client);
+        Assert.True(client.MaxMessageSize > 0);
+        Assert.True(serverConnection.MaxMessageSize > 0);
+
+        DisconnectLoopback(environment, server, client);
+        Assert.True(environment.WaitUntil(() => client.MaxMessageSize == 0));
+    }
+
+    [Fact]
+    public void DataChannel_dispose_warns_unless_the_connection_is_disconnected()
+    {
+        using var environment = new NetworkEnvironment();
+        var log = new Log();
+        log.SetQuiet(true);
+        Context.Instance.RegisterSubsystem(log);
+        using var sink = new TestLogSink(log);
+        using var server = new DataChannelServer();
+        var port = GetAvailableTcpPort();
+        Assert.True(server.Listen(new URL((ushort)port)));
+
+        Assert.Equal(0, DisposeWarnings(static _ => { }));
+
+        // Disconnected after a completed disconnect.
+        Assert.Equal(0, DisposeWarnings(connection =>
+        {
+            Connect(connection);
+            Assert.True(environment.WaitUntil(() => connection.IsConnected));
+            connection.Disconnect();
+            Assert.True(environment.WaitUntil(() => connection.IsDisconnected));
+        }));
+
+        Assert.Equal(1, DisposeWarnings(connection =>
+        {
+            Connect(connection);
+            Assert.Equal(NetworkConnectionState.Connecting, connection.State);
+        }));
+
+        Assert.Equal(1, DisposeWarnings(connection =>
+        {
+            Connect(connection);
+            Assert.True(environment.WaitUntil(() => connection.IsConnected));
+        }));
+
+        // The state changes to Disconnected only in a main thread task, so it is Disconnecting here.
+        Assert.Equal(1, DisposeWarnings(connection =>
+        {
+            Connect(connection);
+            Assert.True(environment.WaitUntil(() => connection.IsConnected));
+            connection.Disconnect();
+            Assert.Equal(NetworkConnectionState.Disconnecting, connection.State);
+        }));
+
+        server.Stop();
+
+        void Connect(DataChannelConnection connection) =>
+            Assert.True(connection.Connect(new URL($"ws://127.0.0.1:{port}")));
+
+        // Runs the arrangement, disposes the connection even when it fails, and returns the
+        // number of new warnings.
+        int DisposeWarnings(Action<DataChannelConnection> arrange)
+        {
+            var connection = new DataChannelConnection();
+            var before = CountDisposeWarnings(log, sink);
+            try
+            {
+                arrange(connection);
+            }
+            finally
+            {
+                connection.Dispose();
+            }
+
+            return CountDisposeWarnings(log, sink) - before;
+        }
+    }
+
+    private static void AssertAddressInRange(string address, ushort begin, ushort end)
+    {
+        var separator = address.LastIndexOf(':');
+        Assert.True(separator > 0, $"Unexpected address format: '{address}'.");
+        Assert.Equal("127.0.0.1", address[..separator]);
+        var port = int.Parse(address[(separator + 1)..], global::System.Globalization.CultureInfo.InvariantCulture);
+        Assert.InRange(port, begin, end);
+    }
+
+    private static int CountDisposeWarnings(Log log, TestLogSink sink)
+    {
+        log.PumpThreadMessages();
+        return sink.Messages.Count(static message =>
+            message.Level == LogLevel.Warning
+            && message.Message.Contains("was not properly disconnected before destruction"));
+    }
+
+    private static DataChannelConnection ConnectLoopback(
+        NetworkEnvironment environment, DataChannelServer server, DataChannelConnection client)
+    {
+        var port = GetAvailableTcpPort();
+        Assert.True(server.Listen(new URL((ushort)port)));
+        Assert.True(client.Connect(new URL($"ws://127.0.0.1:{port}")));
+        Assert.True(environment.WaitUntil(() =>
+            client.IsConnected
+            && server.Connections.Count == 1
+            && server.Connections[0].IsConnected));
+        return (DataChannelConnection)server.Connections[0];
+    }
+
+    private static byte[] ExchangeMessage(
+        NetworkEnvironment environment, DataChannelConnection sender,
+        DataChannelConnection receiver, byte[] payload)
+    {
+        byte[]? received = null;
+        receiver.OnMessageReceived += OnMessage;
+        Assert.True(sender.SendMessage(NetworkMessageId.User, payload));
+        Assert.True(environment.WaitUntil(() => received is not null));
+        receiver.OnMessageReceived -= OnMessage;
+        return received!;
+
+        void OnMessage(NetworkConnection connection, NetworkMessageId messageId,
+            ReadOnlySpan<byte> data, ref bool handled)
+        {
+            Assert.Equal(NetworkMessageId.User, messageId);
+            received = data.ToArray();
+        }
+    }
+
+    private static void DisconnectLoopback(
+        NetworkEnvironment environment, DataChannelServer server, DataChannelConnection client)
+    {
+        client.Disconnect();
+        server.Stop();
+        Assert.True(environment.WaitUntil(() => client.IsDisconnected));
+    }
+
+    private static (ushort Begin, ushort End) GetAvailableUdpPortRange(ushort count, int firstCandidate)
+    {
+        for (var begin = firstCandidate; begin + count <= 60000; begin += count)
+        {
+            var sockets = new List<UdpClient>();
+            try
+            {
+                for (var port = begin; port < begin + count; ++port)
+                    sockets.Add(new UdpClient(new IPEndPoint(IPAddress.Loopback, port)));
+                return ((ushort)begin, (ushort)(begin + count - 1));
+            }
+            catch (SocketException)
+            {
+            }
+            finally
+            {
+                foreach (var socket in sockets)
+                    socket.Dispose();
+            }
+        }
+
+        throw new InvalidOperationException("No free UDP port range on loopback.");
     }
 
     [Fact]
