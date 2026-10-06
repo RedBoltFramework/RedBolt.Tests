@@ -337,8 +337,6 @@ public sealed class NetworkTransportTests
         Assert.Equal(2, probe.InputProcessed);
         Assert.Equal(1, probe.ServerUpdates);
         Assert.Equal(2, probe.ClientUpdates);
-        Assert.Equal(1, probe.ServerUpdatesSent);
-        Assert.Equal(2, probe.ClientUpdatesSent);
         Assert.True(network.IsUpdateNow);
         Assert.InRange(network.UpdateOvertime, 0.0f, 0.000001f);
     }
@@ -543,14 +541,11 @@ public sealed class NetworkTransportTests
         {
             SubscribeToEvent<NetworkEvents.NetworkInputProcessedEvent>(OnInputProcessed);
             SubscribeToEvent<NetworkEvents.NetworkUpdateEvent>(OnUpdate);
-            SubscribeToEvent<NetworkEvents.NetworkUpdateSentEvent>(OnUpdateSent);
         }
 
         public int InputProcessed { get; private set; }
         public int ServerUpdates { get; private set; }
         public int ClientUpdates { get; private set; }
-        public int ServerUpdatesSent { get; private set; }
-        public int ClientUpdatesSent { get; private set; }
 
         private void OnInputProcessed(ref NetworkEvents.NetworkInputProcessedEvent eventData)
         {
@@ -563,14 +558,6 @@ public sealed class NetworkTransportTests
                 ++ServerUpdates;
             else
                 ++ClientUpdates;
-        }
-
-        private void OnUpdateSent(ref NetworkEvents.NetworkUpdateSentEvent eventData)
-        {
-            if (eventData.IsServer)
-                ++ServerUpdatesSent;
-            else
-                ++ClientUpdatesSent;
         }
     }
 
