@@ -20,7 +20,6 @@ internal sealed class ManualConnection : IDisposable
         Peer = new ManualPeer(Connection, this);
         _sink = sink;
         _random = new RandomEngine(seed);
-        Connection.MaxPacketSize = NetworkProtocol.MaxNetworkPacketSize;
     }
 
     public static uint SystemTime { get; set; }
@@ -147,12 +146,16 @@ internal sealed class ManualConnection : IDisposable
         public Transport(ManualConnection owner)
         {
             _owner = owner;
+            _state = NetworkConnectionState.Connected; // Always connected
         }
 
         public override bool Connect(URL url) => true;
         public override void Disconnect() { }
         public override bool SendData(MemoryBuffer data,
             PacketType type = PacketType.ReliableOrdered) => _owner.SendData(data, type);
+
+        public void SetConnected(bool connected) =>
+            _state = connected ? NetworkConnectionState.Connected : NetworkConnectionState.Disconnected;
 
         private readonly ManualConnection _owner;
     }
@@ -280,6 +283,13 @@ internal sealed class NetworkSimulator : IDisposable
 
     public ReplicatedPeer? GetServerToClientConnection(Scene clientScene) =>
         _clients.FirstOrDefault(data => ReferenceEquals(data.ClientScene, clientScene))?.ServerToClient.Peer;
+
+    /// <summary>Changes the connection state of the server-to-client transport.</summary>
+    public void SetServerToClientConnected(Scene clientScene, bool connected) =>
+        FindClient(clientScene).ServerToClient.Connection.SetConnected(connected);
+
+    private PerClient FindClient(Scene clientScene) =>
+        _clients.First(data => ReferenceEquals(data.ClientScene, clientScene));
 
     public void Dispose()
     {

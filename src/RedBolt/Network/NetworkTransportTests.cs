@@ -16,6 +16,9 @@ public sealed class NetworkTransportTests
         using var environment = new NetworkEnvironment();
         using var connection = new TestConnection();
         var packets = CapturePackets(connection);
+        string? debugInfo = null;
+        connection.OnSendMessage += (NetworkConnection sender, NetworkMessageId id, MemoryBuffer data,
+            PacketType type, string info, ref bool handled) => debugInfo = info;
         using var source = new MemoryBuffer(new byte[] { 10, 20, 30 });
         source.Seek(2);
 
@@ -28,39 +31,62 @@ public sealed class NetworkTransportTests
         Assert.Equal((uint)NetworkMessageId.User, reader.ReadVLE());
         Assert.Equal(new byte[] { 10, 20, 30 }, ReadRemaining(reader));
         Assert.Equal(PacketType.ReliableOrdered, packet.Type);
-        Assert.Equal("message", connection.DebugInfoBuffer.ToString());
+        Assert.Equal("message", debugInfo);
     }
 
     [Fact]
-    public void MessageBuilder_frames_and_sends_once()
+    public void WriteSerializedMessage_frames_and_sends_once_with_debug_info()
     {
         using var environment = new NetworkEnvironment();
         using var connection = new TestConnection();
         var packets = CapturePackets(connection);
+        string? debugInfo = null;
+        connection.OnSendMessage += (NetworkConnection sender, NetworkMessageId id, MemoryBuffer data,
+            PacketType type, string info, ref bool handled) => debugInfo = info;
 
-        using (var builder = connection.BeginMessage(NetworkMessageId.SceneClock,
-                   PacketType.UnreliableOrdered, "clock"))
-        {
-            builder.Buffer.WriteUInt(0x12345678);
-            builder.EndMessage();
-        }
+        NetworkMessageUtils.WriteSerializedMessage(connection, NetworkMessageId.SceneClock,
+            new ClockMessage { Value = 0x12345678 }, PacketType.UnreliableOrdered);
+        NetworkMessageUtils.WriteSerializedMessage(connection, NetworkMessageId.SceneClock,
+            new ClockMessage { Value = 0x0BADF00D }, PacketType.UnreliableOrdered);
 
-        var packet = Assert.Single(packets);
-        using var reader = new MemoryBuffer(packet.Data);
+        Assert.Equal(2, packets.Count);
+        using var reader = new MemoryBuffer(packets[0].Data);
         Assert.Equal((uint)NetworkMessageId.SceneClock, reader.ReadVLE());
         Assert.Equal(0x12345678u, reader.ReadUInt());
-        Assert.Equal(PacketType.UnreliableOrdered, packet.Type);
+        Assert.Equal(PacketType.UnreliableOrdered, packets[0].Type);
+        Assert.Equal(sizeof(uint), ReadPayload(packets[1]).Length);
+        Assert.Equal("Clock 195948557", debugInfo);
+    }
+
+    [Fact]
+    public void GetMaxPayloadSize_subtracts_the_message_header_from_the_raw_size()
+    {
+        using var environment = new NetworkEnvironment();
+        using var connection = new TestConnection();
+
+        Assert.Equal((uint)NetworkProtocol.MaxNetworkPacketSize, connection.MaxMessageSize);
+        Assert.Equal(
+            (uint)(NetworkProtocol.MaxNetworkPacketSize - NetworkProtocol.NetworkMessageHeaderSize),
+            connection.MaxPayloadSize);
+
+        connection.MaxMessageSizeOverride = 9;
+        Assert.Equal(9u, connection.MaxMessageSize);
+        Assert.Equal(9u - NetworkProtocol.NetworkMessageHeaderSize, connection.MaxPayloadSize);
+
+        connection.MaxMessageSizeOverride = 2;
+        Assert.Equal(0u, connection.MaxPayloadSize);
     }
 
     [Fact]
     public void LargeMessageWriter_splits_and_reader_reassembles_payload()
     {
         using var environment = new NetworkEnvironment();
-        using var connection = new TestConnection { MaxPacketSize = 9 };
+        using var connection = new TestConnection { MaxMessageSizeOverride = 9 };
         var packets = CapturePackets(connection);
         using var writeBuffer = new VectorBuffer();
+        var writeDebugInfo = new System.Text.StringBuilder();
 
-        using (var writer = new LargeMessageWriter(connection, writeBuffer,
+        using (var writer = new LargeMessageWriter(connection, writeBuffer, writeDebugInfo,
                    NetworkMessageId.AddObjectsIncomplete, NetworkMessageId.AddObjects))
         {
             writer.Buffer.Write(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 });
@@ -91,6 +117,25 @@ public sealed class NetworkTransportTests
     }
 
     [Fact]
+    public void LargeMessageWriter_marks_only_the_last_chunk_when_size_is_an_exact_multiple()
+    {
+        using var environment = new NetworkEnvironment();
+        using var connection = new TestConnection { MaxMessageSizeOverride = 9 };
+        var packets = CapturePackets(connection);
+        using var writeBuffer = new VectorBuffer();
+
+        using (var writer = new LargeMessageWriter(connection, writeBuffer, new System.Text.StringBuilder(),
+                   NetworkMessageId.AddObjectsIncomplete, NetworkMessageId.AddObjects))
+        {
+            writer.Buffer.Write(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
+        }
+
+        Assert.Equal(new[] { NetworkMessageId.AddObjectsIncomplete, NetworkMessageId.AddObjects },
+            packets.Select(ReadMessageId));
+        Assert.Equal(new byte[] { 6, 7, 8, 9, 10 }, ReadPayload(packets[1]));
+    }
+
+    [Fact]
     public void LargeMessageReader_preserves_source_position()
     {
         using var buffer = new VectorBuffer();
@@ -113,11 +158,12 @@ public sealed class NetworkTransportTests
     public void MultiMessageWriter_repeats_header_when_packet_limit_is_reached()
     {
         using var environment = new NetworkEnvironment();
-        using var connection = new TestConnection { MaxPacketSize = 10 };
+        using var connection = new TestConnection { MaxMessageSizeOverride = 10 };
         var packets = CapturePackets(connection);
         using var buffer = new VectorBuffer();
+        var debugInfo = new System.Text.StringBuilder();
 
-        using (var writer = new MultiMessageWriter(connection, buffer,
+        using (var writer = new MultiMessageWriter(connection, buffer, debugInfo,
                    NetworkMessageId.UpdateObjectsReliable, PacketType.ReliableOrdered))
         {
             writer.Buffer.Write(new byte[] { 9, 9 });
@@ -139,7 +185,7 @@ public sealed class NetworkTransportTests
         using var environment = new NetworkEnvironment();
         using var connection = new TestConnection();
         var counter = new NetworkStatisticsCounter(connection, windowSize: 1, intervalMs: 10);
-        connection.SendDataRequested += HandleOutgoing;
+        connection.OnSendData += HandleOutgoing;
         using var outgoing = new MemoryBuffer(new byte[] { 1, 2, 3 });
         using var incoming = new MemoryBuffer(new byte[] { 0, 4, 5, 6 });
 
@@ -198,7 +244,7 @@ public sealed class NetworkTransportTests
 
         byte[]? received = null;
         var serverConnection = server.Connections[0];
-        serverConnection.MessageReceived += OnMessage;
+        serverConnection.OnMessageReceived += OnMessage;
         using var payload = new MemoryBuffer(new byte[] { 3, 1, 4, 1, 5 });
 
         Assert.True(client.SendMessage(NetworkMessageId.User, payload));
@@ -244,7 +290,7 @@ public sealed class NetworkTransportTests
     private static List<CapturedPacket> CapturePackets(TestConnection connection)
     {
         var packets = new List<CapturedPacket>();
-        connection.SendDataRequested += Capture;
+        connection.OnSendData += Capture;
         return packets;
 
         void Capture(NetworkConnection sender, MemoryBuffer data, PacketType type, ref bool handled)
@@ -289,9 +335,24 @@ public sealed class NetworkTransportTests
 
     private sealed class TestConnection : NetworkConnection
     {
+        public uint? MaxMessageSizeOverride { get; set; }
+
+        public override uint MaxMessageSize => MaxMessageSizeOverride ?? base.MaxMessageSize;
+
         public override bool Connect(URL url) => true;
 
-        public void Receive(MemoryBuffer data) => DoOnData(data);
+        public void Receive(MemoryBuffer data) => DispatchDataReceived(data);
+    }
+
+    private struct ClockMessage : INetworkSerializableMessage
+    {
+        public uint Value;
+
+        public void Load(MemoryBuffer source) => Value = source.ReadUInt();
+
+        public void Save(VectorBuffer destination) => destination.WriteUInt(Value);
+
+        public override readonly string ToString() => $"Clock {Value}";
     }
 
     private sealed class NetworkEventProbe : RedObject

@@ -48,8 +48,8 @@ public sealed class NetworkLoadableSceneTests
         Assert.Equal(0, serverConnection.NumPendingPackets);
         Assert.False(serverLoadableScene.IsSwitchInProgress);
 
-        clientConnection.DispatchConnected();
-        serverConnection.DispatchConnected();
+        clientConnection.ConnectNow();
+        serverConnection.ConnectNow();
 
         Assert.Equal(1, serverConnection.NumPendingPackets);
         Assert.True(serverLoadableScene.IsSwitchInProgress);
@@ -98,8 +98,8 @@ public sealed class NetworkLoadableSceneTests
             "Scenes/TestNetworkLoadableScene_B1.bin", "MarkerB1");
         using var secondScene = CreateBinarySceneResource(
             "Scenes/TestNetworkLoadableScene_B2.bin", "MarkerB2");
-        clientConnection.DispatchConnected();
-        serverConnection.DispatchConnected();
+        clientConnection.ConnectNow();
+        serverConnection.ConnectNow();
 
         serverLoadableScene.SetScene(firstScene);
         Assert.True(serverLoadableScene.IsSwitchInProgress);
@@ -152,8 +152,8 @@ public sealed class NetworkLoadableSceneTests
 
         using var serverScene = CreateBinarySceneResource(
             "Scenes/TestNetworkLoadableScene_Reject.bin", "MarkerReject");
-        clientConnection.DispatchConnected();
-        serverConnection.DispatchConnected();
+        clientConnection.ConnectNow();
+        serverConnection.ConnectNow();
 
         serverLoadableScene.SetScene(serverScene);
         Assert.Equal(1, serverConnection.FlushOutgoing());
@@ -197,8 +197,8 @@ public sealed class NetworkLoadableSceneTests
 
         using var missingScene = new Scene();
         missingScene.SetFileName("Scenes/TestNetworkLoadableScene_Missing.bin");
-        clientConnection.DispatchConnected();
-        serverConnection.DispatchConnected();
+        clientConnection.ConnectNow();
+        serverConnection.ConnectNow();
 
         serverLoadableScene.SetScene(missingScene);
         Assert.True(serverLoadableScene.IsSwitchInProgress);
@@ -226,8 +226,8 @@ public sealed class NetworkLoadableSceneTests
         using var clientLoadableScene = new NetworkLoadableScene(clientConnection);
         using var serverScene = CreateBinarySceneResource(
             "Scenes/TestNetworkLoadableScene_Disconnect.bin", "MarkerDisconnect");
-        clientConnection.DispatchConnected();
-        serverConnection.DispatchConnected();
+        clientConnection.ConnectNow();
+        serverConnection.ConnectNow();
 
         serverLoadableScene.SetScene(serverScene);
         Assert.True(serverLoadableScene.IsSwitchInProgress);
@@ -255,8 +255,8 @@ public sealed class NetworkLoadableSceneTests
             "Scenes/TestNetworkLoadableScene_Replication.bin", "MarkerReplication", true);
         var serverReplicationManager = serverScene.GetComponent<ReplicationManager>()!;
         serverReplicationManager.StartServer();
-        clientConnection.DispatchConnected();
-        serverConnection.DispatchConnected();
+        clientConnection.ConnectNow();
+        serverConnection.ConnectNow();
 
         serverLoadableScene.SetScene(serverScene);
         Assert.Equal(1, serverConnection.FlushOutgoing());
@@ -312,7 +312,7 @@ public sealed class NetworkLoadableSceneTests
         public override void Disconnect()
         {
             _state = NetworkConnectionState.Disconnected;
-            OnDisconnected();
+            HandleDisconnected();
         }
 
         public override bool SendData(MemoryBuffer data,
@@ -329,10 +329,10 @@ public sealed class NetworkLoadableSceneTests
 
         public void SetServerSide(NetworkServer server) => SetServer(server);
 
-        public void DispatchConnected()
+        public void ConnectNow()
         {
             _state = NetworkConnectionState.Connected;
-            OnConnected();
+            HandleConnected();
         }
 
         public int FlushOutgoing()
@@ -342,7 +342,7 @@ public sealed class NetworkLoadableSceneTests
             foreach (var packet in packets)
             {
                 using var message = new MemoryBuffer(packet);
-                Peer!.OnData(message);
+                Peer!.HandleDataReceived(message);
             }
             return packets.Length;
         }

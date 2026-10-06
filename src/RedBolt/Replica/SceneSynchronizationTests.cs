@@ -3,7 +3,9 @@ namespace RedBolt.Tests;
 
 using RedBolt.Core;
 using RedBolt.Graphics;
+using RedBolt.IO;
 using RedBolt.Math;
+using RedBolt.Network;
 using RedBolt.Replica;
 using RedBolt.Scene;
 
@@ -180,6 +182,38 @@ public sealed class SceneSynchronizationTests
             foreach (var clientScene in clientScenes)
                 clientScene.Dispose();
         }
+    }
+
+    [Fact]
+    public void Server_sends_no_objects_to_a_client_whose_connection_is_not_connected()
+    {
+        using var fixture = new ReplicaTestContext();
+        var prefab = CreateSimpleTestPrefab();
+        var quality = new ConnectionQuality(0.08f, 0.12f, 0.20f, 0, 0);
+        using var serverScene = new Scene();
+        using var clientScene = new Scene();
+        using var simulator = new NetworkSimulator(serverScene);
+        simulator.AddClient(clientScene, quality);
+        simulator.SimulateTime(0.5f);
+
+        var sentIds = new List<NetworkMessageId>();
+        var connection = simulator.GetServerToClientConnection(clientScene)!.Connection;
+        connection.OnSendMessage += (NetworkConnection sender, NetworkMessageId id, MemoryBuffer data,
+            PacketType type, string debugInfo, ref bool handled) => sentIds.Add(id);
+
+        simulator.SetServerToClientConnected(clientScene, false);
+        NetworkSimulator.SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Late Node");
+        simulator.SimulateTime(0.5f);
+
+        Assert.DoesNotContain(NetworkMessageId.AddObjects, sentIds);
+        Assert.DoesNotContain(NetworkMessageId.UpdateObjectsUnreliable, sentIds);
+        Assert.Null(clientScene.GetChild("Late Node", true));
+
+        simulator.SetServerToClientConnected(clientScene, true);
+        simulator.SimulateTime(0.5f);
+
+        Assert.Contains(NetworkMessageId.AddObjects, sentIds);
+        Assert.NotNull(clientScene.GetChild("Late Node", true));
     }
 
     [Fact]
