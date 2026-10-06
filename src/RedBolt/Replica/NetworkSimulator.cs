@@ -14,19 +14,28 @@ public readonly record struct ConnectionQuality(
 
 internal sealed class ManualConnection : IDisposable
 {
-    public ManualConnection(ReplicationManager sink, uint seed)
+    public ManualConnection(uint seed)
     {
         Connection = new Transport(this);
         Peer = new ManualPeer(Connection, this);
-        _sink = sink;
         _random = new RandomEngine(seed);
+    }
+
+    /// <summary>Create two connected ends. A message sent on one end is received by the other end.</summary>
+    public static (ManualConnection First, ManualConnection Second) CreatePair(RandomEngine random)
+    {
+        var first = new ManualConnection(random.GetUInt());
+        var second = new ManualConnection(random.GetUInt());
+        first.SinkConnection = second;
+        second.SinkConnection = first;
+        return (first, second);
     }
 
     public static uint SystemTime { get; set; }
 
     public Transport Connection { get; }
     public ManualPeer Peer { get; }
-    public ManualPeer? SinkConnection { get; set; }
+    public ManualConnection? SinkConnection { get; set; }
     public ConnectionQuality Quality { get; set; }
 
     public void IncrementTime(uint delta)
@@ -40,6 +49,9 @@ internal sealed class ManualConnection : IDisposable
 
     public void Dispose()
     {
+        // Upstream destroys the peer without a detach from the replication manager. The simulator removes the
+        // connection from the replicator itself. A disconnected transport makes Peer.Dispose skip the detach.
+        Connection.SetConnected(false);
         Peer.Dispose();
         Connection.Dispose();
     }
@@ -48,10 +60,6 @@ internal sealed class ManualConnection : IDisposable
     {
         if (data.Length == 0)
             return false;
-
-        using var packet = new MemoryBuffer(data.ToArray());
-        var messageId = (NetworkMessageId)packet.ReadVLE();
-        var payloadSize = packet.Size - packet.Position;
 
         var currentDropRatio = _droppedMessages / System.Math.Max(1.0, _totalUnreliableMessages);
         var currentShuffleRatio = _shuffledMessages / System.Math.Max(1.0, _totalUnorderedMessages);
@@ -78,13 +86,10 @@ internal sealed class ManualConnection : IDisposable
             ++_shuffledMessages;
         }
 
-        var payload = new byte[checked((int)payloadSize)];
-        packet.Read(payload);
         outgoingQueue.Insert(index, new InternalMessage
         {
             ReceiveTime = _currentTime + GetDeliveryDelay(),
-            MessageId = messageId,
-            Data = payload
+            Data = data.ToArray()
         });
         return true;
     }
@@ -100,11 +105,9 @@ internal sealed class ManualConnection : IDisposable
         return (uint)(value * NetworkSimulator.MillisecondsInFrame * NetworkSimulator.FramesInSecond);
     }
 
-    private void DeliverMessage(InternalMessage message)
-    {
-        using var memoryBuffer = new MemoryBuffer(message.Data);
-        _sink.ProcessMessage(SinkConnection!, message.MessageId, memoryBuffer);
-    }
+    // The destination transport raises its OnMessageReceived event, as upstream HandleMessageReceived does.
+    // Upstream first offers the message to the handlers of the source connection. This port does not.
+    private void DeliverMessage(InternalMessage message) => SinkConnection!.Connection.ReceiveData(message.Data);
 
     private void SendOrderedMessages(List<InternalMessage> messages)
     {
@@ -132,7 +135,6 @@ internal sealed class ManualConnection : IDisposable
     private sealed class InternalMessage
     {
         public uint ReceiveTime;
-        public NetworkMessageId MessageId;
         public byte[] Data = [];
     }
 
@@ -149,8 +151,25 @@ internal sealed class ManualConnection : IDisposable
         public override bool SendData(ReadOnlySpan<byte> data,
             PacketType type = PacketType.ReliableOrdered) => _owner.SendData(data, type);
 
+        /// <summary>Receive a framed packet (message id and payload) as if it came from the remote end.</summary>
+        public void ReceiveData(ReadOnlySpan<byte> packet) => HandleDataReceived(packet);
+
         public void SetConnected(bool connected) =>
             _state = connected ? NetworkConnectionState.Connected : NetworkConnectionState.Disconnected;
+
+        /// <summary>Set the connected state and raise the connect events, as a real transport does.</summary>
+        public void RaiseConnected()
+        {
+            _state = NetworkConnectionState.Connected;
+            HandleConnected();
+        }
+
+        /// <summary>Set the disconnected state and raise the disconnect events, as a real transport does.</summary>
+        public void RaiseDisconnected()
+        {
+            _state = NetworkConnectionState.Disconnected;
+            HandleDisconnected();
+        }
 
         private readonly ManualConnection _owner;
     }
@@ -176,7 +195,6 @@ internal sealed class ManualConnection : IDisposable
         private readonly ManualConnection _owner;
     }
 
-    private readonly ReplicationManager _sink;
     private readonly RandomEngine _random;
     private readonly Dictionary<(bool Reliable, bool Ordered), List<InternalMessage>> _messages = new()
     {
@@ -211,16 +229,13 @@ internal sealed class NetworkSimulator : IDisposable
     public void AddClient(Scene clientScene, ConnectionQuality quality)
     {
         var clientReplicationManager = clientScene.GetOrCreateComponent<ReplicationManager>();
-        var clientToServer = new ManualConnection(_serverReplicationManager, _random.GetUInt());
-        var serverToClient = new ManualConnection(clientReplicationManager, _random.GetUInt());
+        var (clientToServer, serverToClient) = ManualConnection.CreatePair(_random);
 
-        clientToServer.SinkConnection = serverToClient.Peer;
         clientToServer.Quality = quality;
-        serverToClient.SinkConnection = clientToServer.Peer;
         serverToClient.Quality = quality;
 
-        clientReplicationManager.StartClient(clientToServer.Peer);
-        _serverReplicationManager.ServerReplicator!.AddConnection(serverToClient.Peer);
+        clientToServer.Peer.SetReplicationManager(clientReplicationManager);
+        serverToClient.Peer.SetReplicationManager(_serverReplicationManager);
         _clients.Add(new PerClient(clientScene, clientReplicationManager,
             clientToServer, serverToClient));
     }
