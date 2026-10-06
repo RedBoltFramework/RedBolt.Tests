@@ -343,6 +343,39 @@ public sealed class NetworkTransportTests
     }
 
     [Fact]
+    public void Network_delays_a_pending_exit_only_while_a_connection_is_in_teardown()
+    {
+        using var environment = new NetworkEnvironment();
+        using var network = new RedBolt.Network.Network();
+        Context.Instance.RegisterSubsystem(network);
+        using var connection = new TestConnection();
+
+        var idle = new CoreEvents.ExitDelayQueryEvent();
+        network.SendEvent(ref idle);
+        Assert.False(idle.Delay);
+
+        connection.BeginDisconnecting();
+        Assert.True(network.HasActiveResources);
+
+        var busy = new CoreEvents.ExitDelayQueryEvent();
+        network.SendEvent(ref busy);
+        Assert.True(busy.Delay);
+
+        // A subscriber that has set the flag before keeps it.
+        var alreadyDelayed = new CoreEvents.ExitDelayQueryEvent { Delay = true };
+        network.SendEvent(ref alreadyDelayed);
+        Assert.True(alreadyDelayed.Delay);
+
+        var disconnected = new NetworkEvents.ClientDisconnectedEvent { Connection = connection };
+        network.SendEvent(ref disconnected);
+        Assert.False(network.HasActiveResources);
+
+        var finished = new CoreEvents.ExitDelayQueryEvent();
+        network.SendEvent(ref finished);
+        Assert.False(finished.Delay);
+    }
+
+    [Fact]
     public void DataChannel_server_and_client_exchange_a_framed_message()
     {
         using var environment = new NetworkEnvironment();
@@ -598,6 +631,8 @@ public sealed class NetworkTransportTests
         public override bool Connect(URL url) => true;
 
         public void Receive(ReadOnlySpan<byte> data) => DispatchDataReceived(data);
+
+        public void BeginDisconnecting() => NotifyDisconnecting();
     }
 
     private struct ClockMessage : INetworkSerializableMessage
