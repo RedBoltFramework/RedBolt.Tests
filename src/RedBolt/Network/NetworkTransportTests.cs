@@ -1,6 +1,7 @@
 // Copyright (c) 2026 RedBolt and contributors.
 namespace RedBolt.Tests;
 
+using RedBolt.Container;
 using RedBolt.Core;
 using RedBolt.IO;
 using RedBolt.Network;
@@ -461,6 +462,81 @@ public sealed class NetworkTransportTests
         logger.IsEnabled = false;
         Assert.Equal(RedBolt.Logging.LogLevel.None,
             logger.GetMessageLogLevel(NetworkMessageId.User));
+    }
+
+    [Fact]
+    public void CreateConnection_and_CreateServer_default_to_the_DataChannel_types()
+    {
+        using var environment = new NetworkEnvironment();
+        using var network = new RedBolt.Network.Network();
+
+        using var connection = network.CreateConnection();
+        using var server = network.CreateServer();
+
+        Assert.IsType<DataChannelConnection>(connection);
+        Assert.IsType<DataChannelServer>(server);
+    }
+
+    [Fact]
+    public void CreateConnection_and_CreateServer_accept_an_explicit_DataChannel_type()
+    {
+        using var environment = new NetworkEnvironment();
+        using var network = new RedBolt.Network.Network();
+
+        using var connection = network.CreateConnection(typeof(DataChannelConnection).GetTypeId());
+        using var server = network.CreateServer(typeof(DataChannelServer).GetTypeId());
+
+        Assert.IsType<DataChannelConnection>(connection);
+        Assert.IsType<DataChannelServer>(server);
+    }
+
+    [Fact]
+    public void CreateConnection_and_CreateServer_return_null_for_unknown_types()
+    {
+        using var environment = new NetworkEnvironment();
+        using var network = new RedBolt.Network.Network();
+        var unknown = new StringHash("NoSuchNetworkType");
+
+        Assert.Null(network.CreateConnection(unknown));
+        Assert.Null(network.CreateServer(unknown));
+    }
+
+    [Fact]
+    public void CreateConnection_and_CreateServer_return_null_for_types_of_the_wrong_base()
+    {
+        using var environment = new NetworkEnvironment();
+        using var network = new RedBolt.Network.Network();
+
+        Assert.Null(network.CreateConnection(typeof(DataChannelServer).GetTypeId()));
+        Assert.Null(network.CreateServer(typeof(DataChannelConnection).GetTypeId()));
+    }
+
+    [Fact]
+    public void CreateConnection_and_CreateServer_return_null_for_a_factory_type_of_the_wrong_base()
+    {
+        using var environment = new NetworkEnvironment();
+        Context.Instance.RegisterAssembly(typeof(RedBolt.Scene.ShakeComponent).Assembly);
+        using var network = new RedBolt.Network.Network();
+        var componentType = typeof(RedBolt.Scene.ShakeComponent).GetTypeId();
+        Assert.True(Context.Instance.GetReflection(componentType)!.HasObjectFactory());
+
+        Assert.Null(network.CreateConnection(componentType));
+        Assert.Null(network.CreateServer(componentType));
+    }
+
+    [Fact]
+    public void DataChannel_types_have_no_object_factory()
+    {
+        using var environment = new NetworkEnvironment();
+        using var network = new RedBolt.Network.Network();
+
+        var connection = Context.Instance.GetReflection(typeof(DataChannelConnection).GetTypeId());
+        var server = Context.Instance.GetReflection(typeof(DataChannelServer).GetTypeId());
+
+        Assert.NotNull(connection);
+        Assert.NotNull(server);
+        Assert.False(connection.HasObjectFactory());
+        Assert.False(server.HasObjectFactory());
     }
 
     private static List<CapturedPacket> CapturePackets(TestConnection connection)
