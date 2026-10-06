@@ -380,6 +380,68 @@ public sealed class NetworkTransportTests
     }
 
     [Fact]
+    public void Server_keeps_the_connection_during_OnDisconnected_and_removes_it_afterwards()
+    {
+        using var environment = new NetworkEnvironment();
+        using var server = new TestServer();
+        server.SetConnectionFactory(() => new TestConnection());
+        var connection = server.CreateConnection();
+        Assert.Contains(connection, server.Connections);
+
+        var listedDuringEvent = false;
+        var eventCount = 0;
+        server.OnDisconnected += (_, disconnected) =>
+        {
+            ++eventCount;
+            listedDuringEvent = server.Connections.Contains(disconnected);
+        };
+
+        server.RaiseDisconnected(connection);
+
+        Assert.Equal(1, eventCount);
+        Assert.True(listedDuringEvent);
+        Assert.DoesNotContain(connection, server.Connections);
+    }
+
+    [Fact]
+    public void Server_defers_dispatch_from_a_network_thread_to_the_main_thread()
+    {
+        using var environment = new NetworkEnvironment();
+        using var server = new TestServer();
+        server.SetConnectionFactory(() => new TestConnection());
+        var connection = server.CreateConnection();
+        var eventCount = 0;
+        server.OnDisconnected += (_, _) => ++eventCount;
+
+        var thread = new global::System.Threading.Thread(() => server.RaiseDisconnected(connection));
+        thread.Start();
+        thread.Join();
+
+        Assert.Equal(0, eventCount);
+        Assert.Contains(connection, server.Connections);
+        Assert.True(environment.WaitUntil(() => eventCount == 1));
+        Assert.DoesNotContain(connection, server.Connections);
+    }
+
+    [Fact]
+    public void Server_can_be_constructed_without_a_work_queue()
+    {
+        var previousContext = Context.Instance;
+        using var context = new Context();
+        Context.SetInstance(context);
+        try
+        {
+            Assert.Null(context.GetSubsystem<WorkQueue>());
+            using var server = new TestServer();
+            Assert.Empty(server.Connections);
+        }
+        finally
+        {
+            Context.SetInstance(previousContext);
+        }
+    }
+
+    [Fact]
     public void NetworkMessageLogger_observes_sent_and_received_messages()
     {
         using var environment = new NetworkEnvironment();
@@ -443,6 +505,15 @@ public sealed class NetworkTransportTests
     }
 
     private sealed record CapturedPacket(byte[] Data, PacketType Type);
+
+    private sealed class TestServer : NetworkServer
+    {
+        public override bool Listen(URL url) => false;
+        public override void Stop() { }
+        public override bool IsListening => false;
+
+        public void RaiseDisconnected(NetworkConnection connection) => DispatchDisconnected(connection);
+    }
 
     private sealed class TestConnection : NetworkConnection
     {
