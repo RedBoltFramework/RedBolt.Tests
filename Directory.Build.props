@@ -20,11 +20,8 @@
     <RedBoltGlowRoot Condition="'$(RedBoltGlowRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../RedBolt.Glow'))</RedBoltGlowRoot>
     <RedBoltXRRoot Condition="'$(RedBoltXRRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../RedBolt.XR'))</RedBoltXRRoot>
     <RedBoltIsPlatformLibrary>false</RedBoltIsPlatformLibrary>
-    <!-- Tests on their own build into their build/. Inside the monorepo the root Directory.Build.props,
-         imported by the core props below, overrides this default; a global RedBoltBuildRoot wins over both. -->
-    <RedBoltExpectedBuildRoot Condition="'$(RedBoltExpectedBuildRoot)' == '' and '$(RedBoltBuildRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)build'))</RedBoltExpectedBuildRoot>
-    <!-- The project lies at the repository root, so that build/ is below it: keep its generated sources
-         out of the default items. -->
+    <!-- Checkouts built before the build root moved keep a build/ below the project; its generated sources
+         must not be globbed into the compilation. -->
     <DefaultItemExcludes>$(DefaultItemExcludes);build/**</DefaultItemExcludes>
   </PropertyGroup>
 
