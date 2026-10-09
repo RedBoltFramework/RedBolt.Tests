@@ -41,10 +41,10 @@ off-screen harness:
 
 The command uses Xvfb/llvmpipe for display-dependent tests. The
 report is written under `<build root>/TestResults/coverage/` in Cobertura format.
-The build root is `REDBOLT_BUILD_ROOT`, else the monorepo `build/` when this
-repository sits beside `RedBolt.slnx`, else this repository's own `build/`
-(`scripts/redbolt_build_root.sh`). An explicit `REDBOLT_BUILD_ROOT` is also passed
-to `dotnet test` as `-p:RedBoltBuildRoot`; otherwise the MSBuild props decide.
+The build root is `REDBOLT_BUILD_ROOT`, else the `build/` directory beside the
+engine directory (`scripts/redbolt_build_root.sh`). An explicit `REDBOLT_BUILD_ROOT`
+is also passed to `dotnet test` as `-p:RedBoltBuildRoot`; otherwise the MSBuild
+props decide.
 
 Everything in the `RedBolt*` assemblies is measured; only the test assembly
 itself is excluded (`coverage.runsettings`). The harness never fails on a coverage
