@@ -382,6 +382,41 @@ public sealed class EngineTests
     }
 
     [Fact]
+    public void Engine_initialization_registers_resource_root_directories_in_resource_cache()
+    {
+        var suffix = Guid.NewGuid().ToString("N");
+        var executableDirectory = Path.GetDirectoryName(typeof(EngineTests).Assembly.Location)!;
+        var resourceRootFile = Path.Combine(executableDirectory, $"resource-root-{suffix}.ini");
+        var resourceDirectory = Path.Combine(executableDirectory, $"resource-root-{suffix}");
+        Directory.CreateDirectory(resourceDirectory);
+        System.IO.File.WriteAllText(resourceRootFile,
+            $"Core = {{exeDir}}/{Path.GetFileName(resourceDirectory)}{Environment.NewLine}");
+
+        try
+        {
+            using var engine = new EngineScope(new Engine(), new EngineParameters
+            {
+                ApplicationName = "RedBolt.Tests.ResourceRootCache",
+                Headless = true,
+                ResourceRootFile = Path.GetFileName(resourceRootFile),
+                ResourcePrefixPaths = string.Empty
+            });
+
+            var cache = engine.Value.Context.GetSubsystem<ResourceCache>()!;
+            var registered = Assert.Single(cache.ResourceDirs);
+            Assert.Equal(
+                Path.TrimEndingDirectorySeparator(resourceDirectory),
+                Path.TrimEndingDirectorySeparator(Path.GetFullPath(registered)));
+            Assert.False(cache.AddResourceDir(registered));
+        }
+        finally
+        {
+            System.IO.File.Delete(resourceRootFile);
+            Directory.Delete(resourceDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Engine_initialization_uses_resource_root_file_when_enabled()
     {
         var suffix = Guid.NewGuid().ToString("N");

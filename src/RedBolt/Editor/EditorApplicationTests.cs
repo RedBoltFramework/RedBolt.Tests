@@ -312,9 +312,6 @@ public sealed class EditorApplicationTests
             parameters.LogName = string.Empty;
             parameters.LogQuiet = true;
             parameters.RenderBackend = RenderBackend.OpenGL;
-            parameters.ResourcePrefixPaths = Path.GetFullPath(Path.Combine(
-                _repositoryRoot, "build", "bin",
-                RbfxTestData.BuildConfiguration, RbfxTestData.TargetPlatform));
             parameters.TimeOut = _droppedProjectPath is null ? 0 : 10;
             parameters.WindowHidden = true;
             parameters.WindowMaximize = false;
