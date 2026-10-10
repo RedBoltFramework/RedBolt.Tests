@@ -38,11 +38,8 @@ public sealed class ModelInspectorTests
         File.WriteAllText(Path.Combine(projectPath, "Cache.json"), "{}");
         File.WriteAllText(Path.Combine(projectPath, "ui.ini"), string.Empty);
         File.WriteAllText(settingsPath, "{}");
-        using (var destination = new RedBolt.IO.VectorBuffer())
-        {
-            Assert.True(_fixture.Resources.Get<Model>("Models/Box.mdl").Save(destination));
-            File.WriteAllBytes(Path.Combine(dataPath, "Test.mdl"), destination.GetBuffer());
-        }
+        // A copy of the file: Model.Save also writes the model metadata into a resource directory.
+        File.Copy(Path.Combine(RbfxTestData.CoreData, "Models", "Box.mdl"), Path.Combine(dataPath, "Test.mdl"));
         var preservedResources = _fixture.Resources.AllResources.Values.ToArray();
 
         Project? project = null;
