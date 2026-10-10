@@ -200,12 +200,16 @@ public sealed class AnimationTests
 
             using var animation = new Animation { Name = "resource.ani" };
             animation.AddTrigger(0.5f, false, 1);
-            using var destination = new VectorBuffer();
-            destination.SetName("saved.ani");
 
-            Assert.True(animation.Save(destination));
+            Assert.True(animation.SaveFile(new FileIdentifier("saved.ani")));
             Assert.True(System.IO.File.Exists(Path.Combine(directory, "saved.xml")));
             Assert.False(System.IO.File.Exists(Path.Combine(directory, "resource.xml")));
+
+            // A memory buffer is not a file, so it gets no trigger file, also when it has a name.
+            using var destination = new VectorBuffer();
+            destination.SetName("buffer.ani");
+            Assert.True(animation.Save(destination));
+            Assert.Equal(["saved.xml"], Directory.GetFiles(directory, "*.xml").Select(Path.GetFileName));
         }
         finally
         {

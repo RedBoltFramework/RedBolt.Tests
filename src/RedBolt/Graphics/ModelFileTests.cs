@@ -3,6 +3,7 @@ namespace RedBolt.Tests;
 
 using RedBolt;
 using RedBolt.Container;
+using RedBolt.Core;
 using RedBolt.Graphics;
 using RedBolt.IO;
 using RedBolt.Math;
@@ -185,5 +186,43 @@ public sealed class ModelFileTests
         Assert.True(staged.EndLoad());
         Assert.Equal(3u, staged.GetVertexBuffers()[0].GetVertexCount());
         Assert.Equal(3u, staged.GetIndexBuffers()[0].GetIndexCount());
+    }
+
+    [Fact]
+    public void Model_save_writes_metadata_beside_the_destination_file()
+    {
+        var previousContext = Context.Instance;
+        Context.SetInstance(new Context());
+        var directory = Path.Combine(Path.GetTempPath(), $"RedBoltModel-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+
+        try
+        {
+            using var virtualFileSystem = new VirtualFileSystem();
+            virtualFileSystem.MountRoot();
+            // The directory mount accepts a relative name, so a file with a wrong name is found below.
+            virtualFileSystem.MountDir(directory);
+            Context.Instance.RegisterSubsystem(virtualFileSystem);
+
+            using var model = new Model { Name = "resource.mdl" };
+            model.AddMetadata("Key", new Variant(1));
+
+            Assert.True(model.SaveFile(new FileIdentifier(Path.Combine(directory, "saved.mdl"))));
+            var savedXml = Path.Combine(directory, "saved.xml");
+            Assert.True(System.IO.File.Exists(savedXml));
+            Assert.Contains("Key", System.IO.File.ReadAllText(savedXml));
+            Assert.False(System.IO.File.Exists(Path.Combine(directory, "resource.xml")));
+
+            var xmlFilesBefore = Directory.GetFiles(directory, "*.xml").Length;
+            using var destination = new VectorBuffer();
+            Assert.True(model.Save(destination));
+            Assert.False(System.IO.File.Exists(Path.Combine(directory, "resource.xml")));
+            Assert.Equal(xmlFilesBefore, Directory.GetFiles(directory, "*.xml").Length);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+            Context.SetInstance(previousContext);
+        }
     }
 }
